@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 from collections import Counter
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock
 
@@ -10,6 +11,7 @@ import polars as pl
 import pytest
 
 from bot.application.bot import SignalBot
+from bot.config import load_settings
 from bot.core.engine import SignalEngine, StrategyRegistry
 from bot.core.engine.base import StrategyDecision
 from bot.core.events import BookTickerEvent
@@ -649,9 +651,9 @@ def test_ema_bounce_emits_1h_timeframe() -> None:
         (30.0, False),
     ],
 )
-def test_ema_bounce_config_min_adx_changes_outcome(monkeypatch: pytest.MonkeyPatch, min_adx: float, expect_signal: bool) -> None:
+def test_ema_bounce_config_min_adx_changes_outcome(min_adx: float, expect_signal: bool) -> None:
     setup = EmaBounceSetup()
-    settings = SimpleNamespace(filters=SimpleNamespace(setups={}))
+    settings = SimpleNamespace(filters=SimpleNamespace(setups={"ema_bounce": {"min_adx": min_adx}}))
     t0 = datetime.now(UTC) - timedelta(hours=2)
     prepared = make_prepared(price=101.0)
     prepared.bias_1h = "uptrend"
@@ -673,11 +675,6 @@ def test_ema_bounce_config_min_adx_changes_outcome(monkeypatch: pytest.MonkeyPat
             "adx14": [21.0, 22.0, 24.0],
         }
     )
-    monkeypatch.setattr(
-        "bot.strategies.ema_bounce.load_strategy_config",
-        lambda _: {"filters": {"min_adx": min_adx}},
-    )
-
     signal = setup.detect(prepared, settings)
 
     assert (signal is not None) is expect_signal
@@ -691,10 +688,15 @@ def test_ema_bounce_config_min_adx_changes_outcome(monkeypatch: pytest.MonkeyPat
     ],
 )
 def test_structure_pullback_config_trend_threshold_changes_outcome(
-    monkeypatch: pytest.MonkeyPatch, min_trend_score: float, expect_signal: bool
+    min_trend_score: float, expect_signal: bool
 ) -> None:
     setup = StructurePullbackSetup()
-    settings = SimpleNamespace(filters=SimpleNamespace(min_adx_1h=18.0, setups={}))
+    settings = SimpleNamespace(
+        filters=SimpleNamespace(
+            min_adx_1h=18.0,
+            setups={"structure_pullback": {"min_trend_score": min_trend_score}},
+        )
+    )
     prepared = make_prepared(price=106.0)
     prepared.bias_1h = "uptrend"
     prepared.regime_1h_confirmed = "uptrend"
@@ -754,11 +756,6 @@ def test_structure_pullback_config_trend_threshold_changes_outcome(
             "bb_pct_b": [0.55, 0.58, 0.62],
         }
     )
-    monkeypatch.setattr(
-        "bot.strategies.structure_pullback.load_strategy_config",
-        lambda _: {"detection": {"min_trend_score": min_trend_score}},
-    )
-
     signal = setup.detect(prepared, settings)
 
     assert (signal is not None) is expect_signal
@@ -772,10 +769,20 @@ def test_structure_pullback_config_trend_threshold_changes_outcome(
     ],
 )
 def test_fvg_config_mitigation_threshold_changes_outcome(
-    monkeypatch: pytest.MonkeyPatch, min_mitigation_pct: float, expect_signal: bool
+    min_mitigation_pct: float, expect_signal: bool
 ) -> None:
     setup = FVGSetup()
-    settings = SimpleNamespace(filters=SimpleNamespace(setups={}))
+    settings = SimpleNamespace(
+        filters=SimpleNamespace(
+            setups={
+                "fvg": {
+                    "min_mitigation_pct": min_mitigation_pct,
+                    "min_fvg_size_atr": 0.05,
+                    "sl_buffer_atr": 0.5,
+                }
+            }
+        )
+    )
     now = datetime.now(UTC)
     prepared = make_prepared(price=100.0)
     prepared.bias_1h = "uptrend"
@@ -798,17 +805,39 @@ def test_fvg_config_mitigation_threshold_changes_outcome(
             "adx14": [20.0, 21.0, 22.0, 23.0, 24.0],
         }
     )
-    monkeypatch.setattr(
-        "bot.strategies.fvg.load_strategy_config",
-        lambda _: {
-            "detection": {"min_mitigation_pct": min_mitigation_pct, "min_fvg_size_atr": 0.05},
-            "risk_management": {"sl_buffer_atr": 0.5},
-        },
-    )
-
     signal = setup.detect(prepared, settings)
 
     assert (signal is not None) is expect_signal
+
+
+def test_load_settings_merges_legacy_strategy_overrides_once(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    config_file = tmp_path / "config.toml"
+    config_file.write_text(
+        """
+[bot]
+[bot.filters]
+[bot.filters.setups]
+ema_bounce = { min_adx = 24.0 }
+""".strip()
+    )
+    legacy_dir = tmp_path / "config" / "strategies"
+    legacy_dir.mkdir(parents=True)
+    (legacy_dir / "ema_bounce.toml").write_text(
+        """
+[detection]
+ema_touch_tolerance_pct = 0.01
+[filters]
+min_adx = 18.0
+""".strip()
+    )
+    monkeypatch.setenv("TG_TOKEN", "")
+    monkeypatch.setenv("TARGET_CHAT_ID", "")
+
+    settings = load_settings(config_file)
+    overrides = settings.filters.setups["ema_bounce"]
+
+    assert overrides["ema_touch_tolerance_pct"] == pytest.approx(0.01)
+    assert overrides["min_adx"] == pytest.approx(24.0)
 
 
 @pytest.mark.asyncio

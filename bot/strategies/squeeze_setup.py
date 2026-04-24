@@ -10,7 +10,6 @@ from typing import cast
 import polars as pl
 
 from ..config import BotSettings
-from ..config_loader import load_strategy_config, get_nested
 from ..models import PreparedSymbol, Signal
 from ..setup_base import BaseSetup
 from ..setups import _build_signal, _compute_dynamic_score, _reject
@@ -83,13 +82,13 @@ class SqueezeSetup(BaseSetup):
     def detect(self, prepared: PreparedSymbol, settings: BotSettings) -> Signal | None:
         work_15m = prepared.work_15m
 
-        # Load config-driven parameters
-        config = load_strategy_config("squeeze_setup")
-        bb_squeeze_threshold = get_nested(config, "detection.bb_squeeze_threshold", 0.05)
-        min_bb_compression_width = get_nested(config, "detection.min_bb_compression_width", 0.02)
-        bb_pct_b_threshold = get_nested(config, "detection.bb_pct_b_threshold", 0.80)
-        volume_threshold = get_nested(config, "detection.volume_threshold", 0.8)
-        sl_buffer_atr = get_nested(config, "risk_management.sl_buffer_atr", 0.4)
+        dynamic_params = get_dynamic_params(prepared, self.setup_id)
+        defaults = self.get_optimizable_params(settings)
+        bb_squeeze_threshold = dynamic_params.get("bb_squeeze_threshold", 0.05)
+        min_bb_compression_width = dynamic_params.get("min_bb_compression_width", defaults["min_bb_compression_width"])
+        bb_pct_b_threshold = dynamic_params.get("bb_pct_b_threshold", defaults["bb_pct_b_threshold"])
+        volume_threshold = dynamic_params.get("volume_threshold", 0.8)
+        sl_buffer_atr = dynamic_params.get("sl_buffer_atr", 0.4)
 
         if work_15m.height < 30:
             _reject(prepared, "squeeze_setup", "insufficient_bars")

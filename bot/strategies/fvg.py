@@ -16,7 +16,6 @@ import polars as pl
 
 from ..setup_base import BaseSetup
 from ..config import BotSettings
-from ..config_loader import load_strategy_config, get_nested
 from ..models import PreparedSymbol, Signal
 from ..setups import _build_signal, _compute_dynamic_score, _reject
 from ..setups.utils import (
@@ -72,11 +71,9 @@ class FVGSetup(BaseSetup):
         dynamic_params = get_dynamic_params(prepared, setup_id)
         defaults = self.get_optimizable_params(settings)
         
-        # Load config-driven parameters
-        config = load_strategy_config("fvg")
-        min_fvg_size_atr = get_nested(config, "detection.min_fvg_size_atr", 0.3)
-        min_mitigation_pct = get_nested(config, "detection.min_mitigation_pct", 0.3)
-        sl_buffer_atr = get_nested(config, "risk_management.sl_buffer_atr", 0.5)
+        min_fvg_size_atr = dynamic_params.get("min_fvg_size_atr", defaults["min_fvg_size_atr"])
+        min_mitigation_pct = dynamic_params.get("min_mitigation_pct", defaults["min_mitigation_pct"])
+        sl_buffer_atr = dynamic_params.get("sl_buffer_atr", defaults["sl_buffer_atr"])
 
         w = prepared.work_15m
         if w.height < 10:

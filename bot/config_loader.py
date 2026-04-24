@@ -1,4 +1,8 @@
-"""Configuration loader for strategy-specific TOML configs."""
+"""Legacy configuration loader for offline strategy tooling.
+
+Runtime strategy detection now reads setup overrides from
+`settings.filters.setups` populated at startup.
+"""
 from __future__ import annotations
 
 import logging

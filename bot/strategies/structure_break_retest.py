@@ -9,7 +9,6 @@ from typing import cast
 import polars as pl
 
 from ..config import BotSettings
-from ..config_loader import load_strategy_config, get_nested
 from ..features import _swing_points
 from ..models import PreparedSymbol, Signal
 from ..setup_base import BaseSetup
@@ -59,11 +58,9 @@ class StructureBreakRetestSetup(BaseSetup):
         dynamic_params = get_dynamic_params(prepared, setup_id)
         defaults = self.get_optimizable_params(settings)
         
-        # Load config-driven parameters
-        config = load_strategy_config("structure_break_retest")
-        swing_lookback = get_nested(config, "detection.swing_lookback", 10)
-        retest_atr_mult = get_nested(config, "detection.retest_atr_mult", 0.3)
-        sl_buffer_atr = get_nested(config, "risk_management.sl_buffer_atr", 0.5)
+        swing_lookback = int(dynamic_params.get("swing_lookback", defaults["swing_lookback"]))
+        retest_atr_mult = dynamic_params.get("retest_atr_mult", defaults["retest_atr_tol"])
+        sl_buffer_atr = dynamic_params.get("sl_buffer_atr", defaults["sl_buffer_atr"])
 
         work_1h = prepared.work_1h
         work_15m = prepared.work_15m

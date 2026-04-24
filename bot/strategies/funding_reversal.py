@@ -12,7 +12,6 @@ import math
 
 from ..setup_base import BaseSetup
 from ..config import BotSettings
-from ..config_loader import load_strategy_config, get_nested
 from ..models import PreparedSymbol, Signal
 from ..setups import _build_signal, _compute_dynamic_score, _reject
 from ..setups.utils import get_dynamic_params
@@ -64,12 +63,12 @@ class FundingReversalSetup(BaseSetup):
     def _detect(self, prepared: PreparedSymbol, settings: BotSettings) -> Signal | None:
         setup_id = self.setup_id
         
-        # Load config-driven parameters
-        config = load_strategy_config("funding_reversal")
-        funding_threshold = get_nested(config, "funding.funding_threshold", 0.0005)
-        funding_trend_bars = get_nested(config, "funding.funding_trend_bars", 3)
-        min_delta_threshold = get_nested(config, "detection.min_delta_threshold", 0.1)
-        sl_buffer_atr = get_nested(config, "risk_management.sl_buffer_atr", 0.5)
+        dynamic_params = get_dynamic_params(prepared, setup_id)
+        defaults = self.get_optimizable_params(settings)
+        funding_threshold = dynamic_params.get("funding_threshold", defaults["funding_threshold"])
+        funding_trend_bars = int(dynamic_params.get("funding_trend_bars", defaults["funding_trend_bars"]))
+        min_delta_threshold = dynamic_params.get("min_delta_threshold", defaults["min_delta_threshold"])
+        sl_buffer_atr = dynamic_params.get("sl_buffer_atr", defaults["sl_buffer_atr"])
         
         if prepared.funding_rate is None:
             _reject(prepared, setup_id, "funding_rate_missing")

@@ -1,3 +1,0 @@
-{"ts": "2026-04-24T01:11:50.221673+00:00", "symbol": "DODOXUSDT", "setup_id": "structure_pullback", "direction": "long", "tracking_id": "DODOXUSDT|structure_pullback|long|20260424T011148465903Z", "delivery_status": "sent", "reason": null, "message_id": 4135}
-{"ts": "2026-04-24T01:15:19.881647+00:00", "symbol": "ORDIUSDT", "setup_id": "liquidity_sweep", "direction": "long", "tracking_id": "ORDIUSDT|liquidity_sweep|long|20260424T011515191495Z", "delivery_status": "sent", "reason": null, "message_id": 4137}
-{"ts": "2026-04-24T03:00:23.028461+00:00", "symbol": "ENAUSDT", "setup_id": "breaker_block", "direction": "long", "tracking_id": "ENAUSDT|breaker_block|long|20260424T030017164925Z", "delivery_status": "sent", "reason": null, "message_id": 4140}

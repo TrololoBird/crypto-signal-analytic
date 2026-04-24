@@ -1,0 +1,71 @@
+# Logs
+*.log
+*.log.*
+**/logs/
+!logs/.gitkeep
+
+# Data files
+data/bot/logs/
+data/bot/parquet/
+data/bot/session/
+data/bot/telemetry/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.pid
+features_store.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Testing
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.tox/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Config with secrets
+.env
+config.local.toml
+
+# Audit artifacts
+scripts/audit_data/
+*.json

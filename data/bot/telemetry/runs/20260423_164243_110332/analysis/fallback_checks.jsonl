@@ -1,2 +1,0 @@
-{"ts": "2026-04-23T17:12:49.701093+00:00", "trigger": "emergency_fallback", "action": "skip", "fallback_seconds": 1800, "time_since_last_kline_seconds": 755.0}
-{"ts": "2026-04-23T17:42:50.354843+00:00", "trigger": "emergency_fallback", "action": "skip", "fallback_seconds": 1800, "time_since_last_kline_seconds": 1628.8}

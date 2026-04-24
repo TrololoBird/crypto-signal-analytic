@@ -159,6 +159,6 @@ class EmaBounceSetup(BaseSetup):
 
         return _build_signal(
             prepared=prepared, setup_id=setup_id, direction=signal_direction,
-            score=score, reasons=reasons, stop=stop, tp1=tp1, tp2=tp2,
+            score=score, timeframe="1h", reasons=reasons, stop=stop, tp1=tp1, tp2=tp2,
             price_anchor=close, atr=atr,
         )

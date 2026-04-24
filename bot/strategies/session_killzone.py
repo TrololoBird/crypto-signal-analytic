@@ -231,6 +231,7 @@ class SessionKillzoneSetup(BaseSetup):
             setup_id=self.setup_id,
             direction=direction,
             score=score,
+            timeframe="15m+1h",
             reasons=reasons,
             stop=stop,
             tp1=tp1,

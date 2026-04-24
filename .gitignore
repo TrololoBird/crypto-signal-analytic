@@ -64,8 +64,22 @@ Thumbs.db
 
 # Config with secrets
 .env
+.env.example
 config.local.toml
+
+# IDE/AI tools
+.serena/
+.qodo/
+.memory/
+
+# All data (not just subdirs)
+data/
 
 # Audit artifacts
 scripts/audit_data/
 *.json
+
+# Misc
+.cursor/
+*.tmp
+*.temp

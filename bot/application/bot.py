@@ -2302,34 +2302,21 @@ class SignalBot:
         return []
 
     def _build_pinned_shortlist(self) -> list[UniverseSymbol]:
-        preferred_quote = str(self.settings.universe.quote_asset or "").strip().upper()
-        known_quotes = (preferred_quote, "USDT", "USDC", "FDUSD", "BUSD", "USDP", "TUSD", "BTC", "ETH")
-
-        def _split_symbol(symbol: str) -> tuple[str, str]:
-            upper = symbol.strip().upper()
-            for quote in known_quotes:
-                if quote and upper.endswith(quote) and len(upper) > len(quote):
-                    return upper[: -len(quote)], quote
-            return upper, preferred_quote or ""
-
-        shortlist: list[UniverseSymbol] = []
-        for symbol in self.settings.universe.pinned_symbols:
-            base_asset, quote_asset = _split_symbol(symbol)
-            shortlist.append(
-                UniverseSymbol(
-                    symbol=symbol,
-                    base_asset=base_asset,
-                    quote_asset=quote_asset,
-                    contract_type="PERPETUAL",
-                    status="TRADING",
-                    onboard_date_ms=0,
-                    quote_volume=0.0,
-                    price_change_pct=0.0,
-                    last_price=0.0,
-                    shortlist_bucket="pinned",
-                )
+        return [
+            UniverseSymbol(
+                symbol=sym,
+                base_asset=sym.replace("USDT", "").replace("BTC", ""),
+                quote_asset="USDT" if sym.endswith("USDT") else "BTC",
+                contract_type="PERPETUAL",
+                status="TRADING",
+                onboard_date_ms=0,
+                quote_volume=0.0,
+                price_change_pct=0.0,
+                last_price=0.0,
+                shortlist_bucket="pinned",
             )
-        return shortlist
+            for sym in self.settings.universe.pinned_symbols
+        ]
 
     async def _build_live_shortlist(self) -> tuple[list[UniverseSymbol], dict[str, int]]:
         timeout_s = max(10.0, float(self.settings.ws.rest_timeout_seconds) * 2.0)

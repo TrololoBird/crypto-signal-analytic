@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+import logging
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, Any
@@ -18,6 +19,7 @@ if TYPE_CHECKING:
 
 
 UTC = timezone.utc
+LOGGER = logging.getLogger(__name__)
 
 
 def _frame_is_fresh(frame: pl.DataFrame, max_age: timedelta) -> bool:
@@ -26,10 +28,32 @@ def _frame_is_fresh(frame: pl.DataFrame, max_age: timedelta) -> bool:
     try:
         last_close = frame["close_time"].item(-1)
         if isinstance(last_close, str):
-            last_close = datetime.fromisoformat(last_close.replace('Z', '+00:00'))
-    except Exception:
+            last_close = datetime.fromisoformat(last_close.replace("Z", "+00:00"))
+        elif isinstance(last_close, datetime):
+            pass
+        elif isinstance(last_close, (int, float)):
+            last_close = datetime.fromtimestamp(float(last_close), tz=UTC)
+        else:
+            LOGGER.debug(
+                "Freshness degraded: unsupported close_time type %s",
+                type(last_close).__name__,
+            )
+            return False
+
+        if last_close.tzinfo is None:
+            last_close = last_close.replace(tzinfo=UTC)
+        else:
+            last_close = last_close.astimezone(UTC)
+    except Exception as exc:
+        LOGGER.debug("Freshness degraded: failed to normalize close_time (%s)", exc)
         return False
-    return datetime.now(UTC) - last_close <= max_age
+
+    try:
+        delta = datetime.now(UTC) - last_close
+    except Exception as exc:
+        LOGGER.debug("Freshness degraded: failed to compute freshness delta (%s)", exc)
+        return False
+    return delta <= max_age
 
 
 def apply_global_filters(

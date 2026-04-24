@@ -49,7 +49,7 @@ def _is_supported_contract_symbol(symbol: str, base_asset: str) -> bool:
         return False
     if not _ASCII_ASSET_RE.fullmatch(base_asset):
         return False
-    return symbol.endswith("USDT")
+    return True
 
 
 def _bucket_priority(item: UniverseSymbol) -> tuple[float, float, str]:

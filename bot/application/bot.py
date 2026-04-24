@@ -161,6 +161,7 @@ class SignalBot:
         self._last_kline_event_ts: float = 0.0
         self._shortlist: list[UniverseSymbol] = []
         self._last_live_shortlist: list[UniverseSymbol] = []
+        self._symbol_meta_by_symbol: dict[str, Any] = {}
         self._shortlist_source: str = "startup"
         self._shortlist_lock = asyncio.Lock()
         self._cycle_failure_streak = 0
@@ -2301,22 +2302,59 @@ class SignalBot:
                     raise
         return []
 
+    def _extract_symbol_assets(self, symbol: str) -> tuple[str | None, str | None]:
+        sym = str(symbol).strip().upper()
+        meta = self._symbol_meta_by_symbol.get(sym)
+        if meta is None:
+            exchange_cache = getattr(self.client, "_exchange_info_cache", None)
+            if exchange_cache is not None:
+                _cached_at, rows = exchange_cache
+                cache_map = {
+                    str(getattr(row, "symbol", "")).strip().upper(): row
+                    for row in rows
+                }
+                self._symbol_meta_by_symbol.update(cache_map)
+                meta = self._symbol_meta_by_symbol.get(sym)
+        if meta is not None:
+            base = str(getattr(meta, "base_asset", "")).strip().upper()
+            quote = str(getattr(meta, "quote_asset", "")).strip().upper()
+            if base and quote:
+                return base, quote
+
+        configured_quote = str(self.settings.universe.quote_asset).strip().upper()
+        if configured_quote and sym.endswith(configured_quote):
+            base = sym[: -len(configured_quote)]
+            if base:
+                return base, configured_quote
+        return None, None
+
     def _build_pinned_shortlist(self) -> list[UniverseSymbol]:
-        return [
-            UniverseSymbol(
-                symbol=sym,
-                base_asset=sym.replace("USDT", "").replace("BTC", ""),
-                quote_asset="USDT" if sym.endswith("USDT") else "BTC",
-                contract_type="PERPETUAL",
-                status="TRADING",
-                onboard_date_ms=0,
-                quote_volume=0.0,
-                price_change_pct=0.0,
-                last_price=0.0,
-                shortlist_bucket="pinned",
+        shortlist: list[UniverseSymbol] = []
+        for raw_symbol in self.settings.universe.pinned_symbols:
+            symbol = str(raw_symbol).strip().upper()
+            base_asset, quote_asset = self._extract_symbol_assets(symbol)
+            if not base_asset or not quote_asset:
+                LOG.warning(
+                    "skipping pinned symbol due to unresolved base/quote assets | symbol=%s configured_quote_asset=%s",
+                    symbol,
+                    self.settings.universe.quote_asset,
+                )
+                continue
+            shortlist.append(
+                UniverseSymbol(
+                    symbol=symbol,
+                    base_asset=base_asset,
+                    quote_asset=quote_asset,
+                    contract_type="PERPETUAL",
+                    status="TRADING",
+                    onboard_date_ms=0,
+                    quote_volume=0.0,
+                    price_change_pct=0.0,
+                    last_price=0.0,
+                    shortlist_bucket="pinned",
+                )
             )
-            for sym in self.settings.universe.pinned_symbols
-        ]
+        return shortlist
 
     async def _build_live_shortlist(self) -> tuple[list[UniverseSymbol], dict[str, int]]:
         timeout_s = max(10.0, float(self.settings.ws.rest_timeout_seconds) * 2.0)
@@ -2327,6 +2365,9 @@ class SignalBot:
             ),
             timeout=timeout_s,
         )
+        self._symbol_meta_by_symbol = {
+            str(getattr(row, "symbol", "")).strip().upper(): row for row in symbol_meta_list
+        }
         shortlist, summary = build_shortlist(symbol_meta_list, tickers_24h, self.settings)
         return shortlist, summary
 
@@ -2406,6 +2447,9 @@ class SignalBot:
                 self.client.fetch_exchange_symbols(),
                 timeout=30.0
             )
+            self._symbol_meta_by_symbol = {
+                str(getattr(row, "symbol", "")).strip().upper(): row for row in symbol_meta_list
+            }
             LOG.info("background fetch: got %d exchange symbols", len(symbol_meta_list))
             # Could update shortlist here if needed, but pinned symbols are sufficient
         except Exception as exc:

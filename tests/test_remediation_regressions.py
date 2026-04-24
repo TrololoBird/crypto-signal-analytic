@@ -520,6 +520,35 @@ def test_build_structural_targets_prefers_nearest_long_resistance() -> None:
     assert tp2 == pytest.approx(120.0)
 
 
+def test_build_pinned_shortlist_resolves_assets_from_meta_and_safe_quote_parsing(caplog: pytest.LogCaptureFixture) -> None:
+    bot = SignalBot.__new__(SignalBot)
+    bot.settings = SimpleNamespace(
+        universe=SimpleNamespace(
+            pinned_symbols=["BTCUSDT", "ETHUSDT", "1000PEPEUSDT", "DOGEXUSD", "BROKEN"],
+            quote_asset="XUSD",
+        )
+    )
+    bot.client = SimpleNamespace(_exchange_info_cache=None)
+    bot._symbol_meta_by_symbol = {
+        "BTCUSDT": SimpleNamespace(base_asset="BTC", quote_asset="USDT"),
+        "ETHUSDT": SimpleNamespace(base_asset="ETH", quote_asset="USDT"),
+        "1000PEPEUSDT": SimpleNamespace(base_asset="1000PEPE", quote_asset="USDT"),
+    }
+
+    with caplog.at_level("WARNING", logger="bot.application.bot"):
+        shortlist = bot._build_pinned_shortlist()
+
+    by_symbol = {row.symbol: row for row in shortlist}
+    assert by_symbol["BTCUSDT"].base_asset == "BTC"
+    assert by_symbol["BTCUSDT"].quote_asset == "USDT"
+    assert by_symbol["ETHUSDT"].base_asset == "ETH"
+    assert by_symbol["1000PEPEUSDT"].base_asset == "1000PEPE"
+    assert by_symbol["DOGEXUSD"].base_asset == "DOGE"
+    assert by_symbol["DOGEXUSD"].quote_asset == "XUSD"
+    assert "BROKEN" not in by_symbol
+    assert any("unresolved base/quote assets" in rec.message and "BROKEN" in rec.message for rec in caplog.records)
+
+
 def test_build_signal_normalizes_swapped_targets() -> None:
     prepared = make_prepared(price=100.0)
 

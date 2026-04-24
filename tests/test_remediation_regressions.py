@@ -11,6 +11,7 @@ import polars as pl
 import pytest
 
 from bot.application.bot import SignalBot
+from bot.cli import _is_preformatted_log_stderr
 from bot.config import load_settings
 from bot.core.engine import SignalEngine, StrategyRegistry
 from bot.core.engine.base import StrategyDecision
@@ -978,3 +979,13 @@ async def test_strategy_exception_surfaces_runtime_error_decision() -> None:
     assert result.decision is not None
     assert result.decision.reason_code == "runtime.error"
     assert result.error == "boom"
+
+
+def test_cli_stderr_prefilter_detects_logger_timestamp_prefix_for_any_year() -> None:
+    assert _is_preformatted_log_stderr(
+        "2026-04-23 10:11:12,345 | WARNING | stderr | write:1 | STDERR: loop warning"
+    )
+    assert _is_preformatted_log_stderr(
+        "2027-01-01 00:00:00,001 | INFO    | bot.cli | run:42 | BOT SESSION STARTED"
+    )
+    assert not _is_preformatted_log_stderr("unstructured stderr noise from dependency")

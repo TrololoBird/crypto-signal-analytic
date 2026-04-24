@@ -17,11 +17,20 @@ import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
+import re
 import shutil
 
 from . import BotSettings, SignalBot, load_settings
 from .startup_reporter import generate_and_send_startup_report
 from .telemetry import TelemetryStore
+
+_LOGGER_STDERR_PREFIX_RE = re.compile(
+    r"^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}(?:,\d{3})?\s+\|"
+)
+
+
+def _is_preformatted_log_stderr(line: str) -> bool:
+    return bool(_LOGGER_STDERR_PREFIX_RE.match(line.lstrip()))
 
 
 def _run_doctor_check(settings: BotSettings) -> None:
@@ -267,7 +276,7 @@ async def _main() -> None:
             if "\n" in self._buf:
                 lines = self._buf.split("\n")
                 for line in lines[:-1]:
-                    if line.strip() and not line.startswith("2026-"):  # Skip already-formatted log lines
+                    if line.strip() and not _is_preformatted_log_stderr(line):
                         self.logger.warning("STDERR: %s", line)
                 self._buf = lines[-1]
         def flush(self) -> None:

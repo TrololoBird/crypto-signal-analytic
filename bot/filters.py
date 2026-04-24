@@ -22,6 +22,36 @@ UTC = timezone.utc
 LOGGER = logging.getLogger(__name__)
 
 
+_ADX_POLICY_HARD_GATE = "hard_gate"
+_ADX_POLICY_PENALTY = "score_penalty"
+
+# setup_id -> ADX policy override (highest precedence)
+_ADX_POLICY_BY_SETUP: dict[str, str] = {
+    "wick_trap_reversal": _ADX_POLICY_PENALTY,
+    "funding_reversal": _ADX_POLICY_PENALTY,
+    "turtle_soup": _ADX_POLICY_PENALTY,
+}
+
+# strategy_family -> ADX policy fallback
+_ADX_POLICY_BY_FAMILY: dict[str, str] = {
+    "reversal": _ADX_POLICY_PENALTY,
+    "trend_follow": _ADX_POLICY_HARD_GATE,
+    "continuation": _ADX_POLICY_HARD_GATE,
+}
+
+
+def _resolve_adx_policy(signal: Signal) -> str:
+    setup_policy = _ADX_POLICY_BY_SETUP.get(signal.setup_id)
+    if setup_policy:
+        return setup_policy
+    family_policy = _ADX_POLICY_BY_FAMILY.get(signal.strategy_family)
+    if family_policy:
+        return family_policy
+    if signal.confirmation_profile == "trend_follow":
+        return _ADX_POLICY_HARD_GATE
+    return _ADX_POLICY_PENALTY
+
+
 def _frame_is_fresh(frame: pl.DataFrame, max_age: timedelta) -> bool:
     if frame.is_empty() or "close_time" not in frame.columns:
         return False
@@ -144,14 +174,29 @@ def apply_global_filters(
         return _reject("atr_too_high", replace(base, atr_pct=atr_pct))
     passed.append("atr_ok")
 
-    # --- 4b. Market Regime hard gate ---
-    # ADX 1h trend-strength gate (shared with structure_pullback detector).
+    # --- 4b. ADX policy (setup/family aware) ---
     adx_1h = 0.0
     if not prepared.work_1h.is_empty():
         adx_1h = float(prepared.work_1h.item(-1, "adx14") or 0.0)
-    if adx_1h > 0.0 and adx_1h < settings.filters.min_adx_1h:
-        return _reject("regime_not_suitable", replace(base, atr_pct=atr_pct))
-    passed.append("adx_1h_ok")
+    setup_overrides = settings.filters.setups.get(signal.setup_id, {})
+    min_adx_1h = float(setup_overrides.get("min_adx_1h", settings.filters.min_adx_1h))
+    adx_penalty_factor = float(setup_overrides.get("adx_penalty_factor", 0.85))
+    adx_policy = _resolve_adx_policy(signal)
+    adx_penalty_applied = False
+    if adx_1h > 0.0 and adx_1h < min_adx_1h:
+        if adx_policy == _ADX_POLICY_HARD_GATE:
+            details = {
+                "adx_policy": adx_policy,
+                "adx_1h": adx_1h,
+                "min_adx_1h": min_adx_1h,
+                "setup_id": signal.setup_id,
+                "strategy_family": signal.strategy_family,
+            }
+            return _reject("regime_not_suitable", replace(base, atr_pct=atr_pct), details=details)
+        adx_penalty_applied = True
+        passed.append("adx_1h_penalized")
+    else:
+        passed.append("adx_1h_ok")
 
     # 4h ranging no longer hard-blocks breakout strategies — a ranging 4h already
     # lowers the MTF alignment score (0.5 instead of 1.0), which reduces confidence
@@ -200,6 +245,22 @@ def apply_global_filters(
         if confluence_result.ml_probability is not None:
             passed.append("ml_applied")
         updated = replace(updated, passed_filters=tuple(passed))
+
+    if adx_penalty_applied:
+        pre_penalty_score = updated.score
+        adjusted_score = pre_penalty_score * adx_penalty_factor
+        updated = replace(updated, score=adjusted_score)
+        penalty_delta = round(adjusted_score - pre_penalty_score, 6)
+        if scoring_result is not None:
+            scoring_result = replace(
+                scoring_result,
+                final_score=adjusted_score,
+                adjustments={
+                    **scoring_result.adjustments,
+                    "adx_policy_penalty": penalty_delta,
+                },
+            )
+        updated = replace(updated, passed_filters=tuple([*updated.passed_filters, "adx_penalty_applied"]))
 
     # --- 9. Minimum score gate (final gate after ALL adjustments) ---
     if settings.filters.min_score > 0.0 and updated.score < settings.filters.min_score:

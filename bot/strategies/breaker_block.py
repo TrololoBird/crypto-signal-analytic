@@ -12,7 +12,6 @@ import math
 
 from ..setup_base import BaseSetup
 from ..config import BotSettings
-from ..config_loader import load_strategy_config, get_nested
 from ..models import PreparedSymbol, Signal
 from ..setups import _build_signal, _compute_dynamic_score, _reject
 from ..setups.utils import get_dynamic_params
@@ -63,11 +62,9 @@ class BreakerBlockSetup(BaseSetup):
         dynamic_params = get_dynamic_params(prepared, setup_id)
         defaults = self.get_optimizable_params(settings)
 
-        # Load config-driven parameters
-        config = load_strategy_config("breaker_block")
-        scan_bars = get_nested(config, "detection.scan_bars", 50)
-        mitigation_threshold = get_nested(config, "detection.mitigation_threshold", 0.3)
-        sl_buffer_atr = get_nested(config, "risk_management.sl_buffer_atr", 0.5)
+        scan_bars = int(dynamic_params.get("scan_bars", defaults["scan_bars"]))
+        mitigation_threshold = dynamic_params.get("mitigation_threshold", defaults["mitigation_threshold"])
+        sl_buffer_atr = dynamic_params.get("sl_buffer_atr", defaults["sl_buffer_atr"])
 
         w1h = prepared.work_1h
         if w1h.height < 15:

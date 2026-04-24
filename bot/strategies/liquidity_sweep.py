@@ -15,7 +15,6 @@ from typing import cast
 import polars as pl
 
 from ..config import BotSettings
-from ..config_loader import load_strategy_config, get_nested
 from ..models import PreparedSymbol, Signal
 from ..setup_base import BaseSetup
 from ..setups import _build_signal, _compute_dynamic_score, _reject
@@ -59,11 +58,11 @@ class LiquiditySweepSetup(BaseSetup):
         return defaults
 
     def detect(self, prepared: PreparedSymbol, settings: BotSettings) -> Signal | None:
-        # Load config-driven parameters
-        config = load_strategy_config("liquidity_sweep")
-        sweep_atr_mult = get_nested(config, "detection.sweep_atr_mult", 0.2)
-        reclaim_threshold = get_nested(config, "detection.reclaim_threshold", 0.3)
-        sl_buffer_atr = get_nested(config, "risk_management.sl_buffer_atr", 0.5)
+        dynamic_params = get_dynamic_params(prepared, self.setup_id)
+        defaults = self.get_optimizable_params(settings)
+        sweep_atr_mult = dynamic_params.get("sweep_atr_mult", defaults["sweep_atr_mult"])
+        reclaim_threshold = dynamic_params.get("reclaim_threshold", defaults["reclaim_threshold"])
+        sl_buffer_atr = dynamic_params.get("sl_buffer_atr", defaults["sl_buffer_atr"])
 
         try:
             return self._detect(prepared, settings)

@@ -503,6 +503,39 @@ def _load_toml(path: Path) -> dict[str, Any]:
     return parsed if isinstance(parsed, dict) else {}
 
 
+def _flatten_legacy_strategy_config(config: Mapping[str, Any]) -> dict[str, float]:
+    """Flatten nested legacy strategy config into flat numeric overrides."""
+    flattened: dict[str, float] = {}
+    stack: list[Mapping[str, Any]] = [config]
+    while stack:
+        current = stack.pop()
+        for key, value in current.items():
+            if isinstance(value, Mapping):
+                stack.append(value)
+                continue
+            if isinstance(value, bool):
+                flattened[str(key)] = float(value)
+                continue
+            if isinstance(value, (int, float)):
+                flattened[str(key)] = float(value)
+    return flattened
+
+
+def _load_legacy_strategy_overrides(config_root: Path) -> dict[str, dict[str, float]]:
+    """Load config/strategies/*.toml once and map to filters.setups format."""
+    overrides: dict[str, dict[str, float]] = {}
+    legacy_dir = config_root / "config" / "strategies"
+    if not legacy_dir.exists():
+        return overrides
+    for file_path in sorted(legacy_dir.glob("*.toml")):
+        parsed = _load_toml(file_path)
+        if not parsed:
+            continue
+        setup_id = file_path.stem
+        overrides[setup_id] = _flatten_legacy_strategy_config(parsed)
+    return overrides
+
+
 def _convert_toml_dict(d: dict[Any, Any]) -> dict[str, Any]:
     """Convert TOML dict with possible bytes keys to string keys."""
     result: dict[str, Any] = {}
@@ -527,5 +560,20 @@ def load_settings(config_path: str | Path = "config.toml") -> BotSettings:
     payload["target_chat_id"] = os.getenv("TARGET_CHAT_ID", "")
     payload["config_path"] = config_file
     payload.setdefault("data_dir", Path("data") / "bot")
+    filters_payload = payload.setdefault("filters", {})
+    if not isinstance(filters_payload, dict):
+        filters_payload = {}
+        payload["filters"] = filters_payload
+    setup_overrides = filters_payload.setdefault("setups", {})
+    if not isinstance(setup_overrides, dict):
+        setup_overrides = {}
+        filters_payload["setups"] = setup_overrides
+    legacy_overrides = _load_legacy_strategy_overrides(config_file.parent)
+    for setup_id, legacy_params in legacy_overrides.items():
+        existing = setup_overrides.get(setup_id)
+        if isinstance(existing, dict):
+            setup_overrides[setup_id] = {**legacy_params, **existing}
+        else:
+            setup_overrides[setup_id] = dict(legacy_params)
     settings = BotSettings.model_validate(payload)
     return settings

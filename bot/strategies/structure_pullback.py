@@ -9,7 +9,6 @@ from typing import cast
 import polars as pl
 
 from ..config import BotSettings
-from ..config_loader import load_strategy_config, get_nested
 from ..models import PreparedSymbol, Signal
 from ..setup_base import BaseSetup
 from ..setups import (
@@ -56,13 +55,13 @@ class StructurePullbackSetup(BaseSetup):
         work_1h = prepared.work_1h
         work_15m = prepared.work_15m
 
-        # Load config-driven parameters
-        config = load_strategy_config("structure_pullback")
-        min_trend_score = get_nested(config, "detection.min_trend_score", 0.40)
-        ema_proximity_pct = get_nested(config, "detection.ema_proximity_pct", 0.995)
-        pullback_lookback = get_nested(config, "detection.pullback_lookback", 8)
-        sl_buffer_atr = get_nested(config, "risk_management.sl_buffer_atr", 0.4)
-        min_rr = get_nested(config, "risk_management.min_rr", 1.5)
+        dynamic_params = get_dynamic_params(prepared, self.setup_id)
+        defaults = self.get_optimizable_params(settings)
+        min_trend_score = dynamic_params.get("min_trend_score", defaults["min_trend_score"])
+        ema_proximity_pct = dynamic_params.get("ema_proximity_pct", defaults["ema_proximity_pct"])
+        pullback_lookback = int(dynamic_params.get("pullback_lookback", defaults["pullback_lookback"]))
+        sl_buffer_atr = dynamic_params.get("sl_buffer_atr", defaults["sl_buffer_atr"])
+        min_rr = dynamic_params.get("min_rr", defaults["min_rr"])
 
         if work_1h.height < 5 or work_15m.height < 5:
             _reject(prepared, "structure_pullback", "insufficient_bars")

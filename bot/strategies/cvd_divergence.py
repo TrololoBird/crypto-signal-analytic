@@ -15,7 +15,6 @@ import math
 import polars as pl
 
 from ..config import BotSettings
-from ..config_loader import load_strategy_config, get_nested
 from ..features import _swing_points
 from ..models import PreparedSymbol, Signal
 from ..setup_base import BaseSetup
@@ -66,11 +65,11 @@ class CVDDivergenceSetup(BaseSetup):
             return None
 
     def _detect(self, prepared: PreparedSymbol, settings: BotSettings) -> Signal | None:
-        # Load config-driven parameters
-        config = load_strategy_config("cvd_divergence")
-        divergence_lookback = get_nested(config, "detection.divergence_lookback", 20)
-        min_delta_threshold = get_nested(config, "detection.min_delta_threshold", 0.1)
-        sl_buffer_atr = get_nested(config, "risk_management.sl_buffer_atr", 0.5)
+        dynamic_params = get_dynamic_params(prepared, self.setup_id)
+        defaults = self.get_optimizable_params(settings)
+        divergence_lookback = int(dynamic_params.get("divergence_lookback", defaults["divergence_lookback"]))
+        min_delta_threshold = dynamic_params.get("min_delta_threshold", defaults["min_delta_threshold"])
+        sl_buffer_atr = dynamic_params.get("sl_buffer_atr", defaults["sl_buffer_atr"])
         
         w = prepared.work_15m
         if w.height < 20:

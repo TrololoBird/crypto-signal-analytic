@@ -14,7 +14,6 @@ import math
 import polars as pl
 
 from ..config import BotSettings
-from ..config_loader import load_strategy_config, get_nested
 from ..features import _swing_points
 from ..models import PreparedSymbol, Signal
 from ..setup_base import BaseSetup
@@ -66,12 +65,12 @@ class TurtleSoupSetup(BaseSetup):
     def _detect(self, prepared: PreparedSymbol, settings: BotSettings) -> Signal | None:
         setup_id = self.setup_id
         
-        # Load config-driven parameters
-        config = load_strategy_config("turtle_soup")
-        roll_bars = get_nested(config, "detection.roll_bars", 20)
-        break_atr_mult = get_nested(config, "detection.break_atr_mult", 0.1)
-        sl_buffer_atr = get_nested(config, "risk_management.sl_buffer_atr", 0.5)
-        volume_threshold = get_nested(config, "scoring.volume_threshold", 0.8)
+        dynamic_params = get_dynamic_params(prepared, setup_id)
+        defaults = self.get_optimizable_params(settings)
+        roll_bars = int(dynamic_params.get("roll_bars", defaults["roll_bars"]))
+        break_atr_mult = dynamic_params.get("break_atr_mult", defaults["break_atr_mult"])
+        sl_buffer_atr = dynamic_params.get("sl_buffer_atr", defaults["sl_buffer_atr"])
+        volume_threshold = dynamic_params.get("volume_threshold", defaults["volume_threshold"])
         
         w1h = prepared.work_1h
         if w1h.height < roll_bars + 3:

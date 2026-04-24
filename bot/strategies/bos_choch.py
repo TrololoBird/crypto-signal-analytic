@@ -15,7 +15,6 @@ import polars as pl
 
 from ..setup_base import BaseSetup
 from ..config import BotSettings
-from ..config_loader import load_strategy_config, get_nested
 from ..models import PreparedSymbol, Signal
 from ..setups import _build_signal, _compute_dynamic_score, _reject
 from ..features import _swing_points
@@ -76,11 +75,9 @@ class BOSCHOCHSetup(BaseSetup):
         dynamic_params = get_dynamic_params(prepared, setup_id)
         defaults = self.get_optimizable_params(_settings)
         
-        # Load config-driven parameters
-        config = load_strategy_config("bos_choch")
-        bos_lookback = get_nested(config, "detection.bos_lookback", 20)
-        choch_lookback = get_nested(config, "detection.choch_lookback", 15)
-        sl_buffer_atr = get_nested(config, "risk_management.sl_buffer_atr", 0.5)
+        bos_lookback = int(dynamic_params.get("bos_lookback", defaults["bos_lookback"]))
+        choch_lookback = int(dynamic_params.get("choch_lookback", defaults["choch_lookback"]))
+        sl_buffer_atr = dynamic_params.get("sl_buffer_atr", defaults["sl_buffer_atr"])
 
         w = prepared.work_15m
         if w.height < 30:

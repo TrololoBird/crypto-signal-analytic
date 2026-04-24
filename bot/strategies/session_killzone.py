@@ -15,7 +15,6 @@ from typing import cast
 import polars as pl
 
 from ..config import BotSettings
-from ..config_loader import load_strategy_config, get_nested
 
 from ..setup_base import BaseSetup
 from ..models import PreparedSymbol, Signal
@@ -72,14 +71,6 @@ class SessionKillzoneSetup(BaseSetup):
     def detect(self, prepared: PreparedSymbol, settings: BotSettings) -> Signal | None:
         setup_id = self.setup_id
         
-        # Load config-driven parameters
-        config = load_strategy_config("session_killzone")
-        ny_open = get_nested(config, "time_windows.ny_open", 14)
-        ny_close = get_nested(config, "time_windows.ny_close", 22)
-        london_open = get_nested(config, "time_windows.london_open", 8)
-        london_close = get_nested(config, "time_windows.london_close", 16)
-        min_momentum = get_nested(config, "detection.min_momentum", 0.3)
-        sl_buffer_atr = get_nested(config, "risk_management.sl_buffer_atr", 0.5)
         
         try:
             return self._detect(prepared, settings)

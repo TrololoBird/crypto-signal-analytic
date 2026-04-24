@@ -9,7 +9,6 @@ from typing import cast
 import polars as pl
 
 from ..config import BotSettings
-from ..config_loader import load_strategy_config, get_nested
 from ..models import PreparedSymbol, Signal
 from ..setup_base import BaseSetup
 from ..setups import _build_signal, _compute_dynamic_score, _reject
@@ -59,11 +58,9 @@ class EmaBounceSetup(BaseSetup):
         dynamic_params = get_dynamic_params(prepared, setup_id)
         defaults = self.get_optimizable_params(settings)
         
-        # Load config-driven parameters
-        config = load_strategy_config("ema_bounce")
-        ema_touch_tolerance_pct = get_nested(config, "detection.ema_touch_tolerance_pct", 0.008)
-        bounce_threshold_pct = get_nested(config, "detection.bounce_threshold_pct", 0.005)
-        min_adx = get_nested(config, "filters.min_adx", 18.0)
+        ema_touch_tolerance_pct = dynamic_params.get("ema_touch_tolerance_pct", 0.008)
+        bounce_threshold_pct = dynamic_params.get("bounce_threshold_pct", 0.005)
+        min_adx = dynamic_params.get("min_adx", defaults["min_adx_1h"])
         
         work_1h = prepared.work_1h
         if work_1h.height < 3:

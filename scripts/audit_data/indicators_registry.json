@@ -1,0 +1,970 @@
+{
+  "generated_at": "2026-04-23T22:34:28.162681",
+  "total_indicators": 67,
+  "by_category": {
+    "dataframe_column": 30,
+    "prepared_field": 11,
+    "enrichment": 23,
+    "computed": 3
+  },
+  "indicators": [
+    {
+      "name": "open",
+      "category": "dataframe_column",
+      "source": "klines",
+      "required_for": [
+        "all"
+      ],
+      "data_type": "float",
+      "valid_range": null,
+      "nullable": false,
+      "notes": "Open price"
+    },
+    {
+      "name": "high",
+      "category": "dataframe_column",
+      "source": "klines",
+      "required_for": [
+        "all"
+      ],
+      "data_type": "float",
+      "valid_range": null,
+      "nullable": false,
+      "notes": "High price"
+    },
+    {
+      "name": "low",
+      "category": "dataframe_column",
+      "source": "klines",
+      "required_for": [
+        "all"
+      ],
+      "data_type": "float",
+      "valid_range": null,
+      "nullable": false,
+      "notes": "Low price"
+    },
+    {
+      "name": "close",
+      "category": "dataframe_column",
+      "source": "klines",
+      "required_for": [
+        "all"
+      ],
+      "data_type": "float",
+      "valid_range": null,
+      "nullable": false,
+      "notes": "Close price"
+    },
+    {
+      "name": "volume",
+      "category": "dataframe_column",
+      "source": "klines",
+      "required_for": [
+        "all"
+      ],
+      "data_type": "float",
+      "valid_range": [
+        0,
+        null
+      ],
+      "nullable": false,
+      "notes": "Volume"
+    },
+    {
+      "name": "close_time",
+      "category": "dataframe_column",
+      "source": "klines",
+      "required_for": [
+        "filters"
+      ],
+      "data_type": "datetime",
+      "valid_range": null,
+      "nullable": false,
+      "notes": "Bar close time"
+    },
+    {
+      "name": "ema20",
+      "category": "dataframe_column",
+      "source": "features._ema",
+      "required_for": [
+        "structure_pullback",
+        "ema_bounce",
+        "filters"
+      ],
+      "data_type": "float",
+      "valid_range": null,
+      "nullable": false,
+      "notes": "EMA 20"
+    },
+    {
+      "name": "ema50",
+      "category": "dataframe_column",
+      "source": "features._ema",
+      "required_for": [
+        "ema_bounce",
+        "hidden_divergence"
+      ],
+      "data_type": "float",
+      "valid_range": null,
+      "nullable": false,
+      "notes": "EMA 50"
+    },
+    {
+      "name": "ema200",
+      "category": "dataframe_column",
+      "source": "features._ema",
+      "required_for": [
+        "hidden_divergence",
+        "fvg",
+        "order_block"
+      ],
+      "data_type": "float",
+      "valid_range": null,
+      "nullable": false,
+      "notes": "EMA 200"
+    },
+    {
+      "name": "rsi14",
+      "category": "dataframe_column",
+      "source": "features._rsi",
+      "required_for": [
+        "structure_pullback",
+        "session_killzone",
+        "hidden_divergence",
+        "cvd_divergence"
+      ],
+      "data_type": "float",
+      "valid_range": [
+        0,
+        100
+      ],
+      "nullable": false,
+      "notes": "RSI 14"
+    },
+    {
+      "name": "adx14",
+      "category": "dataframe_column",
+      "source": "features._adx",
+      "required_for": [
+        "structure_pullback",
+        "session_killzone",
+        "filters",
+        "ema_bounce"
+      ],
+      "data_type": "float",
+      "valid_range": [
+        0,
+        100
+      ],
+      "nullable": false,
+      "notes": "ADX 14 (trend strength)"
+    },
+    {
+      "name": "atr14",
+      "category": "dataframe_column",
+      "source": "features._atr",
+      "required_for": [
+        "structure_pullback",
+        "ema_bounce",
+        "wick_trap_reversal",
+        "breaker_block",
+        "turtle_soup",
+        "order_block",
+        "squeeze_setup",
+        "fvg",
+        "bos_choch"
+      ],
+      "data_type": "float",
+      "valid_range": [
+        0,
+        null
+      ],
+      "nullable": false,
+      "notes": "ATR 14"
+    },
+    {
+      "name": "atr_pct",
+      "category": "dataframe_column",
+      "source": "features._atr",
+      "required_for": [
+        "filters",
+        "confluence"
+      ],
+      "data_type": "float",
+      "valid_range": [
+        0,
+        null
+      ],
+      "nullable": false,
+      "notes": "ATR as % of price"
+    },
+    {
+      "name": "volume_ratio20",
+      "category": "dataframe_column",
+      "source": "features._volume_ratio",
+      "required_for": [
+        "structure_pullback",
+        "ema_bounce",
+        "session_killzone",
+        "wick_trap_reversal",
+        "cvd_divergence",
+        "liquidity_sweep",
+        "order_block"
+      ],
+      "data_type": "float",
+      "valid_range": [
+        0,
+        null
+      ],
+      "nullable": true,
+      "notes": "Volume ratio vs 20-bar average"
+    },
+    {
+      "name": "supertrend_dir",
+      "category": "dataframe_column",
+      "source": "features._supertrend",
+      "required_for": [
+        "structure_pullback",
+        "ema_bounce"
+      ],
+      "data_type": "int",
+      "valid_range": [
+        -1,
+        1
+      ],
+      "nullable": true,
+      "notes": "SuperTrend direction: 1=uptrend, -1=downtrend"
+    },
+    {
+      "name": "bb_pct_b",
+      "category": "dataframe_column",
+      "source": "features._bollinger_bands",
+      "required_for": [
+        "structure_pullback",
+        "squeeze_setup",
+        "breaker_block",
+        "wick_trap_reversal"
+      ],
+      "data_type": "float",
+      "valid_range": [
+        0,
+        1
+      ],
+      "nullable": true,
+      "notes": "%B position within bands"
+    },
+    {
+      "name": "bb_width",
+      "category": "dataframe_column",
+      "source": "features._bollinger_bands",
+      "required_for": [
+        "squeeze_setup"
+      ],
+      "data_type": "float",
+      "valid_range": [
+        0,
+        null
+      ],
+      "nullable": true,
+      "notes": "Band width"
+    },
+    {
+      "name": "kc_upper",
+      "category": "dataframe_column",
+      "source": "features._keltner_channels",
+      "required_for": [
+        "squeeze_setup"
+      ],
+      "data_type": "float",
+      "valid_range": null,
+      "nullable": true,
+      "notes": "KC upper band"
+    },
+    {
+      "name": "kc_lower",
+      "category": "dataframe_column",
+      "source": "features._keltner_channels",
+      "required_for": [
+        "squeeze_setup"
+      ],
+      "data_type": "float",
+      "valid_range": null,
+      "nullable": true,
+      "notes": "KC lower band"
+    },
+    {
+      "name": "kc_width",
+      "category": "dataframe_column",
+      "source": "features._keltner_channels",
+      "required_for": [
+        "squeeze_setup"
+      ],
+      "data_type": "float",
+      "valid_range": [
+        0,
+        null
+      ],
+      "nullable": true,
+      "notes": "KC width"
+    },
+    {
+      "name": "vwap",
+      "category": "dataframe_column",
+      "source": "features._vwap",
+      "required_for": [
+        "cvd_divergence",
+        "liquidity_sweep",
+        "order_block"
+      ],
+      "data_type": "float",
+      "valid_range": null,
+      "nullable": true,
+      "notes": "Volume Weighted Average Price"
+    },
+    {
+      "name": "donchian_upper",
+      "category": "dataframe_column",
+      "source": "features._donchian_channel",
+      "required_for": [
+        "turtle_soup",
+        "breaker_block"
+      ],
+      "data_type": "float",
+      "valid_range": null,
+      "nullable": true,
+      "notes": "Donchian upper"
+    },
+    {
+      "name": "donchian_lower",
+      "category": "dataframe_column",
+      "source": "features._donchian_channel",
+      "required_for": [
+        "turtle_soup",
+        "breaker_block"
+      ],
+      "data_type": "float",
+      "valid_range": null,
+      "nullable": true,
+      "notes": "Donchian lower"
+    },
+    {
+      "name": "donchian_mid",
+      "category": "dataframe_column",
+      "source": "features._donchian_channel",
+      "required_for": [
+        "turtle_soup"
+      ],
+      "data_type": "float",
+      "valid_range": null,
+      "nullable": true,
+      "notes": "Donchian middle"
+    },
+    {
+      "name": "macd_line",
+      "category": "dataframe_column",
+      "source": "features._macd",
+      "required_for": [
+        "hidden_divergence",
+        "session_killzone"
+      ],
+      "data_type": "float",
+      "valid_range": null,
+      "nullable": true,
+      "notes": "MACD line"
+    },
+    {
+      "name": "macd_signal",
+      "category": "dataframe_column",
+      "source": "features._macd",
+      "required_for": [
+        "hidden_divergence"
+      ],
+      "data_type": "float",
+      "valid_range": null,
+      "nullable": true,
+      "notes": "MACD signal"
+    },
+    {
+      "name": "macd_histogram",
+      "category": "dataframe_column",
+      "source": "features._macd",
+      "required_for": [
+        "hidden_divergence",
+        "session_killzone"
+      ],
+      "data_type": "float",
+      "valid_range": null,
+      "nullable": true,
+      "notes": "MACD histogram"
+    },
+    {
+      "name": "delta_ratio",
+      "category": "dataframe_column",
+      "source": "features._delta_ratio",
+      "required_for": [
+        "filters",
+        "confluence"
+      ],
+      "data_type": "float",
+      "valid_range": null,
+      "nullable": true,
+      "notes": "Buy/sell delta ratio"
+    },
+    {
+      "name": "cmf20",
+      "category": "dataframe_column",
+      "source": "features._cmf",
+      "required_for": [
+        "cvd_divergence",
+        "order_block",
+        "bos_choch"
+      ],
+      "data_type": "float",
+      "valid_range": [
+        -1,
+        1
+      ],
+      "nullable": true,
+      "notes": "Chaikin Money Flow"
+    },
+    {
+      "name": "mfi14",
+      "category": "dataframe_column",
+      "source": "features._mfi",
+      "required_for": [
+        "cvd_divergence"
+      ],
+      "data_type": "float",
+      "valid_range": [
+        0,
+        100
+      ],
+      "nullable": true,
+      "notes": "Money Flow Index"
+    },
+    {
+      "name": "bid_price",
+      "category": "prepared_field",
+      "source": "SymbolFrames",
+      "required_for": [
+        "all"
+      ],
+      "data_type": "float",
+      "valid_range": [
+        0,
+        null
+      ],
+      "nullable": true,
+      "notes": "Best bid"
+    },
+    {
+      "name": "ask_price",
+      "category": "prepared_field",
+      "source": "SymbolFrames",
+      "required_for": [
+        "all"
+      ],
+      "data_type": "float",
+      "valid_range": [
+        0,
+        null
+      ],
+      "nullable": true,
+      "notes": "Best ask"
+    },
+    {
+      "name": "spread_bps",
+      "category": "prepared_field",
+      "source": "calculated",
+      "required_for": [
+        "filters",
+        "scoring"
+      ],
+      "data_type": "float",
+      "valid_range": [
+        0,
+        null
+      ],
+      "nullable": true,
+      "notes": "Spread in basis points"
+    },
+    {
+      "name": "bias_1h",
+      "category": "prepared_field",
+      "source": "features._bias_1h",
+      "required_for": [
+        "structure_pullback",
+        "ema_bounce",
+        "scoring"
+      ],
+      "data_type": "str",
+      "valid_range": null,
+      "nullable": false,
+      "notes": "1H bias: bullish/bearish/neutral"
+    },
+    {
+      "name": "bias_4h",
+      "category": "prepared_field",
+      "source": "features._bias_4h",
+      "required_for": [
+        "filters",
+        "scoring"
+      ],
+      "data_type": "str",
+      "valid_range": null,
+      "nullable": false,
+      "notes": "4H bias: bullish/bearish/neutral"
+    },
+    {
+      "name": "market_regime",
+      "category": "prepared_field",
+      "source": "features._market_regime",
+      "required_for": [
+        "scoring",
+        "confluence"
+      ],
+      "data_type": "str",
+      "valid_range": null,
+      "nullable": false,
+      "notes": "Market regime: trending/neutral/choppy"
+    },
+    {
+      "name": "structure_1h",
+      "category": "prepared_field",
+      "source": "features._market_structure_1h",
+      "required_for": [
+        "structure_pullback",
+        "confluence"
+      ],
+      "data_type": "str",
+      "valid_range": null,
+      "nullable": false,
+      "notes": "1H structure: uptrend/downtrend/ranging"
+    },
+    {
+      "name": "regime_4h_confirmed",
+      "category": "prepared_field",
+      "source": "features._regime_4h_confirmed",
+      "required_for": [
+        "structure_pullback",
+        "confluence"
+      ],
+      "data_type": "str",
+      "valid_range": null,
+      "nullable": false,
+      "notes": "Confirmed 4H regime"
+    },
+    {
+      "name": "regime_1h_confirmed",
+      "category": "prepared_field",
+      "source": "features._regime_1h_confirmed",
+      "required_for": [
+        "structure_pullback",
+        "confluence"
+      ],
+      "data_type": "str",
+      "valid_range": null,
+      "nullable": false,
+      "notes": "Confirmed 1H regime"
+    },
+    {
+      "name": "poc_1h",
+      "category": "prepared_field",
+      "source": "features._volume_poc",
+      "required_for": [
+        "confluence"
+      ],
+      "data_type": "float",
+      "valid_range": [
+        0,
+        null
+      ],
+      "nullable": true,
+      "notes": "1H Point of Control"
+    },
+    {
+      "name": "poc_15m",
+      "category": "prepared_field",
+      "source": "features._volume_poc",
+      "required_for": [
+        "confluence"
+      ],
+      "data_type": "float",
+      "valid_range": [
+        0,
+        null
+      ],
+      "nullable": true,
+      "notes": "15M Point of Control"
+    },
+    {
+      "name": "mark_price",
+      "category": "enrichment",
+      "source": "WebSocket mark price stream",
+      "required_for": [
+        "filters",
+        "calculations"
+      ],
+      "data_type": "float",
+      "valid_range": [
+        0,
+        null
+      ],
+      "nullable": true,
+      "notes": "Mark price from WS"
+    },
+    {
+      "name": "ticker_price",
+      "category": "enrichment",
+      "source": "WebSocket ticker stream",
+      "required_for": [
+        "filters"
+      ],
+      "data_type": "float",
+      "valid_range": [
+        0,
+        null
+      ],
+      "nullable": true,
+      "notes": "Last price from WS ticker"
+    },
+    {
+      "name": "funding_rate",
+      "category": "enrichment",
+      "source": "WebSocket mark price stream",
+      "required_for": [
+        "filters",
+        "scoring",
+        "funding_reversal"
+      ],
+      "data_type": "float",
+      "valid_range": null,
+      "nullable": true,
+      "notes": "Current funding rate"
+    },
+    {
+      "name": "oi_change_pct",
+      "category": "enrichment",
+      "source": "REST API OI data",
+      "required_for": [
+        "filters",
+        "scoring"
+      ],
+      "data_type": "float",
+      "valid_range": null,
+      "nullable": true,
+      "notes": "Open Interest change %"
+    },
+    {
+      "name": "oi_slope_5m",
+      "category": "enrichment",
+      "source": "REST API OI data",
+      "required_for": [
+        "scoring"
+      ],
+      "data_type": "float",
+      "valid_range": null,
+      "nullable": true,
+      "notes": "OI slope over 5m"
+    },
+    {
+      "name": "ls_ratio",
+      "category": "enrichment",
+      "source": "REST API LS ratio",
+      "required_for": [
+        "filters",
+        "scoring"
+      ],
+      "data_type": "float",
+      "valid_range": [
+        0,
+        null
+      ],
+      "nullable": true,
+      "notes": "Long/Short ratio"
+    },
+    {
+      "name": "global_ls_ratio",
+      "category": "enrichment",
+      "source": "REST API global LS",
+      "required_for": [
+        "confluence",
+        "scoring"
+      ],
+      "data_type": "float",
+      "valid_range": [
+        0,
+        null
+      ],
+      "nullable": true,
+      "notes": "Global L/S ratio"
+    },
+    {
+      "name": "taker_ratio",
+      "category": "enrichment",
+      "source": "REST API taker data",
+      "required_for": [
+        "scoring"
+      ],
+      "data_type": "float",
+      "valid_range": [
+        0,
+        null
+      ],
+      "nullable": true,
+      "notes": "Taker buy/sell ratio"
+    },
+    {
+      "name": "liquidation_score",
+      "category": "enrichment",
+      "source": "WebSocket liquidation stream",
+      "required_for": [
+        "confluence",
+        "scoring"
+      ],
+      "data_type": "float",
+      "valid_range": [
+        -1,
+        1
+      ],
+      "nullable": true,
+      "notes": "Liquidation sentiment"
+    },
+    {
+      "name": "basis_pct",
+      "category": "enrichment",
+      "source": "REST API basis + WS mark/index",
+      "required_for": [
+        "filters",
+        "scoring"
+      ],
+      "data_type": "float",
+      "valid_range": null,
+      "nullable": true,
+      "notes": "Futures-Index basis %"
+    },
+    {
+      "name": "mark_index_spread_bps",
+      "category": "enrichment",
+      "source": "REST API basis + WS",
+      "required_for": [
+        "confluence",
+        "filters"
+      ],
+      "data_type": "float",
+      "valid_range": null,
+      "nullable": true,
+      "notes": "Mark-Index spread in bps"
+    },
+    {
+      "name": "premium_zscore_5m",
+      "category": "enrichment",
+      "source": "REST API basis history",
+      "required_for": [
+        "confluence",
+        "scoring"
+      ],
+      "data_type": "float",
+      "valid_range": null,
+      "nullable": true,
+      "notes": "Premium z-score (5m)"
+    },
+    {
+      "name": "premium_slope_5m",
+      "category": "enrichment",
+      "source": "REST API basis history",
+      "required_for": [
+        "confluence",
+        "scoring"
+      ],
+      "data_type": "float",
+      "valid_range": null,
+      "nullable": true,
+      "notes": "Premium slope (5m)"
+    },
+    {
+      "name": "depth_imbalance",
+      "category": "enrichment",
+      "source": "WebSocket book ticker",
+      "required_for": [
+        "confluence",
+        "scoring"
+      ],
+      "data_type": "float",
+      "valid_range": [
+        -1,
+        1
+      ],
+      "nullable": true,
+      "notes": "Order book imbalance"
+    },
+    {
+      "name": "microprice_bias",
+      "category": "enrichment",
+      "source": "WebSocket book ticker",
+      "required_for": [
+        "confluence",
+        "scoring"
+      ],
+      "data_type": "float",
+      "valid_range": null,
+      "nullable": true,
+      "notes": "Microprice bias"
+    },
+    {
+      "name": "funding_trend",
+      "category": "enrichment",
+      "source": "REST API funding history",
+      "required_for": [
+        "scoring"
+      ],
+      "data_type": "str",
+      "valid_range": null,
+      "nullable": true,
+      "notes": "Funding trend: rising/falling/flat"
+    },
+    {
+      "name": "top_trader_position_ratio",
+      "category": "enrichment",
+      "source": "REST API LS ratio",
+      "required_for": [
+        "scoring"
+      ],
+      "data_type": "float",
+      "valid_range": [
+        0,
+        null
+      ],
+      "nullable": true,
+      "notes": "Top trader position ratio"
+    },
+    {
+      "name": "top_vs_global_ls_gap",
+      "category": "enrichment",
+      "source": "calculated from LS ratios",
+      "required_for": [
+        "scoring"
+      ],
+      "data_type": "float",
+      "valid_range": null,
+      "nullable": true,
+      "notes": "Gap between top and global LS"
+    },
+    {
+      "name": "agg_trade_delta_30s",
+      "category": "enrichment",
+      "source": "REST API taker 5m",
+      "required_for": [
+        "scoring"
+      ],
+      "data_type": "float",
+      "valid_range": null,
+      "nullable": true,
+      "notes": "Aggressive trade delta"
+    },
+    {
+      "name": "aggression_shift",
+      "category": "enrichment",
+      "source": "calculated from taker ratios",
+      "required_for": [
+        "scoring"
+      ],
+      "data_type": "float",
+      "valid_range": null,
+      "nullable": true,
+      "notes": "Shift in aggression"
+    },
+    {
+      "name": "mark_price_age_seconds",
+      "category": "enrichment",
+      "source": "WebSocket metadata",
+      "required_for": [
+        "diagnostics"
+      ],
+      "data_type": "float",
+      "valid_range": [
+        0,
+        null
+      ],
+      "nullable": true,
+      "notes": "Age of mark price data"
+    },
+    {
+      "name": "ticker_price_age_seconds",
+      "category": "enrichment",
+      "source": "WebSocket metadata",
+      "required_for": [
+        "diagnostics"
+      ],
+      "data_type": "float",
+      "valid_range": [
+        0,
+        null
+      ],
+      "nullable": true,
+      "notes": "Age of ticker data"
+    },
+    {
+      "name": "book_ticker_age_seconds",
+      "category": "enrichment",
+      "source": "WebSocket metadata",
+      "required_for": [
+        "diagnostics"
+      ],
+      "data_type": "float",
+      "valid_range": [
+        0,
+        null
+      ],
+      "nullable": true,
+      "notes": "Age of book ticker"
+    },
+    {
+      "name": "atr_pct",
+      "category": "computed",
+      "source": "PreparedSymbol property",
+      "required_for": [
+        "filters"
+      ],
+      "data_type": "float",
+      "valid_range": [
+        0,
+        null
+      ],
+      "nullable": true,
+      "notes": "ATR% computed from work_15m"
+    },
+    {
+      "name": "adx_1h",
+      "category": "computed",
+      "source": "Direct from work_1h.item(-1, 'adx14')",
+      "required_for": [
+        "filters",
+        "strategy_rejection_logging"
+      ],
+      "data_type": "float",
+      "valid_range": [
+        0,
+        100
+      ],
+      "nullable": true,
+      "notes": "ADX on 1H (computed)"
+    },
+    {
+      "name": "risk_reward",
+      "category": "computed",
+      "source": "Signal property",
+      "required_for": [
+        "rejection_logging"
+      ],
+      "data_type": "float",
+      "valid_range": [
+        0,
+        null
+      ],
+      "nullable": true,
+      "notes": "Risk/Reward ratio"
+    }
+  ]
+}

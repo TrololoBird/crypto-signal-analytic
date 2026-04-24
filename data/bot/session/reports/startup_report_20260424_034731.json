@@ -1,0 +1,221 @@
+{
+  "event": "startup_previous_run_analysis",
+  "generated_at_utc": "2026-04-24T00:47:31.546796+00:00",
+  "report_kind": "startup_snapshot",
+  "confirmed_facts": [
+    "Previous session started at 2026-04-24T00:45:59+00:00.",
+    "Observed cycles in previous session window: 29.",
+    "Total detector runs: 435.",
+    "Total post-filter candidates: 0.",
+    "Selected signals logged: 0.",
+    "Closed outcomes available: 0.",
+    "Open tracked signals at startup: 0.",
+    "Cooldown entries persisted at startup: 4.",
+    "Configured runtime policy: runtime_mode=signal_only source_policy=binance_only smart_exit_mode=heuristic_v1 gamma_semantics=proxy_only.",
+    "Configured loss-streak pause: 3 consecutive losses pause new tracked signals for 5h."
+  ],
+  "inferred_focus_areas": [
+    "Primary rejection pressure came from `no_raw_hit` (424 rows)."
+  ],
+  "metrics": {
+    "cycle_count": 29,
+    "cycle_age_minutes": 0.8,
+    "detector_runs_total": 435,
+    "post_filter_candidates_total": 0,
+    "selected_total": 0,
+    "rejected_total": 435,
+    "outcomes_total": 0,
+    "open_tracked_total": 0,
+    "cooldown_entries": 4
+  },
+  "top_rejection_reasons": [
+    [
+      "no_raw_hit",
+      424
+    ],
+    [
+      "atr_too_low",
+      7
+    ],
+    [
+      "regime_not_suitable",
+      2
+    ],
+    [
+      "stop_too_tight",
+      2
+    ]
+  ],
+  "top_rejection_stages": [
+    [
+      "strategy",
+      424
+    ],
+    [
+      "filters",
+      11
+    ]
+  ],
+  "percentages": {
+    "cycle_setup_counts": [],
+    "selected_setup_counts": [],
+    "outcome_setup_counts": [],
+    "outcome_result_counts": [],
+    "outcome_quality_counts": [],
+    "rejection_reasons": [
+      {
+        "name": "no_raw_hit",
+        "count": 424,
+        "pct": 97.47
+      },
+      {
+        "name": "atr_too_low",
+        "count": 7,
+        "pct": 1.61
+      },
+      {
+        "name": "regime_not_suitable",
+        "count": 2,
+        "pct": 0.46
+      },
+      {
+        "name": "stop_too_tight",
+        "count": 2,
+        "pct": 0.46
+      }
+    ],
+    "rejection_stages": [
+      {
+        "name": "strategy",
+        "count": 424,
+        "pct": 97.47
+      },
+      {
+        "name": "filters",
+        "count": 11,
+        "pct": 2.53
+      }
+    ],
+    "delivery_statuses": [],
+    "tracking_events": []
+  },
+  "setup_counts": {
+    "cycle_setup_counts": {},
+    "selected_setup_counts": {},
+    "outcome_setup_counts": {}
+  },
+  "delivery_status_counts": {},
+  "tracking_event_counts": {},
+  "outcome_result_counts": {},
+  "outcome_quality_counts": {},
+  "open_signal_counts": {
+    "by_status": {},
+    "by_setup": {}
+  },
+  "latest_cycle_summary": {
+    "ts": "2026-04-24T00:46:44.360727+00:00",
+    "shortlist_size": 45,
+    "candidate_count": 0,
+    "selected_count": 0,
+    "rejected_count": 15,
+    "active_stream_count": 184,
+    "reconnect_reason": null,
+    "rest_weight_1m": 41,
+    "rest_response_time_ms": 0.0
+  },
+  "current_market_state": {
+    "market_regime": "ranging",
+    "btc_bias": "neutral",
+    "eth_bias": "neutral",
+    "funding_sentiment": "neutral",
+    "runtime_mode": "signal_only",
+    "source_policy": "binance_only",
+    "smart_exit_mode": "heuristic_v1",
+    "gamma_semantics": "proxy_only",
+    "macro_risk_mode": "disabled_binance_only",
+    "macro_status": "disabled_by_source_policy",
+    "context_updated_at": "2026-04-24T00:46:18.561134+00:00",
+    "high_funding_count": 0,
+    "low_funding_count": 0,
+    "public_intelligence_available": false,
+    "hard_barrier_long": false,
+    "hard_barrier_short": false
+  },
+  "current_runtime_readiness": {
+    "shortlist_source": "live",
+    "shortlist_size": 45,
+    "shortlist_preview": [
+      "BTCUSDT",
+      "XRPUSDT",
+      "SOLUSDT",
+      "ETHUSDT",
+      "ZECUSDT",
+      "BNBUSDT",
+      "METUSDT",
+      "WIFUSDT",
+      "WLFIUSDT",
+      "DASHUSDT",
+      "1000FLOKIUSDT",
+      "EDGEUSDT"
+    ],
+    "required_frame_readiness": {
+      "15m_ready_symbols": 29,
+      "1h_ready_symbols": 29,
+      "5m_ready_symbols": 29,
+      "4h_macro_symbols": 29
+    },
+    "ws_health": {
+      "active_stream_count": 184,
+      "buffer_message_count": null,
+      "reconnect_reason": null,
+      "ws_last_message_age_s": null
+    },
+    "public_intelligence_ts": null,
+    "intelligence_policy": {
+      "runtime_mode": "signal_only",
+      "source_policy": "binance_only",
+      "smart_exit_mode": "heuristic_v1",
+      "gamma_semantics": "proxy_only"
+    },
+    "macro_status": "disabled_by_source_policy"
+  },
+  "runtime_policy": {
+    "config_loaded": true,
+    "runtime_mode": "signal_only",
+    "source_policy": "binance_only",
+    "smart_exit_mode": "heuristic_v1",
+    "gamma_semantics": "proxy_only",
+    "max_consecutive_stop_losses": 3,
+    "stop_loss_pause_hours": 5
+  },
+  "runtime_errors": [],
+  "shortlist_preview": [
+    "BTCUSDT",
+    "XRPUSDT",
+    "SOLUSDT",
+    "ETHUSDT",
+    "ZECUSDT",
+    "BNBUSDT",
+    "METUSDT",
+    "WIFUSDT",
+    "WLFIUSDT",
+    "DASHUSDT",
+    "1000FLOKIUSDT",
+    "EDGEUSDT"
+  ],
+  "suspicious_modules": [],
+  "recommended_fixes": [
+    {
+      "priority": "medium",
+      "module": "bot.filters",
+      "action": "Review the dominant rejection reason `no_raw_hit` against intended thresholds and recent market regime."
+    }
+  ],
+  "project_state_notes": [
+    "Live Binance runtime is not verified end-to-end by startup artifacts alone.",
+    "Startup snapshot keeps market_regime=`unknown` unless persisted runtime context explicitly confirms it.",
+    "Startup snapshot keeps public_intelligence_ts=`null` when persisted intelligence predates the analyzed session.",
+    "Smart Levels / Nearby is not a separate module yet; current runtime exposes 5m/1h hooks and an explicit funnel instead.",
+    "External macro/news inputs are intentionally disabled under source_policy=`binance_only`."
+  ]
+}

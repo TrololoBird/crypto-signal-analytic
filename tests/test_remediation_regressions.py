@@ -1,0 +1,718 @@
+from __future__ import annotations
+
+import asyncio
+from collections import Counter
+from datetime import UTC, datetime, timedelta
+from types import SimpleNamespace
+from unittest.mock import AsyncMock, Mock
+
+import polars as pl
+import pytest
+
+from bot.application.bot import SignalBot
+from bot.core.engine import SignalEngine, StrategyRegistry
+from bot.core.engine.base import StrategyDecision
+from bot.core.events import BookTickerEvent
+from bot.market_data import BinanceFuturesMarketData, MarketDataUnavailable
+from bot.models import PipelineResult, PreparedSymbol, Signal, UniverseSymbol
+from bot.setup_base import BaseSetup, SetupParams
+from bot.setups import _build_signal
+from bot.setups.utils import build_structural_targets
+from bot.tracked_signals import TrackedSignalState
+from bot.tracking import SignalTracker
+
+
+class TelemetryStub:
+    def __init__(self) -> None:
+        self.rows: list[tuple[str, dict]] = []
+        self.symbol_rows: list[tuple[str, str, dict]] = []
+
+    def append_jsonl(self, filename: str, row: dict) -> None:
+        self.rows.append((filename, row))
+
+    def append_symbol_jsonl(self, bucket: str, symbol: str, relative_name: str, row: dict) -> None:
+        self.symbol_rows.append((symbol, relative_name, row))
+
+
+class DummyMemoryRepo:
+    def __init__(self) -> None:
+        self.active_rows: list[dict] = []
+        self.saved_rows: list[dict] = []
+        self.saved_outcomes: list[dict] = []
+        self.setup_outcomes: list[tuple[str, str]] = []
+        self.tracking_stats: dict[str, int] = {
+            "signals_sent": 0,
+            "activated": 0,
+            "tp1_hit": 0,
+            "tp2_hit": 0,
+            "stop_loss": 0,
+            "expired": 0,
+            "ambiguous_exit": 0,
+            "active": 0,
+        }
+
+    async def get_active_signals(
+        self,
+        symbol: str | None = None,
+        status: str | None = None,
+        include_closed: bool = False,
+    ) -> list[dict]:
+        rows = list(self.active_rows)
+        if symbol is not None:
+            rows = [row for row in rows if row.get("symbol") == symbol]
+        if status is not None:
+            rows = [row for row in rows if row.get("status") == status]
+        if not include_closed and status is None:
+            rows = [row for row in rows if row.get("status") in {"pending", "active"}]
+        return [dict(row) for row in rows]
+
+    async def save_active_signal(self, signal_data: dict) -> None:
+        payload = dict(signal_data)
+        self.saved_rows.append(payload)
+        tracking_id = str(payload["tracking_id"])
+        self.active_rows = [
+            row for row in self.active_rows if row.get("tracking_id") != tracking_id
+        ]
+        self.active_rows.append(payload)
+
+    async def increment_tracking_stats(self, **deltas: int) -> None:
+        for key, value in deltas.items():
+            self.tracking_stats[key] = self.tracking_stats.get(key, 0) + int(value)
+
+    async def get_tracking_stats(self) -> dict[str, int]:
+        return dict(self.tracking_stats)
+
+    async def record_setup_outcome(self, setup_id: str, outcome: str) -> float:
+        self.setup_outcomes.append((setup_id, outcome))
+        return 0.0
+
+    async def save_signal_outcomes_batch(self, outcomes_data: list[dict]) -> None:
+        self.saved_outcomes.extend(outcomes_data)
+
+
+def make_universe_symbol(symbol: str = "BTCUSDT", price: float = 100.0) -> UniverseSymbol:
+    return UniverseSymbol(
+        symbol=symbol,
+        base_asset="BTC",
+        quote_asset="USDT",
+        contract_type="PERPETUAL",
+        status="TRADING",
+        onboard_date_ms=0,
+        quote_volume=1_000_000.0,
+        price_change_pct=1.0,
+        last_price=price,
+        shortlist_bucket="test",
+    )
+
+
+def make_indicator_frame(price: float = 100.0) -> pl.DataFrame:
+    now = datetime.now(UTC)
+    return pl.DataFrame(
+        {
+            "time": [now],
+            "close_time": [now],
+            "open": [price - 1.0],
+            "high": [price + 1.0],
+            "low": [price - 2.0],
+            "close": [price],
+            "volume": [1_000.0],
+            "atr14": [2.0],
+            "atr_pct": [2.0],
+            "rsi14": [55.0],
+            "adx14": [25.0],
+            "volume_ratio20": [1.4],
+            "macd_hist": [0.25],
+            "ema20": [price - 1.0],
+            "ema50": [price - 2.0],
+            "ema200": [price - 5.0],
+            "supertrend_dir": [1.0],
+            "obv_above_ema": [1.0],
+            "bb_pct_b": [0.62],
+            "bb_width": [4.2],
+        }
+    )
+
+
+def make_prepared(symbol: str = "BTCUSDT", price: float = 100.0) -> PreparedSymbol:
+    return PreparedSymbol(
+        universe=make_universe_symbol(symbol=symbol, price=price),
+        work_1h=make_indicator_frame(price),
+        work_15m=make_indicator_frame(price),
+        work_4h=make_indicator_frame(price + 5.0),
+        bid_price=price - 0.1,
+        ask_price=price + 0.1,
+        spread_bps=2.0,
+        funding_rate=0.0008,
+        oi_current=1_250_000.0,
+        oi_change_pct=3.2,
+        ls_ratio=1.18,
+        liquidation_score=0.35,
+        market_regime="trending",
+    )
+
+
+def make_runtime_settings(*, strict_data_quality: bool = True, throttle_seconds: float = 0.0):
+    return SimpleNamespace(
+        runtime=SimpleNamespace(
+            strict_data_quality=strict_data_quality,
+            diagnostic_trace_limit_per_symbol=20,
+            max_signals_per_cycle=3,
+        ),
+        ws=SimpleNamespace(rest_timeout_seconds=0.1, intra_candle_throttle_seconds=throttle_seconds),
+        intelligence=SimpleNamespace(
+            max_consecutive_stop_losses=3,
+            stop_loss_pause_hours=0,
+            runtime_mode="signal_only",
+        ),
+        filters=SimpleNamespace(cooldown_minutes=30),
+    )
+
+
+def make_signal(symbol: str = "BTCUSDT", created_at: datetime | None = None) -> Signal:
+    return Signal(
+        symbol=symbol,
+        setup_id="ema_bounce",
+        direction="long",
+        score=0.82,
+        timeframe="15m",
+        entry_low=99.5,
+        entry_high=100.5,
+        stop=97.5,
+        take_profit_1=103.0,
+        take_profit_2=105.0,
+        created_at=created_at or datetime.now(UTC),
+    )
+
+
+def make_tracked_state(
+    *,
+    tracking_id: str = "BTCUSDT|ema_bounce|long|20260423T000000000000Z",
+    direction: str = "long",
+    status: str = "pending",
+    created_at: datetime | None = None,
+    pending_expires_at: datetime | None = None,
+    active_expires_at: datetime | None = None,
+    activated_at: datetime | None = None,
+    stop: float = 97.5,
+    tp1: float = 103.0,
+    tp2: float = 105.0,
+    single_target_mode: bool = False,
+    target_integrity_status: str = "valid",
+) -> TrackedSignalState:
+    created = created_at or datetime.now(UTC)
+    return TrackedSignalState(
+        tracking_id=tracking_id,
+        tracking_ref="ABC12345",
+        signal_key="BTCUSDT|ema_bounce|long",
+        symbol="BTCUSDT",
+        setup_id="ema_bounce",
+        direction=direction,
+        timeframe="15m",
+        created_at=created.isoformat(),
+        pending_expires_at=(pending_expires_at or (created + timedelta(minutes=10))).isoformat(),
+        active_expires_at=(active_expires_at or (created + timedelta(minutes=60))).isoformat(),
+        entry_low=99.5,
+        entry_high=100.5,
+        entry_mid=100.0,
+        initial_stop=stop,
+        stop=stop,
+        stop_price=stop,
+        take_profit_1=tp1,
+        tp1_price=tp1,
+        take_profit_2=tp2,
+        tp2_price=tp2,
+        single_target_mode=single_target_mode,
+        target_integrity_status=target_integrity_status,
+        score=0.82,
+        risk_reward=2.0,
+        reasons=("test",),
+        signal_message_id=321,
+        bias_4h="uptrend",
+        quote_volume=1_000_000.0,
+        spread_bps=2.0,
+        atr_pct=2.0,
+        orderflow_delta_ratio=0.2,
+        status=status,
+        activated_at=activated_at.isoformat() if activated_at is not None else None,
+    )
+
+
+def make_tracker(market_data: object) -> tuple[SignalTracker, DummyMemoryRepo, TelemetryStub]:
+    repo = DummyMemoryRepo()
+    telemetry = TelemetryStub()
+    settings = SimpleNamespace(
+        tracking=SimpleNamespace(
+            enabled=True,
+            pending_expiry_minutes=10,
+            active_expiry_minutes=60,
+            agg_trade_page_limit=4,
+            agg_trade_page_size=100,
+            move_stop_to_break_even_on_tp1=False,
+        ),
+        ws=SimpleNamespace(rest_timeout_seconds=0.1),
+        features_store_file=None,
+    )
+    tracker = SignalTracker(
+        settings,
+        market_data=market_data,
+        telemetry=telemetry,
+        memory_repo=repo,
+    )
+    tracker._queue_outcome_for_batch = AsyncMock(return_value=None)
+    return tracker, repo, telemetry
+
+
+@pytest.mark.asyncio
+async def test_agg_trade_rest_paths_accept_dict_rows() -> None:
+    market_data = BinanceFuturesMarketData.__new__(BinanceFuturesMarketData)
+    market_data.client = SimpleNamespace(futures_aggregate_trades=object())
+
+    async def fake_call_rest(*args, **kwargs):
+        return [
+            {"a": 11, "p": "100.5", "q": "2.0", "T": 1_000, "m": False},
+            {"a": 12, "p": "100.0", "q": "1.0", "T": 1_050, "m": True},
+        ]
+
+    market_data._call_rest = fake_call_rest
+
+    snapshot = await market_data._fetch_agg_trade_snapshot_rest("BTCUSDT", limit=2)
+    trades, complete = await market_data.fetch_agg_trades(
+        "BTCUSDT",
+        start_time_ms=900,
+        end_time_ms=1_100,
+        page_limit=3,
+        page_size=100,
+    )
+
+    assert snapshot.trade_count == 2
+    assert snapshot.buy_qty == pytest.approx(2.0)
+    assert snapshot.sell_qty == pytest.approx(1.0)
+    assert [trade.trade_id for trade in trades] == [11, 12]
+    assert complete is True
+
+
+@pytest.mark.asyncio
+async def test_tracking_expiry_falls_back_to_time_only_when_market_data_unavailable() -> None:
+    class MarketDataStub:
+        async def fetch_agg_trades(self, *args, **kwargs):
+            raise MarketDataUnavailable(operation="agg", detail="offline", symbol="BTCUSDT")
+
+        async def fetch_klines(self, *args, **kwargs):
+            raise MarketDataUnavailable(operation="klines", detail="offline", symbol="BTCUSDT")
+
+    tracker, repo, _ = make_tracker(MarketDataStub())
+    now = datetime.now(UTC)
+    tracked = make_tracked_state(
+        created_at=now - timedelta(minutes=30),
+        pending_expires_at=now - timedelta(minutes=5),
+        active_expires_at=now + timedelta(minutes=30),
+    )
+    repo.active_rows = [tracker._tracked_to_payload(tracked)]
+
+    events = await tracker.review_open_signals_for_symbol("BTCUSDT", dry_run=False)
+    await asyncio.sleep(0)
+
+    assert [event.event_type for event in events] == ["expired"]
+    assert repo.active_rows[0]["status"] == "closed"
+    assert repo.active_rows[0]["close_reason"] == "expired"
+
+
+@pytest.mark.asyncio
+async def test_short_price_tick_can_hit_tp2() -> None:
+    tracker, _, _ = make_tracker(SimpleNamespace())
+    tracked = make_tracked_state(
+        direction="short",
+        status="active",
+        activated_at=datetime.now(UTC) - timedelta(minutes=1),
+        stop=105.0,
+        tp1=95.0,
+        tp2=90.0,
+    )
+
+    events, closed = await tracker._apply_price_tick(
+        tracked,
+        price=89.0,
+        occurred_at=datetime.now(UTC),
+        precision_mode="trade",
+    )
+    await asyncio.sleep(0)
+
+    assert closed is True
+    assert [event.event_type for event in events] == ["tp1_hit", "tp2_hit"]
+    assert tracked.close_reason == "tp2_hit"
+
+
+@pytest.mark.asyncio
+async def test_smart_exit_keeps_distinct_adaptive_outcome() -> None:
+    tracker, repo, _ = make_tracker(SimpleNamespace())
+    tracked = make_tracked_state(
+        status="active",
+        activated_at=datetime.now(UTC) - timedelta(minutes=2),
+    )
+
+    await tracker._close_event(
+        tracked,
+        event_type="smart_exit",
+        occurred_at=datetime.now(UTC),
+        price=101.0,
+        precision_mode="system",
+    )
+    await asyncio.sleep(0)
+
+    assert repo.setup_outcomes[-1] == ("ema_bounce", "smart_exit")
+
+
+@pytest.mark.asyncio
+async def test_select_and_deliver_uses_tracking_id_for_message_binding_and_feature_snapshot(
+) -> None:
+    signal = make_signal(created_at=datetime(2026, 4, 23, 0, 0, tzinfo=UTC))
+    prepared = make_prepared(symbol=signal.symbol)
+    feature_calls: list[tuple[str, object]] = []
+
+    async def wait_noncritical(*, label: str, timeout: float, operation):
+        return True, await operation
+
+    tracker = SimpleNamespace(
+        set_signal_features=lambda tracking_id, features: feature_calls.append(
+            (tracking_id, features)
+        ),
+        arm_signals_with_messages=AsyncMock(return_value=None),
+    )
+    delivery_result = SimpleNamespace(signal=signal, status="sent", message_id=777, reason=None)
+    bot = SignalBot.__new__(SignalBot)
+    bot.settings = make_runtime_settings()
+    bot._modern_repo = SimpleNamespace(
+        is_symbol_blacklisted=AsyncMock(return_value=False),
+        get_consecutive_sl=AsyncMock(return_value=0),
+        get_active_signals=AsyncMock(return_value=[]),
+        is_cooldown_active=AsyncMock(return_value=False),
+        set_cooldown=AsyncMock(return_value=None),
+        get_market_context=AsyncMock(return_value={}),
+    )
+    bot._wait_noncritical = wait_noncritical
+    bot.delivery = SimpleNamespace(
+        deliver=AsyncMock(return_value=[delivery_result]),
+        send_analytics_companion=AsyncMock(return_value=None),
+    )
+    bot.tracker = tracker
+    bot.telemetry = TelemetryStub()
+    bot.alerts = SimpleNamespace(on_confirmed_signals=AsyncMock(return_value=None))
+    bot._sync_ws_tracked_symbols = AsyncMock(return_value=None)
+    bot._close_superseded_signal = AsyncMock(return_value=None)
+    bot._deliver_tracking = AsyncMock(return_value=None)
+
+    delivered, rejected, counts = await bot._select_and_deliver(
+        [signal],
+        prepared_by_tracking_id={signal.tracking_id: prepared},
+    )
+
+    assert delivered == [signal]
+    assert rejected == []
+    assert counts["sent"] == 1
+    assert feature_calls
+    assert feature_calls[0][0] == signal.tracking_id
+    assert feature_calls[0][1].rsi_15m == pytest.approx(55.0)
+    tracker.arm_signals_with_messages.assert_awaited_once()
+    assert tracker.arm_signals_with_messages.await_args.kwargs["message_ids"] == {
+        signal.tracking_id: 777
+    }
+
+
+@pytest.mark.asyncio
+async def test_select_and_deliver_for_symbol_does_not_double_write_reject_telemetry() -> None:
+    signal = make_signal(created_at=datetime(2026, 4, 23, 0, 1, tzinfo=UTC))
+    bot = SignalBot.__new__(SignalBot)
+    bot.settings = make_runtime_settings()
+    bot.telemetry = TelemetryStub()
+    bot._select_and_rank = Mock(return_value=[signal])
+    bot._select_and_deliver = AsyncMock(
+        return_value=([], [{"reason": "symbol_has_open_signal"}], Counter())
+    )
+
+    result = PipelineResult(
+        symbol="BTCUSDT",
+        trigger="kline_close",
+        event_ts=datetime.now(UTC),
+        raw_setups=1,
+        candidates=[signal],
+        rejected=[],
+        prepared=None,
+        funnel={},
+    )
+
+    candidates, rejected, delivered = await bot._select_and_deliver_for_symbol("BTCUSDT", result)
+
+    assert candidates == [signal]
+    assert delivered == []
+    assert rejected == [{"reason": "symbol_has_open_signal"}]
+    assert bot.telemetry.rows == []
+
+
+@pytest.mark.asyncio
+async def test_intra_candle_path_emits_cycle_log() -> None:
+    signal = make_signal(created_at=datetime(2026, 4, 23, 0, 2, tzinfo=UTC))
+    bot = SignalBot.__new__(SignalBot)
+    bot.settings = make_runtime_settings()
+    bot._last_intra_scan = {}
+    bot._background_tasks = set()
+    bot._shortlist_lock = asyncio.Lock()
+    bot._shortlist = [make_universe_symbol()]
+    bot._analysis_semaphore = asyncio.Semaphore(1)
+    bot._fetch_frames = AsyncMock(return_value=SimpleNamespace())
+    bot._ws_cache_enrichments = lambda symbol: {}
+    bot._run_modern_analysis = AsyncMock(
+        return_value=PipelineResult(
+            symbol="BTCUSDT",
+            trigger="intra_candle",
+            event_ts=datetime.now(UTC),
+            raw_setups=1,
+            candidates=[signal],
+            rejected=[],
+            prepared=None,
+            funnel={},
+        )
+    )
+    bot._ws_enrich = AsyncMock(return_value=None)
+    bot._select_and_deliver_for_symbol = AsyncMock(return_value=([signal], [], [signal]))
+    bot._emit_cycle_log = Mock()
+    bot.telemetry = TelemetryStub()
+
+    await bot._on_book_ticker(BookTickerEvent(symbol="BTCUSDT", bid=None, ask=None))
+
+    for _ in range(3):
+        tasks = list(bot._background_tasks)
+        if not tasks:
+            break
+        await asyncio.gather(*tasks)
+
+    assert bot._emit_cycle_log.call_count == 1
+    kwargs = bot._emit_cycle_log.call_args.kwargs
+    assert kwargs["interval"] == "bookTicker"
+    assert kwargs["result"].trigger == "intra_candle"
+    assert kwargs["delivered"] == [signal]
+
+
+def test_build_structural_targets_prefers_nearest_long_resistance() -> None:
+    work_1h = pl.DataFrame(
+        {
+            "time": [
+                datetime(2026, 4, 23, 0, 0, tzinfo=UTC),
+                datetime(2026, 4, 23, 1, 0, tzinfo=UTC),
+                datetime(2026, 4, 23, 2, 0, tzinfo=UTC),
+            ],
+            "high": [180.0, 120.0, 150.0],
+            "low": [90.0, 95.0, 98.0],
+        }
+    )
+    sh_mask = pl.Series("sh", [True, True, True], dtype=pl.Boolean)
+
+    stop, tp1, tp2 = build_structural_targets(
+        direction="long",
+        price_anchor=100.0,
+        stop_basis=95.0,
+        atr=2.0,
+        work_1h=work_1h,
+        sh_mask=sh_mask,
+    )
+
+    assert stop == pytest.approx(94.6)
+    assert tp1 == pytest.approx(120.0)
+    assert tp2 == pytest.approx(120.0)
+
+
+def test_build_signal_normalizes_swapped_targets() -> None:
+    prepared = make_prepared(price=100.0)
+
+    signal = _build_signal(
+        prepared=prepared,
+        setup_id="breaker_block",
+        direction="long",
+        score=0.77,
+        reasons=["test"],
+        stop=95.0,
+        tp1=112.0,
+        tp2=108.0,
+        price_anchor=100.0,
+        atr=2.0,
+    )
+
+    assert signal is not None
+    assert signal.take_profit_1 == pytest.approx(108.0)
+    assert signal.take_profit_2 == pytest.approx(112.0)
+    assert signal.target_integrity_status == "normalized"
+    assert signal.single_target_mode is False
+
+
+def test_build_signal_reads_adx14_and_preserves_zero_metrics() -> None:
+    prepared = make_prepared(price=100.0)
+    prepared.work_1h = prepared.work_1h.with_columns(pl.lit(0.0).alias("adx14"))
+    prepared.work_15m = prepared.work_15m.with_columns(pl.lit(0.0).alias("volume_ratio20"))
+    prepared.work_5m = pl.DataFrame(
+        {
+            "time": [datetime.now(UTC)],
+            "close_time": [datetime.now(UTC)],
+            "premium_zscore_5m": [0.0],
+            "premium_slope_5m": [0.0],
+            "ls_ratio": [0.0],
+        }
+    )
+
+    signal = _build_signal(
+        prepared=prepared,
+        setup_id="breaker_block",
+        direction="long",
+        score=0.7,
+        reasons=["test"],
+        stop=95.0,
+        tp1=108.0,
+        tp2=112.0,
+        price_anchor=100.0,
+        atr=2.0,
+    )
+
+    assert signal is not None
+    assert signal.adx_1h == pytest.approx(0.0)
+    assert signal.volume_ratio == pytest.approx(0.0)
+    assert signal.premium_zscore_5m == pytest.approx(0.0)
+    assert signal.premium_slope_5m == pytest.approx(0.0)
+    assert signal.ls_ratio == pytest.approx(0.0)
+
+
+@pytest.mark.asyncio
+async def test_single_target_price_tick_closes_once_without_tp2_event() -> None:
+    tracker, repo, _ = make_tracker(SimpleNamespace())
+    tracked = make_tracked_state(
+        status="active",
+        activated_at=datetime.now(UTC) - timedelta(minutes=1),
+        stop=97.5,
+        tp1=105.0,
+        tp2=105.0,
+        single_target_mode=True,
+        target_integrity_status="single_target",
+    )
+
+    events, closed = await tracker._apply_price_tick(
+        tracked,
+        price=105.0,
+        occurred_at=datetime.now(UTC),
+        precision_mode="trade",
+    )
+    await asyncio.sleep(0)
+
+    assert closed is True
+    assert [event.event_type for event in events] == ["tp1_hit"]
+    assert tracked.close_reason == "tp1_hit"
+    assert repo.tracking_stats["tp1_hit"] == 1
+    assert repo.tracking_stats["tp2_hit"] == 0
+
+
+def test_family_confirmation_rejects_missing_fast_context_when_strict() -> None:
+    bot = SignalBot.__new__(SignalBot)
+    bot.settings = make_runtime_settings(strict_data_quality=True)
+    prepared = make_prepared()
+    prepared.work_5m = None
+    prepared.mark_index_spread_bps = None
+    prepared.depth_imbalance = None
+    prepared.microprice_bias = None
+    signal = make_signal()
+
+    ok, reason, details = bot._check_family_confirmation(signal, prepared, metadata=None)
+
+    assert ok is False
+    assert reason == "data.fast_context_missing"
+    assert details["fallback"] == "context_missing"
+
+
+@pytest.mark.asyncio
+async def test_engine_skip_result_keeps_setup_id_and_reason_code() -> None:
+    class HistoryHungrySetup(BaseSetup):
+        setup_id = "history_hungry"
+        min_history_bars = 10
+
+        def get_optimizable_params(self, settings=None) -> dict[str, float]:
+            return {}
+
+        def detect(self, prepared: PreparedSymbol, settings):
+            raise AssertionError("detect should not run when can_calculate is false")
+
+    registry = StrategyRegistry()
+    settings = make_runtime_settings()
+    registry.register(HistoryHungrySetup(SetupParams(enabled=True), settings), enabled=True)
+    engine = SignalEngine(registry, settings)
+
+    results = await engine.calculate_all(make_prepared())
+
+    assert len(results) == 1
+    result = results[0]
+    assert result.setup_id == "history_hungry"
+    assert result.decision is not None
+    assert result.decision.is_skip
+    assert result.decision.reason_code == "data.work_1h_insufficient_history"
+
+
+@pytest.mark.asyncio
+async def test_parallel_strategy_rejections_keep_distinct_reason_codes() -> None:
+    class RejectASetup(BaseSetup):
+        setup_id = "reject_a"
+        min_history_bars = 1
+
+        def get_optimizable_params(self, settings=None) -> dict[str, float]:
+            return {}
+
+        def detect(self, prepared: PreparedSymbol, settings):
+            from bot.setups import _reject
+
+            _reject(prepared, self.setup_id, "atr_invalid", atr=float("nan"))
+            return None
+
+    class RejectBSetup(BaseSetup):
+        setup_id = "reject_b"
+        min_history_bars = 1
+
+        def get_optimizable_params(self, settings=None) -> dict[str, float]:
+            return {}
+
+        def detect(self, prepared: PreparedSymbol, settings):
+            from bot.setups import _reject
+
+            _reject(prepared, self.setup_id, "price_missing")
+            return None
+
+    registry = StrategyRegistry()
+    settings = make_runtime_settings()
+    registry.register(RejectASetup(SetupParams(enabled=True), settings), enabled=True)
+    registry.register(RejectBSetup(SetupParams(enabled=True), settings), enabled=True)
+    engine = SignalEngine(registry, settings)
+
+    results = await engine.calculate_all(make_prepared())
+    reason_by_setup = {result.setup_id: result.decision.reason_code for result in results if result.decision is not None}
+
+    assert reason_by_setup["reject_a"] == "indicator.atr_invalid"
+    assert reason_by_setup["reject_b"] == "data.price_missing"
+
+
+@pytest.mark.asyncio
+async def test_strategy_exception_surfaces_runtime_error_decision() -> None:
+    class BrokenSetup(BaseSetup):
+        setup_id = "broken_setup"
+        min_history_bars = 1
+
+        def get_optimizable_params(self, settings=None) -> dict[str, float]:
+            return {}
+
+        def detect(self, prepared: PreparedSymbol, settings):
+            raise ValueError("boom")
+
+    registry = StrategyRegistry()
+    settings = make_runtime_settings()
+    registry.register(BrokenSetup(SetupParams(enabled=True), settings), enabled=True)
+    engine = SignalEngine(registry, settings)
+
+    results = await engine.calculate_all(make_prepared())
+
+    assert len(results) == 1
+    result = results[0]
+    assert result.setup_id == "broken_setup"
+    assert result.decision is not None
+    assert result.decision.reason_code == "runtime.error"
+    assert result.error == "boom"

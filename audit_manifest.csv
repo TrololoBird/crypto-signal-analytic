@@ -1,0 +1,93 @@
+path,kind,reachability,status,evidence,required_action,delete_policy
+AGENTS.md,doc,none,ok,"no static path from runtime roots, tests/, or scripts/live_*.py",none,keep
+bot/__init__.py,runtime,runtime,ok,reachable from main.py / bot.cli.run() import graph,none,keep
+bot/alerts.py,runtime,runtime,ok,reachable from main.py / bot.cli.run() import graph,none,keep
+bot/application/__init__.py,runtime,none,ok,"no static path from runtime roots, tests/, or scripts/live_*.py",none,keep
+bot/application/bot.py,runtime,runtime,ok,reachable from main.py / bot.cli.run() import graph,none,keep
+bot/autotuner.py,runtime,runtime,ok,reachable from main.py / bot.cli.run() import graph,none,keep
+bot/cli.py,runtime,runtime,ok,reachable from main.py / bot.cli.run() import graph,none,keep
+bot/config.py,runtime,runtime,ok,reachable from main.py / bot.cli.run() import graph,none,keep
+bot/confluence.py,runtime,runtime,ok,reachable from main.py / bot.cli.run() import graph,none,keep
+bot/core/__init__.py,runtime,none,ok,"no static path from runtime roots, tests/, or scripts/live_*.py",none,keep
+bot/core/analyzer/__init__.py,runtime,none,scaffold,"no static path from runtime roots, tests/, or scripts/live_*.py; inbound refs only from bot/core/__init__.py, bot/tasks/reporter.py, bot/tasks/tracker.py",Quarantine first; no deletion until package exports and external consumers are reviewed.,quarantine
+bot/core/analyzer/metrics.py,runtime,none,scaffold,"no static path from runtime roots, tests/, or scripts/live_*.py; inbound refs only from bot/core/analyzer/__init__.py, bot/core/analyzer/reporter.py, bot/core/diagnostics/health.py",Quarantine first; no deletion until package exports and external consumers are reviewed.,quarantine
+bot/core/analyzer/reporter.py,runtime,none,scaffold,"no static path from runtime roots, tests/, or scripts/live_*.py; inbound refs only from bot/core/analyzer/__init__.py",Quarantine first; no deletion until package exports and external consumers are reviewed.,quarantine
+bot/core/analyzer/tracker.py,runtime,none,scaffold,"no static path from runtime roots, tests/, or scripts/live_*.py; inbound refs only from bot/core/analyzer/__init__.py",Quarantine first; no deletion until package exports and external consumers are reviewed.,quarantine
+bot/core/diagnostics/__init__.py,runtime,none,scaffold,"no static path from runtime roots, tests/, or scripts/live_*.py; inbound refs only from bot/core/__init__.py, bot/tasks/reporter.py, bot/tasks/scanner.py, bot/tasks/tracker.py, bot/telegram/sender.py",Quarantine first; no deletion until package exports and external consumers are reviewed.,quarantine
+bot/core/diagnostics/alerts.py,runtime,none,scaffold,"no static path from runtime roots, tests/, or scripts/live_*.py; inbound refs only from bot/core/diagnostics/__init__.py",Quarantine first; no deletion until package exports and external consumers are reviewed.,quarantine
+bot/core/diagnostics/health.py,runtime,none,scaffold,"no static path from runtime roots, tests/, or scripts/live_*.py; inbound refs only from bot/core/diagnostics/__init__.py, bot/core/diagnostics/alerts.py",Quarantine first; no deletion until package exports and external consumers are reviewed.,quarantine
+bot/core/diagnostics/metrics.py,runtime,none,scaffold,"no static path from runtime roots, tests/, or scripts/live_*.py; inbound refs only from bot/core/diagnostics/__init__.py",Quarantine first; no deletion until package exports and external consumers are reviewed.,quarantine
+bot/core/engine/__init__.py,runtime,runtime,ok,reachable from main.py / bot.cli.run() import graph,none,keep
+bot/core/engine/base.py,runtime,runtime,ok,reachable from main.py / bot.cli.run() import graph,none,keep
+bot/core/engine/engine.py,runtime,runtime,ok,reachable from main.py / bot.cli.run() import graph,none,keep
+bot/core/engine/registry.py,runtime,runtime,ok,reachable from main.py / bot.cli.run() import graph,none,keep
+bot/core/event_bus.py,runtime,runtime,ok,reachable from main.py / bot.cli.run() import graph,none,keep
+bot/core/events.py,runtime,runtime,ok,reachable from main.py / bot.cli.run() import graph,none,keep
+bot/core/memory/__init__.py,runtime,runtime,ok,reachable from main.py / bot.cli.run() import graph,none,keep
+bot/core/memory/cache.py,runtime,runtime,ok,reachable from main.py / bot.cli.run() import graph,none,keep
+bot/core/memory/repository.py,runtime,runtime,ok,reachable from main.py / bot.cli.run() import graph,none,keep
+bot/core/memory/repository_extension.py,runtime,runtime,ok,reachable from main.py / bot.cli.run() import graph,none,keep
+bot/core/self_learner.py,runtime,none,scaffold,"no static path from runtime roots, tests/, or scripts/live_*.py",Quarantine first; no deletion until package exports and external consumers are reviewed.,quarantine
+bot/dashboard.py,runtime,runtime,ok,reachable from main.py / bot.cli.run() import graph,none,keep
+bot/delivery.py,runtime,runtime,ok,reachable from main.py / bot.cli.run() import graph,none,keep
+bot/features.py,runtime,runtime,placeholder,reachable from main.py / bot.cli.run() import graph; Module docstring states some backward-compat columns still return neutral values.,Keep strategy-critical indicators; quarantine or delete placeholder-only branches after caller audit.,keep
+bot/filters.py,runtime,runtime,ok,reachable from main.py / bot.cli.run() import graph,none,keep
+bot/journal.py,runtime,runtime,ok,reachable from main.py / bot.cli.run() import graph,none,keep
+bot/market_data.py,runtime,runtime,ok,reachable from main.py / bot.cli.run() import graph,none,keep
+bot/market_regime.py,runtime,runtime,logic-risk,reachable from main.py / bot.cli.run() import graph; Analyzer still derives several regime components from 24h ticker-change aggregates and only prefers structure context when present.,Treat raw 24h change as fallback only and validate regime outputs before tightening live filters.,keep
+bot/messaging.py,runtime,runtime,ok,reachable from main.py / bot.cli.run() import graph,none,keep
+bot/metrics.py,runtime,runtime,ok,reachable from main.py / bot.cli.run() import graph,none,keep
+bot/ml_filter.py,runtime,runtime,ok,reachable from main.py / bot.cli.run() import graph,none,keep
+bot/models.py,runtime,runtime,contract-drift,"reachable from main.py / bot.cli.run() import graph; PreparedSymbol exposes spot_lead_return_1m and spot_futures_spread_bps, but no population call sites were found on the live path.",Either populate these fields or remove them from live confirmation contracts.,keep
+bot/outcomes.py,runtime,runtime,ok,reachable from main.py / bot.cli.run() import graph,none,keep
+bot/public_intelligence.py,runtime,runtime,ok,reachable from main.py / bot.cli.run() import graph,none,keep
+bot/scoring.py,runtime,runtime,ok,reachable from main.py / bot.cli.run() import graph,none,keep
+bot/setup_base.py,runtime,runtime,ok,reachable from main.py / bot.cli.run() import graph,none,keep
+bot/setups/__init__.py,runtime,none,ok,"no static path from runtime roots, tests/, or scripts/live_*.py",none,keep
+bot/setups/utils.py,runtime,runtime,ok,reachable from main.py / bot.cli.run() import graph,none,keep
+bot/setups.py,runtime,runtime,ok,reachable from main.py / bot.cli.run() import graph,none,keep
+bot/startup_reporter.py,runtime,runtime,ok,reachable from main.py / bot.cli.run() import graph,none,keep
+bot/strategies/__init__.py,runtime,runtime,ok,reachable from main.py / bot.cli.run() import graph,none,keep
+bot/strategies/bos_choch.py,runtime,runtime,ok,reachable from main.py / bot.cli.run() import graph,none,keep
+bot/strategies/breaker_block.py,runtime,runtime,ok,reachable from main.py / bot.cli.run() import graph,none,keep
+bot/strategies/cvd_divergence.py,runtime,runtime,ok,reachable from main.py / bot.cli.run() import graph,none,keep
+bot/strategies/ema_bounce.py,runtime,runtime,ok,reachable from main.py / bot.cli.run() import graph,none,keep
+bot/strategies/funding_reversal.py,runtime,runtime,ok,reachable from main.py / bot.cli.run() import graph,none,keep
+bot/strategies/fvg.py,runtime,runtime,ok,reachable from main.py / bot.cli.run() import graph,none,keep
+bot/strategies/hidden_divergence.py,runtime,runtime,ok,reachable from main.py / bot.cli.run() import graph,none,keep
+bot/strategies/liquidity_sweep.py,runtime,runtime,ok,reachable from main.py / bot.cli.run() import graph,none,keep
+bot/strategies/order_block.py,runtime,runtime,ok,reachable from main.py / bot.cli.run() import graph,none,keep
+bot/strategies/session_killzone.py,runtime,runtime,ok,reachable from main.py / bot.cli.run() import graph,none,keep
+bot/strategies/squeeze_setup.py,runtime,runtime,ok,reachable from main.py / bot.cli.run() import graph,none,keep
+bot/strategies/structure_break_retest.py,runtime,runtime,ok,reachable from main.py / bot.cli.run() import graph,none,keep
+bot/strategies/structure_pullback.py,runtime,runtime,ok,reachable from main.py / bot.cli.run() import graph,none,keep
+bot/strategies/turtle_soup.py,runtime,runtime,ok,reachable from main.py / bot.cli.run() import graph,none,keep
+bot/strategies/wick_trap_reversal.py,runtime,runtime,ok,reachable from main.py / bot.cli.run() import graph,none,keep
+bot/tasks/__init__.py,runtime,none,scaffold,"no static path from runtime roots, tests/, or scripts/live_*.py",Quarantine first; no deletion until package exports and external consumers are reviewed.,quarantine
+bot/tasks/reporter.py,runtime,none,scaffold,"no static path from runtime roots, tests/, or scripts/live_*.py; inbound refs only from bot/tasks/__init__.py",Quarantine first; no deletion until package exports and external consumers are reviewed.,quarantine
+bot/tasks/scanner.py,runtime,none,scaffold,"no static path from runtime roots, tests/, or scripts/live_*.py; inbound refs only from bot/tasks/__init__.py",Quarantine first; no deletion until package exports and external consumers are reviewed.,quarantine
+bot/tasks/scheduler.py,runtime,none,scaffold,"no static path from runtime roots, tests/, or scripts/live_*.py; inbound refs only from bot/tasks/__init__.py",Quarantine first; no deletion until package exports and external consumers are reviewed.,quarantine
+bot/tasks/tracker.py,runtime,none,scaffold,"no static path from runtime roots, tests/, or scripts/live_*.py; inbound refs only from bot/tasks/__init__.py",Quarantine first; no deletion until package exports and external consumers are reviewed.,quarantine
+bot/telegram/__init__.py,runtime,none,scaffold,"no static path from runtime roots, tests/, or scripts/live_*.py",Quarantine first; no deletion until package exports and external consumers are reviewed.,quarantine
+bot/telegram/queue.py,runtime,none,scaffold,"no static path from runtime roots, tests/, or scripts/live_*.py; inbound refs only from bot/telegram/__init__.py, bot/telegram/sender.py",Quarantine first; no deletion until package exports and external consumers are reviewed.,quarantine
+bot/telegram/sender.py,runtime,none,scaffold,"no static path from runtime roots, tests/, or scripts/live_*.py; inbound refs only from bot/telegram/__init__.py",Quarantine first; no deletion until package exports and external consumers are reviewed.,quarantine
+bot/telegram_bot.py,runtime,none,scaffold,"no static path from runtime roots, tests/, or scripts/live_*.py",Quarantine first; no deletion until package exports and external consumers are reviewed.,quarantine
+bot/telemetry.py,runtime,runtime,ok,reachable from main.py / bot.cli.run() import graph,none,keep
+bot/tracked_signals.py,runtime,runtime,ok,reachable from main.py / bot.cli.run() import graph,none,keep
+bot/tracking.py,runtime,runtime,ok,reachable from main.py / bot.cli.run() import graph,none,keep
+bot/universe.py,runtime,runtime,ok,reachable from main.py / bot.cli.run() import graph,none,keep
+bot/ws_manager.py,runtime,runtime,ok,reachable from main.py / bot.cli.run() import graph,none,keep
+config.toml,config,none,ok,"no static path from runtime roots, tests/, or scripts/live_*.py",none,keep
+lastplan.md,doc,none,ok,"no static path from runtime roots, tests/, or scripts/live_*.py",none,keep
+PRD_v7.0_Futures_Signal_Bot_Final_Codex.md,doc,none,doc-drift,"no static path from runtime roots, tests/, or scripts/live_*.py; Historical PRD still describes a multi-process/shared-memory runtime that is not the live code path.",Keep only as historical context; do not treat it as launch or architecture truth.,keep
+pyproject.toml,config,none,ok,"no static path from runtime roots, tests/, or scripts/live_*.py",none,keep
+requirements-frozen.txt,config,none,ok,"no static path from runtime roots, tests/, or scripts/live_*.py",none,keep
+requirements-modern.txt,config,none,ok,"no static path from runtime roots, tests/, or scripts/live_*.py",none,keep
+requirements-optional.txt,config,none,ok,"no static path from runtime roots, tests/, or scripts/live_*.py","install alongside requirements.txt when dashboard, ML, or self-learning are enabled",keep
+requirements.txt,config,none,ok,"no static path from runtime roots, tests/, or scripts/live_*.py",none,keep
+scripts/generate_audit_artifacts.py,script,none,ok,"no static path from runtime roots, tests/, or scripts/live_*.py",none,keep
+scripts/live_check_binance_api.py,script,scripts,ok,reachable from scripts/live_*.py import graph,none,keep
+scripts/live_check_indicators.py,script,scripts,ok,reachable from scripts/live_*.py import graph,none,keep
+scripts/live_check_strategies.py,script,scripts,ok,reachable from scripts/live_*.py import graph,none,keep
+scripts/live_smoke_bot.py,script,scripts,ok,reachable from scripts/live_*.py import graph,none,keep
+tests/test_remediation_regressions.py,test,tests,ok,reachable from tests/ import graph,none,keep

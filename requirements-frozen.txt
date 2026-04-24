@@ -1,0 +1,52 @@
+# Frozen requirements for stable bot operation (April 2026)
+# Updated for websockets>=15.0.1,<16.0.0 compatibility with Binance SDK
+# Install: pip install -r requirements-frozen.txt
+#
+# Optional dashboard / ML / self-learning extras live in requirements-optional.txt.
+#
+# KEY FIXES APPLIED:
+# - websockets 15.0.1 (was 16.0) - compatible with Binance SDK
+# - pydantic 2.12.5 (was 2.13.1) - compatible with aiogram 3.27.0
+# - Removed: polars_talib, numba, pandas-ta (replaced with polars_ta)
+# - Removed: unicorn-binance-websocket-api (unused)
+
+# Core async & data processing (Polars-first)
+polars==1.39.3
+numpy==2.4.4
+python-dotenv==1.0.1
+
+# Critical: pydantic <2.13 for aiogram 3.27.0 compatibility
+pydantic==2.12.5
+pydantic_core==2.41.5
+
+# Critical: websockets 15.x for Binance SDK compatibility
+# Post-April 2026: Binance requires new WS endpoints
+websockets==15.0.1
+
+msgspec==0.19.0
+orjson==3.10.12
+tenacity==9.0.0
+prometheus-client==0.21.1
+pytest==8.3.4
+pytest-asyncio==0.25.2
+
+# Binance SDK (USDS-M Futures)
+binance-sdk-derivatives-trading-usds-futures==9.1.0
+
+# Alternative SDK
+binance-connector==3.12.0
+python-binance==1.0.22
+
+# Telegram & HTTP
+aiogram==3.27.0
+aiohttp==3.13.5
+
+# TA (Polars-native, NO numba)
+# Using polars_ta instead of polars_talib to avoid numba/numpy conflicts
+polars_ta==0.5.17
+
+# Database
+aiosqlite==0.22.1
+
+# Logging
+structlog==24.4.0

@@ -1,0 +1,24 @@
+# Squeeze Setup Strategy Configuration
+
+[strategy]
+enabled = true
+name = "squeeze_setup"
+
+[detection]
+# Bollinger/Keltner squeeze thresholds
+bb_squeeze_threshold = 0.05
+min_squeeze_bars = 3
+min_bb_compression_width = 0.02
+bb_pct_b_threshold = 0.80
+
+# Volume confirmation
+volume_threshold = 0.8
+
+[risk_management]
+sl_buffer_atr = 0.4
+min_rr = 1.5
+
+[scoring]
+base_score = 0.55
+bias_mismatch_penalty = 0.75
+tp_too_close_penalty = 0.75

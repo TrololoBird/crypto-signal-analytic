@@ -1,0 +1,182 @@
+# ML/AI Optimizable Strategy Parameters
+# All values can be tuned by self-learner or external optimization
+
+[bot.strategies.wick_trap_reversal]
+enabled = true
+base_score = 0.55
+bias_mismatch_penalty = 0.75
+tp_too_close_penalty = 0.75
+# Detection thresholds
+wick_through_atr_mult = 0.3      # wick_through = low < level - atr * X
+closed_back_threshold = 0.0      # closed_back = close > level
+# SL/TP
+sl_buffer_atr = 0.5              # stop = wick_extreme ± atr * X
+min_rr = 1.5
+
+[bot.strategies.turtle_soup]
+enabled = true
+base_score = 0.52
+roll_bars = 20.0
+break_atr_mult = 0.1             # break detection threshold
+# Confirmation
+vol_ratio_threshold = 0.8        # volume ratio for confirmation
+# SL/TP
+sl_buffer_atr = 0.5
+min_rr = 1.5
+
+[bot.strategies.structure_pullback]
+enabled = true
+base_score = 0.55
+bias_mismatch_penalty = 0.75
+tp_too_close_penalty = 0.75
+# Scoring thresholds
+min_trend_score = 0.40           # was 0.50
+score_diff_threshold = 0.03      # |long - short| must exceed this
+ema_proximity_pct = 0.995        # 0.5% proximity to EMA
+# SL/TP
+sl_buffer_atr = 0.4
+min_rr = 1.5
+
+[bot.strategies.squeeze_setup]
+enabled = true
+base_score = 0.53
+# Bollinger/Keltner thresholds
+bb_squeeze_threshold = 0.05      # BB width vs KC width
+min_squeeze_bars = 3
+# Volume
+vol_ratio_threshold = 0.8
+# SL/TP
+sl_buffer_atr = 0.4
+min_rr = 1.5
+
+[bot.strategies.fvg]
+enabled = true
+base_score = 0.54
+# FVG detection
+min_fvg_size_atr = 0.3           # minimum FVG size
+max_fvg_age_bars = 5             # how old FVG can be
+# SL/TP
+sl_buffer_atr = 0.5
+min_rr = 1.5
+
+[bot.strategies.liquidity_sweep]
+enabled = true
+base_score = 0.54
+# Sweep detection
+sweep_atr_mult = 0.2             # sweep beyond level
+reclaim_threshold = 0.3          # close back above/below
+# SL/TP
+sl_buffer_atr = 0.5
+min_rr = 1.5
+
+[bot.strategies.order_block]
+enabled = true
+base_score = 0.54
+# OB detection
+ob_lookback_bars = 10
+min_ob_size_atr = 0.5
+# Mitigation
+mitigation_threshold = 0.3       # how much must be mitigated
+# SL/TP
+sl_buffer_atr = 0.5
+min_rr = 1.5
+
+[bot.strategies.session_killzone]
+enabled = true
+base_score = 0.53
+# Time windows (hours UTC)
+ny_open = 14
+ny_close = 22
+london_open = 8
+london_close = 16
+# Momentum threshold
+min_momentum = 0.3
+# SL/TP
+sl_buffer_atr = 0.5
+min_rr = 1.5
+
+[bot.strategies.hidden_divergence]
+enabled = true
+base_score = 0.52
+# Divergence detection
+rsi_lookback = 14
+price_tolerance_pct = 0.001      # 0.1% for price comparison
+macd_threshold = 0.0
+# SL/TP
+sl_buffer_atr = 0.5
+min_rr = 1.5
+
+[bot.strategies.funding_reversal]
+enabled = true
+base_score = 0.55
+# Funding thresholds
+extreme_funding = 0.01           # 1% funding = extreme
+oi_change_threshold = 0.5        # 50% OI change
+# SL/TP
+sl_buffer_atr = 0.5
+min_rr = 1.2                     # tighter RR for quick reversals
+
+[bot.strategies.cvd_divergence]
+enabled = true
+base_score = 0.52
+# CVD detection
+cvd_lookback_bars = 20
+volume_weighting = 0.7           # weight of volume in score
+# SL/TP
+sl_buffer_atr = 0.5
+min_rr = 1.5
+
+[bot.strategies.breaker_block]
+enabled = true
+base_score = 0.53
+# Breaker detection
+break_lookback = 20
+min_break_size_atr = 0.3
+# SL/TP
+sl_buffer_atr = 0.5
+min_rr = 1.5
+
+[bot.strategies.ema_bounce]
+enabled = true
+base_score = 0.52
+# EMA touch tolerance
+ema_touch_tolerance_pct = 0.008  # 0.8% from EMA (was 0.5%)
+bounce_threshold_pct = 0.005     # 0.5% bounce (was 0.3%)
+# Trend
+min_adx = 18.0
+# SL/TP
+sl_buffer_atr = 0.4              # via utils
+target_atr_mult = 2.0
+
+[bot.strategies.structure_break_retest]
+enabled = true
+base_score = 0.54
+# Retest detection
+retest_max_bars = 5
+retest_tolerance_pct = 0.002     # 0.2% tolerance
+# SL/TP
+sl_buffer_atr = 0.5
+min_rr = 1.5
+
+[bot.strategies.bos_choch]
+enabled = true
+base_score = 0.53
+# Structure detection
+swing_lookback = 5
+break_confirmation_bars = 2
+# SL/TP
+sl_buffer_atr = 0.5
+min_rr = 1.5
+
+# ============================================
+# Global Strategy Settings (applied to all)
+# ============================================
+[bot.strategies.global]
+# Default SL buffer if not specified per strategy
+default_sl_buffer_atr = 0.5
+# Default risk/reward minimum
+default_min_rr = 1.5
+# Maximum signals per cycle per symbol
+max_signals_per_symbol = 1
+# Cooldown between signals (minutes)
+default_cooldown_minutes = 60

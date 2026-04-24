@@ -1,0 +1,7 @@
+{"ts": "2026-04-24T01:17:40.129425+00:00", "trigger": "emergency_fallback", "action": "skip", "fallback_seconds": 1800, "time_since_last_kline_seconds": 147.9}
+{"ts": "2026-04-24T01:47:40.173751+00:00", "trigger": "emergency_fallback", "action": "skip", "fallback_seconds": 1800, "time_since_last_kline_seconds": 148.4}
+{"ts": "2026-04-24T02:17:40.237994+00:00", "trigger": "emergency_fallback", "action": "skip", "fallback_seconds": 1800, "time_since_last_kline_seconds": 137.0}
+{"ts": "2026-04-24T02:47:40.255704+00:00", "trigger": "emergency_fallback", "action": "skip", "fallback_seconds": 1800, "time_since_last_kline_seconds": 148.8}
+{"ts": "2026-04-24T03:17:40.261275+00:00", "trigger": "emergency_fallback", "action": "skip", "fallback_seconds": 1800, "time_since_last_kline_seconds": 152.5}
+{"ts": "2026-04-24T03:47:40.302340+00:00", "trigger": "emergency_fallback", "action": "skip", "fallback_seconds": 1800, "time_since_last_kline_seconds": 152.1}
+{"ts": "2026-04-24T04:17:40.315222+00:00", "trigger": "emergency_fallback", "action": "skip", "fallback_seconds": 1800, "time_since_last_kline_seconds": 151.0}

@@ -1,0 +1,22 @@
+============================================================
+TESTING BOT IMPORTS
+Traceback (most recent call last):
+============================================================
+
+1. Testing config import...
+   [OK] BotSettings imported
+
+2. Testing models import...
+   [OK] Signal has adx_1h: True
+   [OK] Signal has risk_reward: True
+   [OK] Signal has trend_direction: True
+
+3. Testing setups import...
+   [OK] _build_signal imported
+
+4. Testing strategies import...
+
+[ERROR] cannot import name 'WickTrapReversal' from 'bot.strategies.wick_trap_reversal' (C:\Users\undea\Documents\bot\bot\strategies\wick_trap_reversal.py)
+  File "C:\Users\undea\Documents\bot\test_bot.py", line 26, in <module>
+    from bot.strategies.wick_trap_reversal import WickTrapReversal
+ImportError: cannot import name 'WickTrapReversal' from 'bot.strategies.wick_trap_reversal' (C:\Users\undea\Documents\bot\bot\strategies\wick_trap_reversal.py)

@@ -1,0 +1,28 @@
+# Wick Trap Reversal Strategy Configuration
+
+[strategy]
+enabled = true
+name = "wick_trap_reversal"
+
+[detection]
+# Wick detection
+wick_atr_threshold = 0.3
+wick_through_atr_mult = 0.3
+closed_back_threshold = 0.0
+
+# Swing parameters
+swing_lookback_n = 3
+bars_ago_min = 3
+bars_ago_max = 20
+
+[risk_management]
+sl_buffer_atr = 0.5
+min_rr = 1.5
+
+[scoring]
+base_score = 0.55
+bias_mismatch_penalty = 0.75
+tp_too_close_penalty = 0.75
+
+[filters]
+min_volume_ratio = 0.8

@@ -1,0 +1,31 @@
+# Structure Pullback Strategy Configuration
+
+[strategy]
+enabled = true
+name = "structure_pullback"
+
+[detection]
+# Trend requirements
+min_trend_score = 0.40
+ema_proximity_pct = 0.995
+
+# Pullback lookback
+pullback_lookback = 8
+swing_lookback_n = 5
+
+[risk_management]
+sl_buffer_atr = 0.4
+min_rr = 1.5
+
+[scoring]
+base_score = 0.55
+bias_mismatch_penalty = 0.75
+tp_too_close_penalty = 0.75
+
+[filters]
+# EMA alignment
+require_ema_alignment = true
+ema20_above_ema50 = true
+
+# Volume requirements
+min_volume_ratio = 0.8

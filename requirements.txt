@@ -1,0 +1,52 @@
+# Optional dashboard / ML / self-learning extras live in requirements-optional.txt.
+#
+# Binance SDK (USDS-M Futures - official modular SDK)
+# Updated for compatibility with websockets>=15.0.1,<16.0.0
+binance-sdk-derivatives-trading-usds-futures>=9.1.0
+
+# Binance — только публичные данные (market data + WebSocket streams)
+binance-connector>=3.12.0
+python-binance>=1.0.22
+
+# Core async & data processing (Polars-first)
+polars>=1.39.3
+numpy>=1.26.4,<2.5
+
+# Telegram & HTTP
+aiogram>=3.27.0
+aiohttp>=3.11.0
+# Critical: websockets must be <16.0 for binance-sdk compatibility
+# but >=15.0.1 for new WS endpoints (post April 2026)
+websockets>=15.0.1,<16.0.0
+
+# TA (Polars-native)
+# Note: polars_talib pulls numba which has numpy compatibility issues
+# Using polars_ta (pure Polars) instead - faster and no numba dependency.
+# polars_talib remains optional and is not required for runtime.
+polars_ta>=0.3.0
+
+# Database
+aiosqlite>=0.22.1
+
+# Config & validation
+pydantic>=2.8.0
+python-dotenv>=1.0.0
+structlog>=24.1.0
+
+# Reliability
+tenacity>=9.0.0
+
+# Monitoring
+prometheus-client>=0.19.0
+
+# Serialization
+msgspec>=0.19.0
+orjson>=3.9.0
+
+# WebSocket manager - updated for websockets>=15 compatibility
+# unicorn-binance-websocket-api>=2.11.0  # Enable if using unicorn
+
+# Testing
+pytest>=8.3.0
+pytest-asyncio>=0.25.0
+pytest-xdist>=3.6.0

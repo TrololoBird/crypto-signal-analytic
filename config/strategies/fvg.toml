@@ -1,0 +1,24 @@
+# FVG (Fair Value Gap) Strategy Configuration
+
+[strategy]
+enabled = true
+name = "fvg"
+
+[detection]
+# FVG parameters
+min_fvg_size_atr = 0.3
+max_fvg_age_bars = 5
+
+# Imbalance detection
+min_imbalance_ratio = 0.3
+
+[risk_management]
+sl_buffer_atr = 0.5
+min_rr = 1.5
+
+[scoring]
+base_score = 0.54
+
+[filters]
+min_volume_ratio = 0.8
+require_fill_confirmation = true

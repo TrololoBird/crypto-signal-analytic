@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    from bot.cli import main; main()
+    ^^^^^^^^^^^^^^^^^^^^^^^^
+ImportError: cannot import name 'main' from 'bot.cli' (C:\Users\undea\Documents\bot\bot\cli.py)

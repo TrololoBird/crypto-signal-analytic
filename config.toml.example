@@ -1,0 +1,165 @@
+# Clean runtime configuration for the signal bot.
+# Secrets stay in .env.
+# Copy this file to config.toml and customize as needed.
+
+[bot.runtime]
+analysis_concurrency = 8
+max_signals_per_cycle = 3
+telemetry_subdir = "telemetry"
+log_level = "INFO"
+shortlist_refresh_interval_seconds = 7200
+emergency_fallback_seconds = 1800
+strict_data_quality = true
+diagnostic_trace_limit_per_symbol = 20
+# Startup throttling to prevent REST API flood on startup
+startup_batch_size = 3
+startup_batch_delay_seconds = 2.0
+max_concurrent_rest_requests = 5
+
+[bot.universe]
+quote_asset = "USDT"
+dynamic_limit = 120
+shortlist_limit = 45
+min_quote_volume_usd = 10_000_000
+min_listing_age_days = 14
+pinned_symbols = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT"]
+
+[bot.filters]
+cooldown_minutes = 60
+symbol_cooldown_minutes = 120
+max_spread_bps = 8.0
+# Empirical note (2026-04-14): min_atr_pct 0.50 works better than 0.30
+# Low ATR allows choppy/sideways markets through - lowers signal quality.
+min_atr_pct = 0.50
+max_atr_pct = 10.0
+min_adx_1h = 22.0
+min_risk_reward = 1.9
+min_score = 0.66
+freshness_15m_minutes = 16
+freshness_1h_hours = 2
+freshness_4h_hours = 10
+min_bars_15m = 210
+min_bars_1h = 210
+min_bars_4h = 210
+max_mark_price_deviation_pct = 0.005
+
+[bot.filters.setups]
+ema_bounce = { base_score = 0.55, min_adx_1h = 15.0, bias_mismatch_penalty = 0.75, min_rr = 1.5 }
+structure_pullback = { base_score = 0.55, bias_mismatch_penalty = 0.75, tp_too_close_penalty = 0.75, min_rr = 1.5 }
+structure_break_retest = { base_score = 0.55, threshold_adx = 18.0, bias_mismatch_penalty = 0.75, min_rr = 1.5 }
+wick_trap_reversal = { base_score = 0.50, bias_mismatch_penalty = 0.75, min_rr = 1.5 }
+squeeze_setup = { base_score = 0.55, bias_mismatch_penalty = 0.75, min_rr = 1.5 }
+fvg_setup = { base_score = 0.60, threshold_gap = 0.001, min_rr = 1.5, tp_too_close_penalty = 0.8 }
+order_block = { base_score = 0.50, threshold_volume = 1.2, min_rr = 1.5 }
+liquidity_sweep = { base_score = 0.50, threshold_tol = 0.0015, min_rr = 1.5 }
+bos_choch = { base_score = 0.55, bias_mismatch_penalty = 0.75, min_rr = 1.5, min_swings = 6 }
+hidden_divergence = { base_score = 0.50, bias_mismatch_penalty = 0.75, min_rr = 1.5 }
+funding_reversal = { base_score = 0.50, bias_mismatch_penalty = 0.75, min_rr = 1.5 }
+cvd_divergence = { base_score = 0.50, bias_mismatch_penalty = 0.75, min_rr = 1.5 }
+session_killzone = { base_score = 0.55, bias_mismatch_penalty = 0.75, min_rr = 1.5 }
+breaker_block = { base_score = 0.50, bias_mismatch_penalty = 0.75, min_rr = 1.5 }
+turtle_soup = { base_score = 0.50, bias_mismatch_penalty = 0.75, min_rr = 1.5 }
+
+[bot.tracking]
+enabled = true
+pending_expiry_minutes = 180
+active_expiry_minutes = 720
+move_stop_to_break_even_on_tp1 = true
+min_stop_distance_pct = 0.5
+max_stop_distance_pct = 15.0
+agg_trade_page_limit = 6
+agg_trade_page_size = 1000
+
+[bot.setups]
+# Original setups
+structure_pullback = true
+structure_break_retest = true
+wick_trap_reversal = true
+squeeze_setup = true
+ema_bounce = true
+# New setups
+fvg_setup = true
+order_block = true
+liquidity_sweep = true
+bos_choch = true
+hidden_divergence = true
+funding_reversal = true
+cvd_divergence = true
+session_killzone = true
+breaker_block = true
+turtle_soup = true
+
+[bot.scoring]
+enabled = true
+setup_prior_weight = 0.50
+# Weights MUST sum to exactly 1.0 (validated on startup)
+weight_mtf_alignment = 0.25
+weight_volume_quality = 0.20
+weight_structure_clarity = 0.20
+weight_risk_reward = 0.15
+weight_crowd_position = 0.10
+weight_oi_momentum = 0.10
+funding_rate_extreme = 0.0010
+funding_rate_moderate = 0.0005
+
+[bot.alerts]
+enabled = true
+enable_entry_zone = true
+watch_interest_pct = 0.015
+entry_zone_pct = 0.003
+invalidate_buffer_pct = 0.005
+max_watch_alerts_per_hour = 3
+watch_symbol_cooldown_minutes = 60
+entry_symbol_cooldown_minutes = 15
+invalidated_min_age_minutes = 10
+watch_expiry_minutes = 60
+
+[bot.ws]
+enabled = true
+# Root Binance Futures WS endpoint. Manager routes bookTicker to /public and
+# market streams to /market internally.
+base_url = "wss://fstream.binance.com"
+public_base_url = "wss://fstream.binance.com/public"
+market_base_url = "wss://fstream.binance.com/market"
+kline_intervals = ["5m", "15m", "1h"]
+subscription_scope = "shortlist"
+subscribe_book_ticker = true
+# NOTE: aggTrade is subscribed only for tracked/active symbols.
+# It is never attached to the full shortlist.
+subscribe_agg_trade = false
+subscribe_chunk_size = 20
+subscribe_chunk_delay_ms = 210
+health_check_silence_seconds = 60.0
+market_reconnect_grace_seconds = 90.0
+agg_trade_window_seconds = 300
+kline_cache_size = 300
+warmup_timeout_seconds = 60.0
+reconnect_max_delay_seconds = 300.0
+max_agg_trade_buffer = 10000
+rest_timeout_seconds = 12.0
+subscribe_market_streams = true
+market_ticker_freshness_seconds = 120.0
+force_order_window_seconds = 60
+
+[bot.ml]
+use_ml_in_live = false
+
+[bot.intelligence]
+enabled = true
+runtime_mode = "signal_only"
+source_policy = "binance_only"
+smart_exit_mode = "heuristic_v1"
+gamma_semantics = "proxy_only"
+refresh_interval_seconds = 900
+write_hourly_reports = true
+options_expiry_count = 2
+barrier_symbol_count = 2
+hard_barrier_pct = 1.5
+hard_barrier_window_minutes = 15
+smart_exit_enabled = true
+smart_exit_threshold = 0.62
+max_consecutive_stop_losses = 3
+stop_loss_pause_hours = 5
+benchmark_symbols = ["BTCUSDT", "ETHUSDT", "SOLUSDT"]
+option_underlyings = ["BTC", "ETH"]
+macro_symbols = ["^VIX", "DX-Y.NYB", "^TNX", "^GSPC"]

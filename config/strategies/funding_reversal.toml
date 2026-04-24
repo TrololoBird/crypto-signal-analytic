@@ -1,0 +1,30 @@
+# Funding Reversal Strategy Configuration
+
+[strategy]
+enabled = true
+name = "funding_reversal"
+
+[funding]
+# Funding rate thresholds
+extreme_funding = 0.01
+very_extreme_funding = 0.02
+
+# Open interest
+oi_change_threshold = 0.5
+min_oi_value = 1000000
+
+[detection]
+# Reversal confirmation
+confirmation_bars = 2
+price_reversal_pct = 0.003
+
+[risk_management]
+sl_buffer_atr = 0.5
+min_rr = 1.2
+
+[scoring]
+base_score = 0.55
+
+[filters]
+min_volume_ratio = 0.8
+max_funding_age_hours = 8

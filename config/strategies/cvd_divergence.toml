@@ -1,0 +1,25 @@
+# CVD Divergence Strategy Configuration
+
+[strategy]
+enabled = true
+name = "cvd_divergence"
+
+[detection]
+# CVD parameters
+cvd_lookback_bars = 20
+volume_weighting = 0.7
+
+# Divergence detection
+price_tolerance_pct = 0.001
+min_cvd_slope = 0.01
+
+[risk_management]
+sl_buffer_atr = 0.5
+min_rr = 1.5
+
+[scoring]
+base_score = 0.52
+
+[filters]
+min_volume_ratio = 0.8
+min_adx = 15.0

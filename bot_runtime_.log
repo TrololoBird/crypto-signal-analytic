@@ -1,0 +1,795 @@
+2026-04-23 16:49:10 [info     ] telegram message sent          chars=877 preview='<b>Startup Report</b> | Type: <code>startup_snapshot</code> | Cycles: <code>9780</code> | Detector runs: <code>146700</code> | Selected: <code>6</code> | Outcomes: <code>3</code> | Open tracked: <code>3</code> | Latest cycle: <code>2026-04-23T13:18:03.210184+00:00</code> | Market: regime=<code>volatile</code> btc=<code>neutral</code> eth=<code>downtrend</code> | Policy: runtime=<code>signal_only</code> source=<code>binance_only</code> pause=<code>3/5h</code> | Shortlist: source=<code>live</codeЕ'
+2026-04-23 16:49:10 [info     ] telegram bot session closed
+2026-04-23 16:49:10,401 | INFO    | bot.cli | configure_logging:121 | ================================================================================
+2026-04-23 16:49:10,406 | INFO    | bot.cli | configure_logging:122 | BOT SESSION STARTED | 2026-04-23 13:49:10 UTC
+2026-04-23 16:49:10,407 | INFO    | bot.cli | configure_logging:123 | LOG FILE | data\bot\logs\bot_20260423_134910_59960.log
+2026-04-23 16:49:10,408 | INFO    | bot.cli | configure_logging:124 | DEBUG MODE | False
+2026-04-23 16:49:10,411 | INFO    | bot.cli | configure_logging:125 | ASYNCIO DEBUG | False
+2026-04-23 16:49:10,413 | INFO    | bot.cli | configure_logging:126 | ================================================================================
+2026-04-23 16:49:10,419 | INFO    | bot.cli | _run_doctor_check:49 | DOCTOR OK | {"pid_lock": "data\\bot\\bot.pid", "logs_dir": "data\\bot\\logs", "telemetry_dir": "data\\bot\\telemetry", "db_path": "data\\bot\\bot.db", "config_filters": {"min_atr_pct": 0.5, "min_score": 0.66, "freshness_15m_minutes": 16, "freshness_1h_hours": 2}, "ws": {"base_url": "wss://fstream.binance.com", "public_base_url": "wss://fstream.binance.com/public", "market_base_url": "wss://fstream.binance.com/market", "subscribe_book_ticker": true}, "setups_enabled": {"structure_pullback": true, "structure_break_retest": true, "wick_trap_reversal": true, "squeeze_setup": true, "ema_bounce": true, "order_block": true, "breaker_block": true, "fvg_setup": true, "bos_choch": true, "liquidity_sweep": true, "turtle_soup": true, "cvd_divergence": true, "hidden_divergence": true, "funding_reversal": true, "session_killzone": true}}
+2026-04-23 16:49:10,504 | INFO    | bot.ws_manager | set_event_bus:300 | EventBus attached to ws_manager
+2026-04-23 16:49:10,504 | INFO    | bot.application.bot | __init__:91 | ws_manager initialized | pinned_symbols=4
+2026-04-23 16:49:15,269 | INFO    | bot.application.bot | __init__:108 | MemoryRepository initialized | db=data\bot\bot.db
+2026-04-23 16:49:15,871 | INFO    | bot.metrics | __init__:194 | metrics collector initialized on port 9090
+2026-04-23 16:49:15,944 | INFO    | bot.metrics | start_server:203 | metrics server started on port 9090
+2026-04-23 16:49:20,260 | INFO    | bot.dashboard | start_server:266 | dashboard server started on port 8080
+2026-04-23 16:49:20,303 | INFO    | bot.tracking | _load_features_store:132 | features_store loaded | entries=3
+2026-04-23 16:49:20,304 | INFO    | bot.core.engine.registry | register:51 | Registered strategy: structure_pullback (enabled=True)
+2026-04-23 16:49:20,305 | INFO    | bot.application.bot | _register_strategies:207 | registered strategy structure_pullback (enabled=True)
+2026-04-23 16:49:20,307 | INFO    | bot.core.engine.registry | register:51 | Registered strategy: structure_break_retest (enabled=True)
+2026-04-23 16:49:20,307 | INFO    | bot.application.bot | _register_strategies:207 | registered strategy structure_break_retest (enabled=True)
+2026-04-23 16:49:20,307 | INFO    | bot.core.engine.registry | register:51 | Registered strategy: wick_trap_reversal (enabled=True)
+2026-04-23 16:49:20,313 | INFO    | bot.application.bot | _register_strategies:207 | registered strategy wick_trap_reversal (enabled=True)
+2026-04-23 16:49:20,319 | INFO    | bot.core.engine.registry | register:51 | Registered strategy: squeeze_setup (enabled=True)
+2026-04-23 16:49:20,319 | INFO    | bot.application.bot | _register_strategies:207 | registered strategy squeeze_setup (enabled=True)
+2026-04-23 16:49:20,320 | INFO    | bot.core.engine.registry | register:51 | Registered strategy: ema_bounce (enabled=True)
+2026-04-23 16:49:20,320 | INFO    | bot.application.bot | _register_strategies:207 | registered strategy ema_bounce (enabled=True)
+2026-04-23 16:49:20,320 | INFO    | bot.core.engine.registry | register:51 | Registered strategy: fvg_setup (enabled=True)
+2026-04-23 16:49:20,321 | INFO    | bot.application.bot | _register_strategies:207 | registered strategy fvg_setup (enabled=True)
+2026-04-23 16:49:20,321 | INFO    | bot.core.engine.registry | register:51 | Registered strategy: order_block (enabled=True)
+2026-04-23 16:49:20,323 | INFO    | bot.application.bot | _register_strategies:207 | registered strategy order_block (enabled=True)
+2026-04-23 16:49:20,323 | INFO    | bot.core.engine.registry | register:51 | Registered strategy: liquidity_sweep (enabled=True)
+2026-04-23 16:49:20,323 | INFO    | bot.application.bot | _register_strategies:207 | registered strategy liquidity_sweep (enabled=True)
+2026-04-23 16:49:20,324 | INFO    | bot.core.engine.registry | register:51 | Registered strategy: bos_choch (enabled=True)
+2026-04-23 16:49:20,324 | INFO    | bot.application.bot | _register_strategies:207 | registered strategy bos_choch (enabled=True)
+2026-04-23 16:49:20,325 | INFO    | bot.core.engine.registry | register:51 | Registered strategy: hidden_divergence (enabled=True)
+2026-04-23 16:49:20,326 | INFO    | bot.application.bot | _register_strategies:207 | registered strategy hidden_divergence (enabled=True)
+2026-04-23 16:49:20,327 | INFO    | bot.core.engine.registry | register:51 | Registered strategy: funding_reversal (enabled=True)
+2026-04-23 16:49:20,330 | INFO    | bot.application.bot | _register_strategies:207 | registered strategy funding_reversal (enabled=True)
+2026-04-23 16:49:20,330 | INFO    | bot.core.engine.registry | register:51 | Registered strategy: cvd_divergence (enabled=True)
+2026-04-23 16:49:20,331 | INFO    | bot.application.bot | _register_strategies:207 | registered strategy cvd_divergence (enabled=True)
+2026-04-23 16:49:20,331 | INFO    | bot.core.engine.registry | register:51 | Registered strategy: session_killzone (enabled=True)
+2026-04-23 16:49:20,334 | INFO    | bot.application.bot | _register_strategies:207 | registered strategy session_killzone (enabled=True)
+2026-04-23 16:49:20,334 | INFO    | bot.core.engine.registry | register:51 | Registered strategy: breaker_block (enabled=True)
+2026-04-23 16:49:20,334 | INFO    | bot.application.bot | _register_strategies:207 | registered strategy breaker_block (enabled=True)
+2026-04-23 16:49:20,334 | INFO    | bot.core.engine.registry | register:51 | Registered strategy: turtle_soup (enabled=True)
+2026-04-23 16:49:20,335 | INFO    | bot.application.bot | _register_strategies:207 | registered strategy turtle_soup (enabled=True)
+2026-04-23 16:49:20,335 | INFO    | bot.application.bot | _register_strategies:209 | strategies registered | total=15 enabled=15
+2026-04-23 16:49:20,335 | INFO    | bot.application.bot | __init__:153 | SignalEngine initialized with 15 strategies
+2026-04-23 16:49:20,338 | INFO    | bot.application.bot | __init__:179 | EventBus subscriptions registered | handlers=3 (kline_close, reconnect, book_ticker)
+2026-04-23 16:49:20,405 | INFO    | bot.core.memory.repository | initialize:343 | Memory repository initialized at data\bot\bot.db
+2026-04-23 16:49:20,405 | INFO    | bot.application.bot | start:885 | modern repository initialized | SQLite ready
+2026-04-23 16:49:24,650 | INFO    | bot.application.bot | start:892 | startup tracking sweep closed open signals | events=2
+2026-04-23 16:49:24,848 | INFO    | bot.delivery | deliver_tracking_updates:536 | coalesced tracking batch | tracking_ref=9C9A8316 events=['tp1_hit', 'tp2_hit'] final=tp2_hit
+2026-04-23 16:49:27,166 | INFO    | bot.delivery | deliver_tracking_updates:545 | telegram signal card edited
+<b>SOONUSDT LONG</b> <code>#9C9A8316</code>
+\U0001f4a1 ╙ьхЁхээ√щ | <code>15m liquidity sweep</code>
+RR <code>0.00</code> | Risk <code>0.00%</code>
+
+<b>Entry</b> <code>0.183126 Ц 0.183874</code>
+<b>SL</b> <code>0.183446</code> | <b>TP1</b> <code>0.188565</code> | <b>TP2</b> <code>0.191700</code> | <b>TP3</b> <code>0.199900</code>
+\U0001f4cc ╥Ёхщышэу: +0.0% \u2192 SL т схчєс√Єюъ | +0.0% \u2192 ЇшъёшЁютрЄ№ 30%
+<b>Trigger</b> Liquidity sweep long: eq low=0.1819 -&gt; wick=0.1805 close=0.1835
+<b>Chart</b> <a href="https://www.tradingview.com/chart/?symbol=BINANCE:SOONUSDT.P&amp;interval=15">TradingView</a>
+<b>Status</b> closed at TP2 on <code>2026-04-23 16:46 UTC+03:00</code> at <code>0.191700</code>
+2026-04-23 16:49:27 [info     ] telegram message sent          chars=358 preview='<b>SOONUSDT LONG</b> <code>#9C9A8316</code> | <b>TP2 Hit</b> | <b>Time</b> <code>2026-04-23 16:46 UTC+03:00</code> | <b>Price</b> <code>0.191700</code> | <b>Plan</b> <code>Entry 0.183126-0.183874 | SL 0.183446 | TP1 0.188565 | TP2 0.191700</code> | <b>Chart</b> <a href="https://www.tradingview.com/chart/?symbol=BINANCE:SOONUSDT.P&amp;interval=15">TradingView</a>'
+2026-04-23 16:49:27,417 | INFO    | bot.delivery | deliver_tracking_updates:563 | telegram tracking update sent
+<b>SOONUSDT LONG</b> <code>#9C9A8316</code> | <b>TP2 Hit</b>
+<b>Time</b> <code>2026-04-23 16:46 UTC+03:00</code> | <b>Price</b> <code>0.191700</code>
+<b>Plan</b> <code>Entry 0.183126-0.183874 | SL 0.183446 | TP1 0.188565 | TP2 0.191700</code>
+<b>Chart</b> <a href="https://www.tradingview.com/chart/?symbol=BINANCE:SOONUSDT.P&amp;interval=15">TradingView</a>
+2026-04-23 16:49:27,442 | INFO    | bot.application.bot | start:904 | runtime initialized | setups=15 shortlist_limit=45 memory_symbols=0 btc_bias=neutral blacklisted=none
+2026-04-23 16:49:27,444 | INFO    | bot.application.bot | _do_refresh_shortlist:2206 | refreshing shortlist...
+2026-04-23 16:49:29,423 | INFO    | bot.application.bot | _do_refresh_shortlist:2247 | shortlist refresh complete | source=live size=45 eligible=140 dynamic_pool=120 pinned=4
+2026-04-23 16:49:29,423 | INFO    | bot.application.bot | start:922 | starting ws_manager with shortlist | symbols=45 timeout=30.0s
+2026-04-23 16:49:29,424 | INFO    | bot.ws_manager | start:337 | ws_manager started | symbols=45 endpoints=['public', 'market']
+2026-04-23 16:49:29,424 | INFO    | bot.ws_manager | _run_stream:1364 | ws connecting | endpoint=public url=wss://fstream.binance.com/public/stream streams=45
+2026-04-23 16:49:29,517 | INFO    | bot.ws_manager | _run_stream:1364 | ws connecting | endpoint=market url=wss://fstream.binance.com/market/stream streams=139
+2026-04-23 16:49:29,542 | INFO    | bot.core.event_bus | run:57 | event bus dispatch loop started
+2026-04-23 16:49:29,569 | INFO    | bot.application.bot | run_forever:956 | event bus started and ready
+2026-04-23 16:49:29,569 | INFO    | bot.application.bot | run_forever:972 | event-driven mode active | emergency_fallback=1800s
+2026-04-23 16:49:31,743 | INFO    | bot.application.bot | _preload_shortlist_frames:1522 | preload frames: starting...
+2026-04-23 16:49:31,747 | INFO    | bot.application.bot | _preload_shortlist_frames:1531 | preload frames: loading data for 45 symbols
+2026-04-23 16:49:32,457 | INFO    | bot.ws_manager | _run_stream:1379 | ws connection established | endpoint=public url=wss://fstream.binance.com/public/stream
+2026-04-23 16:49:32,463 | INFO    | bot.ws_manager | _run_stream:1396 | ws connected | endpoint=public url=wss://fstream.binance.com/public/stream streams=45 connect_count=1 endpoint_connect_count=1
+2026-04-23 16:49:32,830 | INFO    | bot.ws_manager | _run_stream:1379 | ws connection established | endpoint=market url=wss://fstream.binance.com/market/stream
+2026-04-23 16:49:32,830 | INFO    | bot.ws_manager | _run_stream:1396 | ws connected | endpoint=market url=wss://fstream.binance.com/market/stream streams=139 connect_count=2 endpoint_connect_count=1
+2026-04-23 16:49:32,918 | INFO    | bot.ws_manager | _resubscribe_all:754 | ws resubscribe sent | endpoint=public streams=45 chunks=3
+2026-04-23 16:49:35,283 | INFO    | bot.application.bot | _do_refresh_shortlist:2206 | refreshing shortlist...
+2026-04-23 16:49:35,637 | INFO    | bot.application.bot | _fetch_frames:1454 | ETHUSDT: frames merged | 15m=299/210 1h=299/210 optional_5m=299/96 optional_4h=239/210
+2026-04-23 16:49:35,638 | INFO    | bot.application.bot | _run_modern_analysis:251 | ETHUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:49:39,900 | INFO    | bot.features | prepare_symbol:1085 | ETHUSDT: prepared symbol successfully | work_15m=100 work_1h=100 work_5m=100 optional_4h=40
+2026-04-23 16:49:41,032 | INFO    | bot.core.engine.engine | calculate_all:54 | ETHUSDT: calculate_all called | strategies=15
+2026-04-23 16:49:42,001 | INFO    | bot.application.bot | _do_refresh_shortlist:2247 | shortlist refresh complete | source=live size=45 eligible=140 dynamic_pool=120 pinned=4
+2026-04-23 16:49:45,370 | INFO    | bot.ws_manager | _resubscribe_all:754 | ws resubscribe sent | endpoint=market streams=139 chunks=7
+2026-04-23 16:49:45,370 | INFO    | bot.ws_manager | _run_stream:1409 | high stream count | endpoint=market streams=139 shortlist=45
+2026-04-23 16:49:45,626 | INFO    | bot.core.engine.engine | calculate_all:95 | ETHUSDT: calculate_all complete | results=15 signals=1 errors=0
+2026-04-23 16:49:45,627 | INFO    | bot.application.bot | _run_modern_analysis:553 | ETHUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=1 perf_rejected=0 candidates=0
+2026-04-23 16:49:45,779 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=ETHUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:49:48,480 | INFO    | bot.application.bot | _fetch_frames:1454 | XRPUSDT: frames merged | 15m=299/210 1h=299/210 optional_5m=299/96 optional_4h=239/210
+2026-04-23 16:49:48,481 | INFO    | bot.application.bot | _run_modern_analysis:251 | XRPUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:49:49,645 | INFO    | bot.features | prepare_symbol:1085 | XRPUSDT: prepared symbol successfully | work_15m=100 work_1h=100 work_5m=100 optional_4h=40
+2026-04-23 16:49:49,749 | INFO    | bot.core.engine.engine | calculate_all:54 | XRPUSDT: calculate_all called | strategies=15
+2026-04-23 16:49:50,175 | INFO    | bot.application.bot | _fetch_frames:1454 | SOLUSDT: frames merged | 15m=299/210 1h=299/210 optional_5m=299/96 optional_4h=239/210
+2026-04-23 16:49:50,175 | INFO    | bot.application.bot | _run_modern_analysis:251 | SOLUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:49:51,340 | INFO    | bot.features | prepare_symbol:1085 | SOLUSDT: prepared symbol successfully | work_15m=100 work_1h=100 work_5m=100 optional_4h=40
+2026-04-23 16:49:51,391 | INFO    | bot.core.engine.engine | calculate_all:54 | SOLUSDT: calculate_all called | strategies=15
+2026-04-23 16:49:55,362 | INFO    | bot.core.engine.engine | calculate_all:95 | XRPUSDT: calculate_all complete | results=15 signals=1 errors=0
+2026-04-23 16:49:56,775 | INFO    | bot.core.engine.engine | calculate_all:95 | SOLUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:49:56,780 | INFO    | bot.application.bot | _run_modern_analysis:553 | SOLUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:49:56,931 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=SOLUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:49:58,294 | INFO    | bot.application.bot | _run_modern_analysis:553 | XRPUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=1 perf_rejected=0 candidates=0
+2026-04-23 16:49:58,366 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=XRPUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:49:58,375 | INFO    | bot.application.bot | _update_memory_market_context:2091 | market regime updated | regime=ranging strength=0.30 btc=neutral eth=neutral
+2026-04-23 16:50:28,940 | INFO    | bot.application.bot | _fetch_frames:1454 | BTCUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:50:28,940 | INFO    | bot.application.bot | _run_modern_analysis:251 | BTCUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:50:29,241 | INFO    | bot.features | prepare_symbol:1085 | BTCUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:50:29,257 | INFO    | bot.core.engine.engine | calculate_all:54 | BTCUSDT: calculate_all called | strategies=15
+2026-04-23 16:50:30,641 | INFO    | bot.core.engine.engine | calculate_all:95 | BTCUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:50:30,646 | INFO    | bot.application.bot | _run_modern_analysis:553 | BTCUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:50:30,721 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=BTCUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:50:31,116 | INFO    | bot.application.bot | _fetch_frames:1454 | RAVEUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:50:31,119 | INFO    | bot.application.bot | _run_modern_analysis:251 | RAVEUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:50:31,621 | INFO    | bot.features | prepare_symbol:1085 | RAVEUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:50:31,656 | INFO    | bot.core.engine.engine | calculate_all:54 | RAVEUSDT: calculate_all called | strategies=15
+2026-04-23 16:50:32,982 | INFO    | bot.application.bot | _fetch_frames:1454 | ENJUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:50:32,985 | INFO    | bot.application.bot | _run_modern_analysis:251 | ENJUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:50:33,851 | INFO    | bot.features | prepare_symbol:1085 | ENJUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:50:33,936 | INFO    | bot.core.engine.engine | calculate_all:54 | ENJUSDT: calculate_all called | strategies=15
+2026-04-23 16:50:34,172 | INFO    | bot.core.engine.engine | calculate_all:95 | RAVEUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:50:34,173 | INFO    | bot.application.bot | _run_modern_analysis:553 | RAVEUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:50:34,253 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=RAVEUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:50:34,864 | INFO    | bot.application.bot | _fetch_frames:1454 | SOLUSDT: frames merged | 15m=299/210 1h=299/210 optional_5m=299/96 optional_4h=239/210
+2026-04-23 16:50:34,865 | INFO    | bot.application.bot | _run_modern_analysis:251 | SOLUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:50:34,866 | INFO    | bot.features | prepare_symbol:1085 | SOLUSDT: prepared symbol successfully | work_15m=100 work_1h=100 work_5m=100 optional_4h=40
+2026-04-23 16:50:34,886 | INFO    | bot.core.engine.engine | calculate_all:54 | SOLUSDT: calculate_all called | strategies=15
+2026-04-23 16:50:34,905 | INFO    | bot.application.bot | _fetch_frames:1454 | BTCUSDT: frames merged | 15m=299/210 1h=299/210 optional_5m=299/96 optional_4h=239/210
+2026-04-23 16:50:34,906 | INFO    | bot.application.bot | _run_modern_analysis:251 | BTCUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:50:35,031 | INFO    | bot.features | prepare_symbol:1085 | BTCUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=100 optional_4h=40
+2026-04-23 16:50:35,123 | INFO    | bot.core.engine.engine | calculate_all:54 | BTCUSDT: calculate_all called | strategies=15
+2026-04-23 16:50:35,161 | INFO    | bot.application.bot | _fetch_frames:1454 | ETHUSDT: frames merged | 15m=299/210 1h=299/210 optional_5m=299/96 optional_4h=239/210
+2026-04-23 16:50:35,162 | INFO    | bot.application.bot | _run_modern_analysis:251 | ETHUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:50:35,162 | INFO    | bot.features | prepare_symbol:1085 | ETHUSDT: prepared symbol successfully | work_15m=100 work_1h=100 work_5m=100 optional_4h=40
+2026-04-23 16:50:35,212 | INFO    | bot.core.engine.engine | calculate_all:54 | ETHUSDT: calculate_all called | strategies=15
+2026-04-23 16:50:35,231 | INFO    | bot.application.bot | _fetch_frames:1454 | BIOUSDT: frames merged | 15m=299/210 1h=299/210 optional_5m=299/96 optional_4h=239/210
+2026-04-23 16:50:35,232 | INFO    | bot.application.bot | _run_modern_analysis:251 | BIOUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:50:35,616 | INFO    | bot.features | prepare_symbol:1085 | BIOUSDT: prepared symbol successfully | work_15m=100 work_1h=100 work_5m=100 optional_4h=40
+2026-04-23 16:50:35,652 | INFO    | bot.core.engine.engine | calculate_all:54 | BIOUSDT: calculate_all called | strategies=15
+2026-04-23 16:50:35,655 | INFO    | bot.application.bot | _fetch_frames:1454 | RAVEUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:50:35,655 | INFO    | bot.application.bot | _run_modern_analysis:251 | RAVEUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:50:35,656 | INFO    | bot.features | prepare_symbol:1085 | RAVEUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:50:35,716 | INFO    | bot.core.engine.engine | calculate_all:54 | RAVEUSDT: calculate_all called | strategies=15
+2026-04-23 16:50:35,721 | INFO    | bot.application.bot | _fetch_frames:1454 | ENJUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:50:35,721 | INFO    | bot.application.bot | _run_modern_analysis:251 | ENJUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:50:35,722 | INFO    | bot.features | prepare_symbol:1085 | ENJUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:50:35,799 | INFO    | bot.core.engine.engine | calculate_all:54 | ENJUSDT: calculate_all called | strategies=15
+2026-04-23 16:50:35,856 | INFO    | bot.application.bot | _fetch_frames:1454 | XRPUSDT: frames merged | 15m=299/210 1h=299/210 optional_5m=299/96 optional_4h=239/210
+2026-04-23 16:50:35,856 | INFO    | bot.application.bot | _run_modern_analysis:251 | XRPUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:50:35,857 | INFO    | bot.features | prepare_symbol:1085 | XRPUSDT: prepared symbol successfully | work_15m=100 work_1h=100 work_5m=100 optional_4h=40
+2026-04-23 16:50:35,984 | INFO    | bot.core.engine.engine | calculate_all:54 | XRPUSDT: calculate_all called | strategies=15
+2026-04-23 16:50:36,104 | INFO    | bot.application.bot | _fetch_frames:1454 | DOTUSDT: frames merged | 15m=299/210 1h=299/210 optional_5m=299/96 optional_4h=239/210
+2026-04-23 16:50:37,068 | INFO    | bot.application.bot | _fetch_frames:1454 | VELVETUSDT: frames merged | 15m=299/210 1h=299/210 optional_5m=299/96 optional_4h=239/210
+2026-04-23 16:50:37,119 | INFO    | bot.application.bot | _fetch_frames:1454 | GIGGLEUSDT: frames merged | 15m=299/210 1h=299/210 optional_5m=299/96 optional_4h=239/210
+2026-04-23 16:50:37,134 | INFO    | bot.core.engine.engine | calculate_all:95 | ENJUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:50:37,141 | INFO    | bot.application.bot | _run_modern_analysis:553 | ENJUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:50:37,336 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=ENJUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:50:37,781 | INFO    | bot.application.bot | _fetch_frames:1454 | BIOUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:50:37,812 | INFO    | bot.application.bot | _fetch_frames:1454 | DOTUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:50:38,161 | INFO    | bot.application.bot | _run_modern_analysis:251 | DOTUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:50:38,700 | INFO    | bot.features | prepare_symbol:1085 | DOTUSDT: prepared symbol successfully | work_15m=100 work_1h=100 work_5m=100 optional_4h=40
+2026-04-23 16:50:38,734 | INFO    | bot.core.engine.engine | calculate_all:54 | DOTUSDT: calculate_all called | strategies=15
+2026-04-23 16:50:43,598 | INFO    | bot.core.engine.engine | calculate_all:95 | BTCUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:50:43,599 | INFO    | bot.application.bot | _run_modern_analysis:553 | BTCUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:50:43,674 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=BTCUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:50:43,679 | INFO    | bot.core.engine.engine | calculate_all:95 | SOLUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:50:43,679 | INFO    | bot.application.bot | _run_modern_analysis:553 | SOLUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:50:43,762 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=SOLUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:50:44,298 | INFO    | bot.application.bot | _run_modern_analysis:251 | VELVETUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:50:44,848 | INFO    | bot.features | prepare_symbol:1085 | VELVETUSDT: prepared symbol successfully | work_15m=100 work_1h=100 work_5m=100 optional_4h=40
+2026-04-23 16:50:44,900 | INFO    | bot.core.engine.engine | calculate_all:54 | VELVETUSDT: calculate_all called | strategies=15
+2026-04-23 16:50:44,904 | INFO    | bot.application.bot | _run_modern_analysis:251 | GIGGLEUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:50:45,218 | INFO    | bot.features | prepare_symbol:1085 | GIGGLEUSDT: prepared symbol successfully | work_15m=100 work_1h=100 work_5m=100 optional_4h=40
+2026-04-23 16:50:45,260 | INFO    | bot.core.engine.engine | calculate_all:54 | GIGGLEUSDT: calculate_all called | strategies=15
+2026-04-23 16:50:46,418 | INFO    | bot.application.bot | _fetch_frames:1454 | VIRTUALUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:50:46,601 | INFO    | bot.application.bot | _fetch_frames:1454 | OPUSDT: frames merged | 15m=299/210 1h=299/210 optional_5m=299/96 optional_4h=239/210
+2026-04-23 16:50:46,725 | INFO    | bot.application.bot | _fetch_frames:1454 | VIRTUALUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:50:47,969 | INFO    | bot.application.bot | _fetch_frames:1454 | POLUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:50:48,108 | INFO    | bot.core.engine.engine | calculate_all:95 | ETHUSDT: calculate_all complete | results=15 signals=1 errors=0
+2026-04-23 16:50:48,109 | INFO    | bot.application.bot | _run_modern_analysis:553 | ETHUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=1 perf_rejected=0 candidates=0
+2026-04-23 16:50:48,183 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=ETHUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:50:48,291 | INFO    | bot.application.bot | _fetch_frames:1454 | POLUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:50:48,666 | INFO    | bot.application.bot | _run_modern_analysis:251 | BIOUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:50:48,748 | INFO    | bot.features | prepare_symbol:1085 | BIOUSDT: prepared symbol successfully | work_15m=100 work_1h=100 work_5m=40 optional_4h=40
+2026-04-23 16:50:48,768 | INFO    | bot.core.engine.engine | calculate_all:54 | BIOUSDT: calculate_all called | strategies=15
+2026-04-23 16:50:49,692 | INFO    | bot.core.engine.engine | calculate_all:95 | BIOUSDT: calculate_all complete | results=15 signals=5 errors=0
+2026-04-23 16:50:50,200 | INFO    | bot.core.engine.engine | calculate_all:95 | RAVEUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:50:50,202 | INFO    | bot.application.bot | _run_modern_analysis:553 | RAVEUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:50:50,305 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=RAVEUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:50:50,662 | INFO    | bot.application.bot | _run_modern_analysis:251 | DOTUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:50:50,744 | INFO    | bot.features | prepare_symbol:1085 | DOTUSDT: prepared symbol successfully | work_15m=100 work_1h=100 work_5m=40 optional_4h=40
+2026-04-23 16:50:50,778 | INFO    | bot.core.engine.engine | calculate_all:54 | DOTUSDT: calculate_all called | strategies=15
+2026-04-23 16:50:51,560 | INFO    | bot.core.engine.engine | calculate_all:95 | ENJUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:50:51,562 | INFO    | bot.application.bot | _run_modern_analysis:553 | ENJUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:50:51,661 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=ENJUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:50:52,299 | INFO    | bot.application.bot | _run_modern_analysis:251 | VIRTUALUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:50:53,037 | INFO    | bot.features | prepare_symbol:1085 | VIRTUALUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:50:53,110 | INFO    | bot.core.engine.engine | calculate_all:54 | VIRTUALUSDT: calculate_all called | strategies=15
+2026-04-23 16:50:55,206 | INFO    | bot.application.bot | _fetch_frames:1454 | STRKUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:50:55,445 | INFO    | bot.application.bot | _run_modern_analysis:553 | BIOUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=5 perf_rejected=0 candidates=0
+2026-04-23 16:50:55,582 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=BIOUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:50:55,712 | INFO    | bot.application.bot | _fetch_frames:1454 | STRKUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:50:56,579 | INFO    | bot.application.bot | _run_modern_analysis:251 | OPUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:50:58,577 | INFO    | bot.features | prepare_symbol:1085 | OPUSDT: prepared symbol successfully | work_15m=100 work_1h=100 work_5m=100 optional_4h=40
+2026-04-23 16:50:58,764 | INFO    | bot.core.engine.engine | calculate_all:54 | OPUSDT: calculate_all called | strategies=15
+2026-04-23 16:50:59,872 | INFO    | bot.core.engine.engine | calculate_all:95 | XRPUSDT: calculate_all complete | results=15 signals=1 errors=0
+2026-04-23 16:51:00,513 | INFO    | bot.application.bot | _fetch_frames:1454 | SIRENUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:00,977 | INFO    | bot.application.bot | _fetch_frames:1454 | SIRENUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:01,610 | INFO    | bot.application.bot | _fetch_frames:1454 | WIFUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:01,766 | INFO    | bot.application.bot | _fetch_frames:1454 | WIFUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:01,789 | INFO    | bot.application.bot | _fetch_frames:1454 | VELVETUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:01,806 | INFO    | bot.application.bot | _fetch_frames:1454 | HYPEUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:01,813 | INFO    | bot.core.engine.engine | calculate_all:95 | DOTUSDT: calculate_all complete | results=15 signals=1 errors=0
+2026-04-23 16:51:01,814 | INFO    | bot.application.bot | _run_modern_analysis:553 | DOTUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=1 perf_rejected=0 candidates=0
+2026-04-23 16:51:01,957 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=DOTUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:01,992 | INFO    | bot.application.bot | _fetch_frames:1454 | HYPEUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:01,997 | INFO    | bot.application.bot | _run_modern_analysis:251 | VIRTUALUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:01,999 | INFO    | bot.features | prepare_symbol:1085 | VIRTUALUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:02,047 | INFO    | bot.core.engine.engine | calculate_all:54 | VIRTUALUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:02,097 | INFO    | bot.application.bot | _run_modern_analysis:553 | XRPUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=1 perf_rejected=0 candidates=0
+2026-04-23 16:51:02,209 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=XRPUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:02,226 | INFO    | bot.application.bot | _run_modern_analysis:251 | POLUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:03,037 | INFO    | bot.features | prepare_symbol:1085 | POLUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:03,105 | INFO    | bot.core.engine.engine | calculate_all:54 | POLUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:03,140 | INFO    | bot.application.bot | _fetch_frames:1454 | BOMEUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:03,155 | INFO    | bot.application.bot | _fetch_frames:1454 | BOMEUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:03,175 | INFO    | bot.core.engine.engine | calculate_all:95 | VELVETUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:03,179 | INFO    | bot.application.bot | _run_modern_analysis:553 | VELVETUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:03,305 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=VELVETUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:03,355 | INFO    | bot.application.bot | _fetch_frames:1454 | OPNUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:03,378 | INFO    | bot.application.bot | _fetch_frames:1454 | SOONUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:03,382 | INFO    | bot.application.bot | _run_modern_analysis:251 | POLUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:03,386 | INFO    | bot.features | prepare_symbol:1085 | POLUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:03,457 | INFO    | bot.core.engine.engine | calculate_all:54 | POLUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:03,461 | INFO    | bot.application.bot | _fetch_frames:1454 | OPNUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:03,463 | INFO    | bot.application.bot | _fetch_frames:1454 | SOONUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:03,527 | INFO    | bot.core.engine.engine | calculate_all:95 | GIGGLEUSDT: calculate_all complete | results=15 signals=2 errors=0
+2026-04-23 16:51:03,532 | INFO    | bot.application.bot | _run_modern_analysis:553 | GIGGLEUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=2 perf_rejected=0 candidates=0
+2026-04-23 16:51:03,746 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=GIGGLEUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:03,759 | INFO    | bot.application.bot | _run_modern_analysis:251 | STRKUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:04,287 | INFO    | bot.features | prepare_symbol:1085 | STRKUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:04,338 | INFO    | bot.core.engine.engine | calculate_all:54 | STRKUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:04,363 | INFO    | bot.application.bot | _fetch_frames:1454 | TRIAUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:04,374 | INFO    | bot.ws_manager | _run_stream:1514 | ws disconnected | endpoint=market url=wss://fstream.binance.com/market/stream error=sent 1011 (internal error) keepalive ping timeout; no close frame received code=none reason= uptime=94.9s retry_in=1.1s streak=0
+2026-04-23 16:51:04,381 | INFO    | bot.application.bot | _fetch_frames:1454 | TRIAUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:04,413 | INFO    | bot.application.bot | _fetch_frames:1454 | XAUTUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=168/210
+2026-04-23 16:51:04,428 | INFO    | bot.application.bot | _fetch_frames:1454 | ONUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:04,437 | INFO    | bot.application.bot | _fetch_frames:1454 | XAUTUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=168/210
+2026-04-23 16:51:04,438 | INFO    | bot.application.bot | _fetch_frames:1454 | ONUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:04,439 | INFO    | bot.core.engine.engine | calculate_all:95 | BIOUSDT: calculate_all complete | results=15 signals=5 errors=0
+2026-04-23 16:51:04,462 | INFO    | bot.core.engine.engine | calculate_all:95 | VIRTUALUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:04,463 | INFO    | bot.application.bot | _run_modern_analysis:553 | VIRTUALUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:04,528 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=VIRTUALUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:04,539 | INFO    | bot.application.bot | _run_modern_analysis:251 | STRKUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:04,541 | INFO    | bot.features | prepare_symbol:1085 | STRKUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:04,573 | INFO    | bot.core.engine.engine | calculate_all:54 | STRKUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:04,575 | INFO    | bot.application.bot | _update_memory_market_context:2091 | market regime updated | regime=ranging strength=0.32 btc=neutral eth=neutral
+2026-04-23 16:51:04,608 | INFO    | bot.core.engine.engine | calculate_all:95 | DOTUSDT: calculate_all complete | results=15 signals=1 errors=0
+2026-04-23 16:51:04,609 | INFO    | bot.application.bot | _run_modern_analysis:553 | DOTUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=1 perf_rejected=0 candidates=0
+2026-04-23 16:51:04,695 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=DOTUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:04,696 | INFO    | bot.application.bot | _run_modern_analysis:251 | SIRENUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:05,492 | INFO    | bot.features | prepare_symbol:1085 | SIRENUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:05,539 | INFO    | bot.core.engine.engine | calculate_all:54 | SIRENUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:05,563 | INFO    | bot.core.engine.engine | calculate_all:95 | OPUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:05,564 | INFO    | bot.application.bot | _run_modern_analysis:553 | OPUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:05,664 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=OPUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:05,676 | INFO    | bot.core.engine.engine | calculate_all:95 | VIRTUALUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:05,677 | INFO    | bot.application.bot | _run_modern_analysis:553 | VIRTUALUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:05,770 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=VIRTUALUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:05,774 | INFO    | bot.application.bot | _run_modern_analysis:251 | SIRENUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:05,775 | INFO    | bot.features | prepare_symbol:1085 | SIRENUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:05,809 | INFO    | bot.core.engine.engine | calculate_all:54 | SIRENUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:05,835 | INFO    | bot.application.bot | _fetch_frames:1454 | PAXGUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:05,880 | INFO    | bot.application.bot | _fetch_frames:1454 | PIEVERSEUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:05,981 | INFO    | bot.application.bot | _fetch_frames:1454 | 1000000MOGUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:06,379 | INFO    | bot.application.bot | _fetch_frames:1454 | BARDUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:06,380 | INFO    | bot.ws_manager | _maybe_backfill_after_disconnect:914 | reconnect backfill | stale_symbols=35
+2026-04-23 16:51:06,440 | INFO    | bot.application.bot | _run_modern_analysis:251 | WIFUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:07,629 | INFO    | bot.features | prepare_symbol:1085 | WIFUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:07,655 | INFO    | bot.core.engine.engine | calculate_all:54 | WIFUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:07,658 | INFO    | bot.core.engine.engine | calculate_all:95 | POLUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:07,658 | INFO    | bot.application.bot | _run_modern_analysis:553 | POLUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:07,722 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=POLUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:07,726 | INFO    | bot.application.bot | _fetch_frames:1454 | PAXGUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:07,729 | INFO    | bot.application.bot | _fetch_frames:1454 | PIEVERSEUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:07,731 | INFO    | bot.application.bot | _fetch_frames:1454 | 1000000MOGUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:07,737 | INFO    | bot.application.bot | _fetch_frames:1454 | BARDUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:07,745 | INFO    | bot.application.bot | _run_modern_analysis:251 | WIFUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:07,746 | INFO    | bot.features | prepare_symbol:1085 | WIFUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:07,779 | INFO    | bot.core.engine.engine | calculate_all:54 | WIFUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:07,787 | INFO    | bot.core.engine.engine | calculate_all:95 | POLUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:07,787 | INFO    | bot.application.bot | _run_modern_analysis:553 | POLUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:07,907 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=POLUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:07,909 | INFO    | bot.application.bot | _run_modern_analysis:251 | VELVETUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:07,910 | INFO    | bot.features | prepare_symbol:1085 | VELVETUSDT: prepared symbol successfully | work_15m=100 work_1h=100 work_5m=100 optional_4h=40
+2026-04-23 16:51:07,970 | INFO    | bot.core.engine.engine | calculate_all:54 | VELVETUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:07,974 | INFO    | bot.core.engine.engine | calculate_all:95 | STRKUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:07,975 | INFO    | bot.application.bot | _run_modern_analysis:553 | STRKUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:08,062 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=STRKUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:08,078 | INFO    | bot.application.bot | _run_modern_analysis:251 | HYPEUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:08,624 | INFO    | bot.features | prepare_symbol:1085 | HYPEUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:08,661 | INFO    | bot.core.engine.engine | calculate_all:54 | HYPEUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:08,703 | INFO    | bot.core.engine.engine | calculate_all:95 | STRKUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:08,708 | INFO    | bot.application.bot | _run_modern_analysis:553 | STRKUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:08,795 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=STRKUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:08,806 | INFO    | bot.application.bot | _run_modern_analysis:553 | BIOUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=4 perf_rejected=0 candidates=0
+2026-04-23 16:51:08,909 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=BIOUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:08,930 | INFO    | bot.application.bot | _fetch_frames:1454 | AEROUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:08,947 | INFO    | bot.application.bot | _fetch_frames:1454 | STOUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:08,994 | INFO    | bot.application.bot | _fetch_frames:1454 | GIGGLEUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:09,060 | INFO    | bot.application.bot | _run_modern_analysis:251 | HYPEUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:09,063 | INFO    | bot.features | prepare_symbol:1085 | HYPEUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:09,140 | INFO    | bot.core.engine.engine | calculate_all:54 | HYPEUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:09,144 | INFO    | bot.core.engine.engine | calculate_all:95 | SIRENUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:09,144 | INFO    | bot.application.bot | _run_modern_analysis:553 | SIRENUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:09,237 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=SIRENUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:09,237 | INFO    | bot.application.bot | _run_modern_analysis:251 | BOMEUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:09,777 | INFO    | bot.features | prepare_symbol:1085 | BOMEUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:09,825 | INFO    | bot.core.engine.engine | calculate_all:54 | BOMEUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:09,828 | INFO    | bot.application.bot | _fetch_frames:1454 | AEROUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:09,830 | INFO    | bot.application.bot | _fetch_frames:1454 | STOUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:09,913 | INFO    | bot.application.bot | _fetch_frames:1454 | XMRUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:09,978 | INFO    | bot.application.bot | _run_modern_analysis:251 | BOMEUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:09,980 | INFO    | bot.features | prepare_symbol:1085 | BOMEUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:10,071 | INFO    | bot.core.engine.engine | calculate_all:54 | BOMEUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:10,076 | INFO    | bot.application.bot | _fetch_frames:1454 | XMRUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:10,088 | INFO    | bot.core.engine.engine | calculate_all:95 | SIRENUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:10,088 | INFO    | bot.application.bot | _run_modern_analysis:553 | SIRENUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:10,163 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=SIRENUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:10,170 | INFO    | bot.application.bot | _run_modern_analysis:251 | OPNUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:10,937 | INFO    | bot.features | prepare_symbol:1085 | OPNUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:10,988 | INFO    | bot.core.engine.engine | calculate_all:54 | OPNUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:11,003 | INFO    | bot.core.engine.engine | calculate_all:95 | WIFUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:11,006 | INFO    | bot.application.bot | _run_modern_analysis:553 | WIFUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:11,080 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=WIFUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:11,088 | INFO    | bot.application.bot | _run_modern_analysis:251 | SOONUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:11,665 | INFO    | bot.features | prepare_symbol:1085 | SOONUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:11,717 | INFO    | bot.core.engine.engine | calculate_all:54 | SOONUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:11,736 | INFO    | bot.core.engine.engine | calculate_all:95 | WIFUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:11,737 | INFO    | bot.application.bot | _run_modern_analysis:553 | WIFUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:11,811 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=WIFUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:11,863 | INFO    | bot.application.bot | _fetch_frames:1454 | UNIUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:11,972 | INFO    | bot.application.bot | _fetch_frames:1454 | TRUMPUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:11,988 | INFO    | bot.application.bot | _run_modern_analysis:251 | OPNUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:11,989 | INFO    | bot.features | prepare_symbol:1085 | OPNUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:12,057 | INFO    | bot.core.engine.engine | calculate_all:54 | OPNUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:12,073 | INFO    | bot.application.bot | _fetch_frames:1454 | UNIUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:12,078 | INFO    | bot.application.bot | _fetch_frames:1454 | OPUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:12,079 | INFO    | bot.application.bot | _fetch_frames:1454 | TRUMPUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:12,093 | INFO    | bot.core.engine.engine | calculate_all:95 | VELVETUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:12,093 | INFO    | bot.application.bot | _run_modern_analysis:553 | VELVETUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:12,190 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=VELVETUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:12,192 | INFO    | bot.core.engine.engine | calculate_all:95 | HYPEUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:12,193 | INFO    | bot.application.bot | _run_modern_analysis:553 | HYPEUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:12,258 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=HYPEUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:12,259 | INFO    | bot.application.bot | _run_modern_analysis:251 | SOONUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:12,263 | INFO    | bot.features | prepare_symbol:1085 | SOONUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:12,294 | INFO    | bot.core.engine.engine | calculate_all:54 | SOONUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:12,299 | INFO    | bot.ws_manager | _run_stream:1514 | ws disconnected | endpoint=public url=wss://fstream.binance.com/public/stream error=sent 1011 (internal error) keepalive ping timeout; no close frame received code=none reason= uptime=102.9s retry_in=1.0s streak=0
+2026-04-23 16:51:12,304 | INFO    | bot.application.bot | _run_modern_analysis:251 | TRIAUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:13,141 | INFO    | bot.features | prepare_symbol:1085 | TRIAUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:13,206 | INFO    | bot.core.engine.engine | calculate_all:54 | TRIAUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:13,211 | INFO    | bot.core.engine.engine | calculate_all:95 | HYPEUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:13,211 | INFO    | bot.application.bot | _run_modern_analysis:553 | HYPEUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:13,388 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=HYPEUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:13,396 | INFO    | bot.application.bot | _run_modern_analysis:251 | TRIAUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:13,401 | INFO    | bot.features | prepare_symbol:1085 | TRIAUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:13,520 | INFO    | bot.core.engine.engine | calculate_all:54 | TRIAUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:13,528 | INFO    | bot.core.engine.engine | calculate_all:95 | BOMEUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:13,535 | INFO    | bot.application.bot | _run_modern_analysis:553 | BOMEUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:13,656 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=BOMEUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:13,688 | INFO    | bot.application.bot | _fetch_frames:1454 | ROBOUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:13,720 | INFO    | bot.application.bot | _fetch_frames:1454 | LYNUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:13,768 | INFO    | bot.application.bot | _fetch_frames:1454 | GUNUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:13,768 | INFO    | bot.ws_manager | _run_stream:1364 | ws connecting | endpoint=public url=wss://fstream.binance.com/public/stream streams=45
+2026-04-23 16:51:13,772 | INFO    | bot.application.bot | _run_modern_analysis:251 | XAUTUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:14,424 | INFO    | bot.features | prepare_symbol:1085 | XAUTUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=0
+2026-04-23 16:51:14,456 | INFO    | bot.core.engine.engine | calculate_all:54 | XAUTUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:14,460 | INFO    | bot.core.engine.engine | calculate_all:95 | BOMEUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:14,460 | INFO    | bot.application.bot | _run_modern_analysis:553 | BOMEUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:14,595 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=BOMEUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:14,610 | INFO    | bot.application.bot | _fetch_frames:1454 | ROBOUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:14,621 | INFO    | bot.application.bot | _fetch_frames:1454 | LYNUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:14,622 | INFO    | bot.application.bot | _fetch_frames:1454 | GUNUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:14,626 | INFO    | bot.application.bot | _run_modern_analysis:251 | ONUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:15,698 | INFO    | bot.features | prepare_symbol:1085 | ONUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:15,926 | INFO    | bot.core.engine.engine | calculate_all:54 | ONUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:15,941 | INFO    | bot.core.engine.engine | calculate_all:95 | OPNUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:15,942 | INFO    | bot.application.bot | _run_modern_analysis:553 | OPNUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:16,090 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=OPNUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:16,177 | INFO    | bot.application.bot | _fetch_frames:1454 | XPLUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:16,209 | INFO    | bot.application.bot | _run_modern_analysis:251 | XAUTUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:16,209 | INFO    | bot.features | prepare_symbol:1085 | XAUTUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=0
+2026-04-23 16:51:16,294 | INFO    | bot.core.engine.engine | calculate_all:54 | XAUTUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:16,301 | INFO    | bot.core.engine.engine | calculate_all:95 | SOONUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:16,304 | INFO    | bot.application.bot | _run_modern_analysis:553 | SOONUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:16,435 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=SOONUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:16,440 | INFO    | bot.application.bot | _fetch_frames:1454 | XPLUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:16,459 | INFO    | bot.application.bot | _fetch_frames:1454 | 1000PEPEUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:16,490 | INFO    | bot.application.bot | _fetch_frames:1454 | NEIROUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:16,528 | INFO    | bot.application.bot | _fetch_frames:1454 | ARBUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:16,537 | INFO    | bot.application.bot | _run_modern_analysis:251 | ONUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:16,538 | INFO    | bot.features | prepare_symbol:1085 | ONUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:16,633 | INFO    | bot.core.engine.engine | calculate_all:54 | ONUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:16,637 | INFO    | bot.application.bot | _fetch_frames:1454 | 1000PEPEUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:16,638 | INFO    | bot.application.bot | _fetch_frames:1454 | NEIROUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:16,638 | INFO    | bot.application.bot | _fetch_frames:1454 | ARBUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:16,837 | INFO    | bot.core.engine.engine | calculate_all:95 | OPNUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:16,840 | INFO    | bot.application.bot | _run_modern_analysis:553 | OPNUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:16,918 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=OPNUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:16,924 | INFO    | bot.application.bot | _run_modern_analysis:251 | PAXGUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:17,509 | INFO    | bot.features | prepare_symbol:1085 | PAXGUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:17,585 | INFO    | bot.core.engine.engine | calculate_all:54 | PAXGUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:17,588 | INFO    | bot.core.engine.engine | calculate_all:95 | SOONUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:17,589 | INFO    | bot.application.bot | _run_modern_analysis:553 | SOONUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:17,686 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=SOONUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:17,707 | INFO    | bot.application.bot | _fetch_frames:1454 | HBARUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:17,709 | INFO    | bot.application.bot | _run_modern_analysis:251 | PIEVERSEUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:18,573 | INFO    | bot.features | prepare_symbol:1085 | PIEVERSEUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:18,628 | INFO    | bot.core.engine.engine | calculate_all:54 | PIEVERSEUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:18,635 | INFO    | bot.application.bot | _fetch_frames:1454 | HBARUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:18,677 | INFO    | bot.core.engine.engine | calculate_all:95 | TRIAUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:18,677 | INFO    | bot.application.bot | _run_modern_analysis:553 | TRIAUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:18,789 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=TRIAUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:18,828 | INFO    | bot.application.bot | _fetch_frames:1454 | SKYAIUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:18,874 | INFO    | bot.application.bot | _fetch_frames:1454 | GRASSUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:18,876 | INFO    | bot.application.bot | _run_modern_analysis:251 | 1000000MOGUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:19,432 | INFO    | bot.features | prepare_symbol:1085 | 1000000MOGUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:19,455 | INFO    | bot.core.engine.engine | calculate_all:54 | 1000000MOGUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:19,458 | INFO    | bot.core.engine.engine | calculate_all:95 | TRIAUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:19,458 | INFO    | bot.application.bot | _run_modern_analysis:553 | TRIAUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:19,521 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=TRIAUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:19,535 | INFO    | bot.application.bot | _fetch_frames:1454 | SKYAIUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:19,539 | INFO    | bot.application.bot | _fetch_frames:1454 | GRASSUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:19,542 | INFO    | bot.application.bot | _run_modern_analysis:251 | BARDUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:19,821 | INFO    | bot.features | prepare_symbol:1085 | BARDUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:19,836 | INFO    | bot.core.engine.engine | calculate_all:54 | BARDUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:19,840 | INFO    | bot.core.engine.engine | calculate_all:95 | XAUTUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:19,841 | INFO    | bot.application.bot | _run_modern_analysis:553 | XAUTUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:19,910 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=XAUTUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:19,940 | INFO    | bot.application.bot | _fetch_frames:1454 | NMRUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:19,941 | INFO    | bot.application.bot | _run_modern_analysis:251 | PAXGUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:19,941 | INFO    | bot.features | prepare_symbol:1085 | PAXGUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:19,969 | INFO    | bot.core.engine.engine | calculate_all:54 | PAXGUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:19,970 | INFO    | bot.core.engine.engine | calculate_all:95 | ONUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:19,971 | INFO    | bot.application.bot | _run_modern_analysis:553 | ONUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:20,032 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=ONUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:20,033 | INFO    | bot.ws_manager | _run_stream:1379 | ws connection established | endpoint=public url=wss://fstream.binance.com/public/stream
+2026-04-23 16:51:20,036 | INFO    | bot.ws_manager | _run_stream:1396 | ws connected | endpoint=public url=wss://fstream.binance.com/public/stream streams=45 connect_count=3 endpoint_connect_count=2
+2026-04-23 16:51:20,041 | INFO    | bot.application.bot | _fetch_frames:1454 | NMRUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:20,043 | INFO    | bot.application.bot | _run_modern_analysis:251 | PIEVERSEUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:20,050 | INFO    | bot.features | prepare_symbol:1085 | PIEVERSEUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:20,076 | INFO    | bot.core.engine.engine | calculate_all:54 | PIEVERSEUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:20,082 | INFO    | bot.core.engine.engine | calculate_all:95 | XAUTUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:20,083 | INFO    | bot.application.bot | _run_modern_analysis:553 | XAUTUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:20,174 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=XAUTUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:20,198 | INFO    | bot.application.bot | _fetch_frames:1454 | STABLEUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:20,201 | INFO    | bot.application.bot | _run_modern_analysis:251 | 1000000MOGUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:20,201 | INFO    | bot.features | prepare_symbol:1085 | 1000000MOGUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:20,220 | INFO    | bot.core.engine.engine | calculate_all:54 | 1000000MOGUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:20,223 | INFO    | bot.core.engine.engine | calculate_all:95 | ONUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:20,225 | INFO    | bot.application.bot | _run_modern_analysis:553 | ONUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:20,333 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=ONUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:20,338 | INFO    | bot.application.bot | _fetch_frames:1454 | STABLEUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:20,342 | INFO    | bot.application.bot | _run_modern_analysis:251 | BARDUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:20,343 | INFO    | bot.features | prepare_symbol:1085 | BARDUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:20,374 | INFO    | bot.core.engine.engine | calculate_all:54 | BARDUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:20,404 | INFO    | bot.core.engine.engine | calculate_all:95 | PAXGUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:20,406 | INFO    | bot.application.bot | _run_modern_analysis:553 | PAXGUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:20,517 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=PAXGUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:20,524 | INFO    | bot.application.bot | _run_modern_analysis:251 | AEROUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:20,801 | INFO    | bot.features | prepare_symbol:1085 | AEROUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:20,817 | INFO    | bot.core.engine.engine | calculate_all:54 | AEROUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:20,819 | INFO    | bot.core.engine.engine | calculate_all:95 | PIEVERSEUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:20,820 | INFO    | bot.application.bot | _run_modern_analysis:553 | PIEVERSEUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:20,880 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=PIEVERSEUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:20,984 | INFO    | bot.application.bot | _run_modern_analysis:251 | STOUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:21,383 | INFO    | bot.features | prepare_symbol:1085 | STOUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:21,405 | INFO    | bot.core.engine.engine | calculate_all:54 | STOUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:21,452 | INFO    | bot.core.engine.engine | calculate_all:95 | 1000000MOGUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:21,456 | INFO    | bot.application.bot | _run_modern_analysis:553 | 1000000MOGUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:21,602 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=1000000MOGUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:21,618 | INFO    | bot.application.bot | _fetch_frames:1454 | HOLOUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:21,619 | INFO    | bot.ws_manager | _resubscribe_all:754 | ws resubscribe sent | endpoint=public streams=45 chunks=3
+2026-04-23 16:51:21,631 | INFO    | bot.application.bot | _run_modern_analysis:251 | GIGGLEUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:21,632 | INFO    | bot.features | prepare_symbol:1085 | GIGGLEUSDT: prepared symbol successfully | work_15m=100 work_1h=100 work_5m=100 optional_4h=40
+2026-04-23 16:51:21,708 | INFO    | bot.core.engine.engine | calculate_all:54 | GIGGLEUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:21,720 | INFO    | bot.core.engine.engine | calculate_all:95 | BARDUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:21,721 | INFO    | bot.application.bot | _run_modern_analysis:553 | BARDUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:21,823 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=BARDUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:21,826 | INFO    | bot.application.bot | _fetch_frames:1454 | HOLOUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:21,890 | INFO    | bot.application.bot | _run_modern_analysis:251 | AEROUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:21,891 | INFO    | bot.features | prepare_symbol:1085 | AEROUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:21,916 | INFO    | bot.core.engine.engine | calculate_all:54 | AEROUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:22,071 | INFO    | bot.core.engine.engine | calculate_all:95 | PAXGUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:22,071 | INFO    | bot.application.bot | _run_modern_analysis:553 | PAXGUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:22,130 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=PAXGUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:22,204 | INFO    | bot.application.bot | _run_modern_analysis:251 | STOUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:22,205 | INFO    | bot.features | prepare_symbol:1085 | STOUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:22,223 | INFO    | bot.core.engine.engine | calculate_all:54 | STOUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:22,225 | INFO    | bot.core.engine.engine | calculate_all:95 | PIEVERSEUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:22,225 | INFO    | bot.application.bot | _run_modern_analysis:553 | PIEVERSEUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:22,303 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=PIEVERSEUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:22,548 | INFO    | bot.application.bot | _run_modern_analysis:251 | XMRUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:22,947 | INFO    | bot.features | prepare_symbol:1085 | XMRUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:22,975 | INFO    | bot.core.engine.engine | calculate_all:54 | XMRUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:23,420 | INFO    | bot.core.engine.engine | calculate_all:95 | 1000000MOGUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:23,421 | INFO    | bot.application.bot | _run_modern_analysis:553 | 1000000MOGUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:23,483 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=1000000MOGUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:23,774 | INFO    | bot.application.bot | _run_modern_analysis:251 | XMRUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:23,775 | INFO    | bot.features | prepare_symbol:1085 | XMRUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:23,796 | INFO    | bot.core.engine.engine | calculate_all:54 | XMRUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:23,801 | INFO    | bot.core.engine.engine | calculate_all:95 | BARDUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:23,802 | INFO    | bot.application.bot | _run_modern_analysis:553 | BARDUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:23,868 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=BARDUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:24,170 | INFO    | bot.application.bot | _run_modern_analysis:251 | UNIUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:24,458 | INFO    | bot.features | prepare_symbol:1085 | UNIUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:24,480 | INFO    | bot.core.engine.engine | calculate_all:54 | UNIUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:24,740 | INFO    | bot.core.engine.engine | calculate_all:95 | AEROUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:24,742 | INFO    | bot.application.bot | _run_modern_analysis:553 | AEROUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:24,800 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=AEROUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:25,019 | INFO    | bot.application.bot | _run_modern_analysis:251 | TRUMPUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:25,276 | INFO    | bot.features | prepare_symbol:1085 | TRUMPUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:25,291 | INFO    | bot.core.engine.engine | calculate_all:54 | TRUMPUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:25,293 | INFO    | bot.core.engine.engine | calculate_all:95 | STOUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:25,295 | INFO    | bot.application.bot | _run_modern_analysis:553 | STOUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:25,341 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=STOUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:25,452 | INFO    | bot.application.bot | _run_modern_analysis:251 | UNIUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:25,453 | INFO    | bot.features | prepare_symbol:1085 | UNIUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:25,474 | INFO    | bot.core.engine.engine | calculate_all:54 | UNIUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:25,856 | INFO    | bot.core.engine.engine | calculate_all:95 | AEROUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:25,856 | INFO    | bot.application.bot | _run_modern_analysis:553 | AEROUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:25,910 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=AEROUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:25,919 | INFO    | bot.core.engine.engine | calculate_all:95 | GIGGLEUSDT: calculate_all complete | results=15 signals=2 errors=0
+2026-04-23 16:51:25,922 | INFO    | bot.application.bot | _run_modern_analysis:553 | GIGGLEUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=2 perf_rejected=0 candidates=0
+2026-04-23 16:51:25,970 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=GIGGLEUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:26,000 | INFO    | bot.application.bot | _run_modern_analysis:251 | OPUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:26,001 | INFO    | bot.features | prepare_symbol:1085 | OPUSDT: prepared symbol successfully | work_15m=100 work_1h=100 work_5m=100 optional_4h=40
+2026-04-23 16:51:26,020 | INFO    | bot.core.engine.engine | calculate_all:54 | OPUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:26,022 | INFO    | bot.core.engine.engine | calculate_all:95 | STOUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:26,023 | INFO    | bot.application.bot | _run_modern_analysis:553 | STOUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:26,068 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=STOUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:26,068 | INFO    | bot.application.bot | _run_modern_analysis:251 | TRUMPUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:26,069 | INFO    | bot.features | prepare_symbol:1085 | TRUMPUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:26,087 | INFO    | bot.core.engine.engine | calculate_all:54 | TRUMPUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:26,107 | INFO    | bot.application.bot | _run_modern_analysis:251 | ROBOUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:26,369 | INFO    | bot.features | prepare_symbol:1085 | ROBOUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:26,383 | INFO    | bot.core.engine.engine | calculate_all:54 | ROBOUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:26,398 | INFO    | bot.core.engine.engine | calculate_all:95 | XMRUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:26,399 | INFO    | bot.application.bot | _run_modern_analysis:553 | XMRUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:26,472 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=XMRUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:26,520 | INFO    | bot.application.bot | _run_modern_analysis:251 | LYNUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:26,847 | INFO    | bot.features | prepare_symbol:1085 | LYNUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:26,870 | INFO    | bot.core.engine.engine | calculate_all:54 | LYNUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:26,872 | INFO    | bot.core.engine.engine | calculate_all:95 | XMRUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:26,872 | INFO    | bot.application.bot | _run_modern_analysis:553 | XMRUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:26,958 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=XMRUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:27,012 | INFO    | bot.application.bot | _run_modern_analysis:251 | GUNUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:27,257 | INFO    | bot.features | prepare_symbol:1085 | GUNUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:27,275 | INFO    | bot.core.engine.engine | calculate_all:54 | GUNUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:27,373 | INFO    | bot.core.engine.engine | calculate_all:95 | UNIUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:27,373 | INFO    | bot.application.bot | _run_modern_analysis:553 | UNIUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:27,438 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=UNIUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:27,556 | INFO    | bot.application.bot | _run_modern_analysis:251 | ROBOUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:27,557 | INFO    | bot.features | prepare_symbol:1085 | ROBOUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:27,575 | INFO    | bot.core.engine.engine | calculate_all:54 | ROBOUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:27,580 | INFO    | bot.core.engine.engine | calculate_all:95 | TRUMPUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:27,582 | INFO    | bot.application.bot | _run_modern_analysis:553 | TRUMPUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:27,634 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=TRUMPUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:27,700 | INFO    | bot.application.bot | _run_modern_analysis:251 | LYNUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:27,703 | INFO    | bot.features | prepare_symbol:1085 | LYNUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:27,724 | INFO    | bot.core.engine.engine | calculate_all:54 | LYNUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:27,754 | INFO    | bot.core.engine.engine | calculate_all:95 | UNIUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:27,755 | INFO    | bot.application.bot | _run_modern_analysis:553 | UNIUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:27,813 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=UNIUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:27,874 | INFO    | bot.application.bot | _run_modern_analysis:251 | GUNUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:27,874 | INFO    | bot.features | prepare_symbol:1085 | GUNUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:27,895 | INFO    | bot.core.engine.engine | calculate_all:54 | GUNUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:28,035 | INFO    | bot.core.engine.engine | calculate_all:95 | OPUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:28,036 | INFO    | bot.application.bot | _run_modern_analysis:553 | OPUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:28,087 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=OPUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:28,096 | INFO    | bot.core.engine.engine | calculate_all:95 | TRUMPUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:28,097 | INFO    | bot.application.bot | _run_modern_analysis:553 | TRUMPUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:28,154 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=TRUMPUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:28,155 | INFO    | bot.application.bot | _run_modern_analysis:251 | XPLUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:28,442 | INFO    | bot.features | prepare_symbol:1085 | XPLUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:28,459 | INFO    | bot.core.engine.engine | calculate_all:54 | XPLUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:28,468 | INFO    | bot.application.bot | _run_modern_analysis:251 | XPLUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:28,468 | INFO    | bot.features | prepare_symbol:1085 | XPLUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:28,487 | INFO    | bot.core.engine.engine | calculate_all:54 | XPLUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:28,489 | INFO    | bot.core.engine.engine | calculate_all:95 | ROBOUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:28,489 | INFO    | bot.application.bot | _run_modern_analysis:553 | ROBOUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:28,538 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=ROBOUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:28,566 | INFO    | bot.application.bot | _run_modern_analysis:251 | 1000PEPEUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:28,813 | INFO    | bot.features | prepare_symbol:1085 | 1000PEPEUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:28,831 | INFO    | bot.core.engine.engine | calculate_all:54 | 1000PEPEUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:28,879 | INFO    | bot.core.engine.engine | calculate_all:95 | LYNUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:28,880 | INFO    | bot.application.bot | _run_modern_analysis:553 | LYNUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:28,947 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=LYNUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:29,049 | INFO    | bot.application.bot | _run_modern_analysis:251 | NEIROUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:29,292 | INFO    | bot.features | prepare_symbol:1085 | NEIROUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:29,314 | INFO    | bot.core.engine.engine | calculate_all:54 | NEIROUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:29,316 | INFO    | bot.core.engine.engine | calculate_all:95 | GUNUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:29,317 | INFO    | bot.application.bot | _run_modern_analysis:553 | GUNUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:29,365 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=GUNUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:29,530 | INFO    | bot.application.bot | _run_modern_analysis:251 | ARBUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:29,864 | INFO    | bot.features | prepare_symbol:1085 | ARBUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:29,888 | INFO    | bot.core.engine.engine | calculate_all:54 | ARBUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:30,198 | INFO    | bot.core.engine.engine | calculate_all:95 | ROBOUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:30,199 | INFO    | bot.application.bot | _run_modern_analysis:553 | ROBOUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:30,256 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=ROBOUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:30,481 | INFO    | bot.application.bot | _run_modern_analysis:251 | 1000PEPEUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:30,482 | INFO    | bot.features | prepare_symbol:1085 | 1000PEPEUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:30,500 | INFO    | bot.core.engine.engine | calculate_all:54 | 1000PEPEUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:30,504 | INFO    | bot.core.engine.engine | calculate_all:95 | LYNUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:30,505 | INFO    | bot.application.bot | _run_modern_analysis:553 | LYNUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:30,615 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=LYNUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:30,734 | INFO    | bot.application.bot | _run_modern_analysis:251 | NEIROUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:30,734 | INFO    | bot.features | prepare_symbol:1085 | NEIROUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:30,752 | INFO    | bot.core.engine.engine | calculate_all:54 | NEIROUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:30,814 | INFO    | bot.core.engine.engine | calculate_all:95 | GUNUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:30,815 | INFO    | bot.application.bot | _run_modern_analysis:553 | GUNUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:30,902 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=GUNUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:30,956 | INFO    | bot.application.bot | _run_modern_analysis:251 | ARBUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:30,957 | INFO    | bot.features | prepare_symbol:1085 | ARBUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:30,983 | INFO    | bot.core.engine.engine | calculate_all:54 | ARBUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:30,987 | INFO    | bot.core.engine.engine | calculate_all:95 | XPLUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:30,987 | INFO    | bot.application.bot | _run_modern_analysis:553 | XPLUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:31,041 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=XPLUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:31,129 | INFO    | bot.application.bot | _run_modern_analysis:251 | HBARUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:31,394 | INFO    | bot.features | prepare_symbol:1085 | HBARUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:31,422 | INFO    | bot.core.engine.engine | calculate_all:54 | HBARUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:31,521 | INFO    | bot.core.engine.engine | calculate_all:95 | XPLUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:31,522 | INFO    | bot.application.bot | _run_modern_analysis:553 | XPLUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:31,589 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=XPLUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:31,631 | INFO    | bot.application.bot | _run_modern_analysis:251 | HBARUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:31,631 | INFO    | bot.features | prepare_symbol:1085 | HBARUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:31,689 | INFO    | bot.core.engine.engine | calculate_all:54 | HBARUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:31,690 | INFO    | bot.core.engine.engine | calculate_all:95 | 1000PEPEUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:31,696 | INFO    | bot.application.bot | _run_modern_analysis:553 | 1000PEPEUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:31,798 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=1000PEPEUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:32,085 | INFO    | bot.application.bot | _run_modern_analysis:251 | SKYAIUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:32,665 | INFO    | bot.features | prepare_symbol:1085 | SKYAIUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:32,681 | INFO    | bot.core.engine.engine | calculate_all:54 | SKYAIUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:32,857 | INFO    | bot.core.engine.engine | calculate_all:95 | NEIROUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:32,858 | INFO    | bot.application.bot | _run_modern_analysis:553 | NEIROUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:32,916 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=NEIROUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:33,139 | INFO    | bot.application.bot | _run_modern_analysis:251 | GRASSUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:33,402 | INFO    | bot.features | prepare_symbol:1085 | GRASSUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:33,419 | INFO    | bot.core.engine.engine | calculate_all:54 | GRASSUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:33,422 | INFO    | bot.core.engine.engine | calculate_all:95 | ARBUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:33,422 | INFO    | bot.application.bot | _run_modern_analysis:553 | ARBUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:33,496 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=ARBUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:33,779 | INFO    | bot.application.bot | _run_modern_analysis:251 | SKYAIUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:33,780 | INFO    | bot.features | prepare_symbol:1085 | SKYAIUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:33,795 | INFO    | bot.core.engine.engine | calculate_all:54 | SKYAIUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:34,287 | INFO    | bot.core.engine.engine | calculate_all:95 | 1000PEPEUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:34,287 | INFO    | bot.application.bot | _run_modern_analysis:553 | 1000PEPEUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:34,343 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=1000PEPEUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:35,090 | INFO    | bot.application.bot | _run_modern_analysis:251 | GRASSUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:35,095 | INFO    | bot.features | prepare_symbol:1085 | GRASSUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:35,123 | INFO    | bot.core.engine.engine | calculate_all:54 | GRASSUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:35,130 | INFO    | bot.core.engine.engine | calculate_all:95 | NEIROUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:35,132 | INFO    | bot.application.bot | _run_modern_analysis:553 | NEIROUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:35,197 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=NEIROUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:35,232 | INFO    | bot.application.bot | _fetch_frames:1454 | BTCUSDT: frames merged | 15m=299/210 1h=299/210 optional_5m=299/96 optional_4h=239/210
+2026-04-23 16:51:35,269 | INFO    | bot.application.bot | _fetch_frames:1454 | ETHUSDT: frames merged | 15m=299/210 1h=299/210 optional_5m=299/96 optional_4h=239/210
+2026-04-23 16:51:35,306 | INFO    | bot.application.bot | _fetch_frames:1454 | SOLUSDT: frames merged | 15m=299/210 1h=299/210 optional_5m=299/96 optional_4h=239/210
+2026-04-23 16:51:35,345 | INFO    | bot.application.bot | _fetch_frames:1454 | DOTUSDT: frames merged | 15m=299/210 1h=299/210 optional_5m=299/96 optional_4h=239/210
+2026-04-23 16:51:35,368 | INFO    | bot.application.bot | _fetch_frames:1454 | XRPUSDT: frames merged | 15m=299/210 1h=299/210 optional_5m=299/96 optional_4h=239/210
+2026-04-23 16:51:35,383 | INFO    | bot.application.bot | _fetch_frames:1454 | HYPEUSDT: frames merged | 15m=299/210 1h=299/210 optional_5m=299/96 optional_4h=239/210
+2026-04-23 16:51:35,384 | INFO    | bot.application.bot | _fetch_frames:1454 | PAXGUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:35,403 | INFO    | bot.application.bot | _fetch_frames:1454 | STRKUSDT: frames merged | 15m=299/210 1h=299/210 optional_5m=299/96 optional_4h=239/210
+2026-04-23 16:51:35,739 | INFO    | bot.application.bot | _run_modern_analysis:251 | NMRUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:35,995 | INFO    | bot.features | prepare_symbol:1085 | NMRUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:36,012 | INFO    | bot.core.engine.engine | calculate_all:54 | NMRUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:36,016 | INFO    | bot.application.bot | _fetch_frames:1454 | ONUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:36,033 | INFO    | bot.application.bot | _fetch_frames:1454 | BIOUSDT: frames merged | 15m=299/210 1h=299/210 optional_5m=299/96 optional_4h=239/210
+2026-04-23 16:51:36,402 | INFO    | bot.core.engine.engine | calculate_all:95 | ARBUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:36,402 | INFO    | bot.application.bot | _run_modern_analysis:553 | ARBUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:36,451 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=ARBUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:36,794 | INFO    | bot.application.bot | _run_modern_analysis:251 | NMRUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:36,794 | INFO    | bot.features | prepare_symbol:1085 | NMRUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:36,816 | INFO    | bot.core.engine.engine | calculate_all:54 | NMRUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:36,818 | INFO    | bot.core.engine.engine | calculate_all:95 | HBARUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:36,818 | INFO    | bot.application.bot | _run_modern_analysis:553 | HBARUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:36,895 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=HBARUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:36,898 | INFO    | bot.application.bot | _fetch_frames:1454 | SKYAIUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:36,899 | INFO    | bot.application.bot | _fetch_frames:1454 | GUNUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:36,899 | INFO    | bot.application.bot | _fetch_frames:1454 | XAUTUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=168/210
+2026-04-23 16:51:36,900 | INFO    | bot.application.bot | _fetch_frames:1454 | GRASSUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:36,922 | INFO    | bot.application.bot | _fetch_frames:1454 | VELVETUSDT: frames merged | 15m=299/210 1h=299/210 optional_5m=299/96 optional_4h=239/210
+2026-04-23 16:51:36,942 | INFO    | bot.application.bot | _fetch_frames:1454 | GIGGLEUSDT: frames merged | 15m=299/210 1h=299/210 optional_5m=299/96 optional_4h=239/210
+2026-04-23 16:51:36,947 | INFO    | bot.application.bot | _fetch_frames:1454 | ARBUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:36,951 | INFO    | bot.application.bot | _fetch_frames:1454 | TRUMPUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:36,952 | INFO    | bot.application.bot | _fetch_frames:1454 | NEIROUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:36,953 | INFO    | bot.application.bot | _fetch_frames:1454 | 1000PEPEUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:36,955 | INFO    | bot.application.bot | _fetch_frames:1454 | UNIUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:36,956 | INFO    | bot.application.bot | _fetch_frames:1454 | ROBOUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:37,304 | INFO    | bot.application.bot | _run_modern_analysis:251 | STABLEUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:37,602 | INFO    | bot.features | prepare_symbol:1085 | STABLEUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:37,620 | INFO    | bot.core.engine.engine | calculate_all:54 | STABLEUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:37,626 | INFO    | bot.application.bot | _fetch_frames:1454 | 1000000MOGUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:37,989 | INFO    | bot.core.engine.engine | calculate_all:95 | HBARUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:37,989 | INFO    | bot.application.bot | _run_modern_analysis:553 | HBARUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:38,047 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=HBARUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:38,054 | INFO    | bot.application.bot | _fetch_frames:1454 | XPLUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:38,062 | INFO    | bot.application.bot | _fetch_frames:1454 | PIEVERSEUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:38,064 | INFO    | bot.application.bot | _fetch_frames:1454 | STABLEUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:38,065 | INFO    | bot.application.bot | _fetch_frames:1454 | XMRUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:38,065 | INFO    | bot.application.bot | _fetch_frames:1454 | HBARUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:38,525 | INFO    | bot.application.bot | _run_modern_analysis:251 | STABLEUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:38,526 | INFO    | bot.features | prepare_symbol:1085 | STABLEUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:38,548 | INFO    | bot.core.engine.engine | calculate_all:54 | STABLEUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:38,550 | INFO    | bot.core.engine.engine | calculate_all:95 | SKYAIUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:38,551 | INFO    | bot.application.bot | _run_modern_analysis:553 | SKYAIUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:38,609 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=SKYAIUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:38,616 | INFO    | bot.application.bot | _fetch_frames:1454 | AEROUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:38,617 | INFO    | bot.application.bot | _fetch_frames:1454 | LYNUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:38,626 | INFO    | bot.application.bot | _fetch_frames:1454 | STOUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:39,652 | INFO    | bot.application.bot | _run_modern_analysis:251 | HOLOUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:39,929 | INFO    | bot.features | prepare_symbol:1085 | HOLOUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:39,943 | INFO    | bot.core.engine.engine | calculate_all:54 | HOLOUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:40,262 | INFO    | bot.core.engine.engine | calculate_all:95 | GRASSUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:40,263 | INFO    | bot.application.bot | _run_modern_analysis:553 | GRASSUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:40,308 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=GRASSUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:40,671 | INFO    | bot.application.bot | _run_modern_analysis:251 | HOLOUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:40,672 | INFO    | bot.features | prepare_symbol:1085 | HOLOUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:40,694 | INFO    | bot.core.engine.engine | calculate_all:54 | HOLOUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:40,696 | INFO    | bot.core.engine.engine | calculate_all:95 | SKYAIUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:40,697 | INFO    | bot.application.bot | _run_modern_analysis:553 | SKYAIUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:40,752 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=SKYAIUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:40,762 | INFO    | bot.application.bot | _fetch_frames:1454 | BARDUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:41,151 | INFO    | bot.application.bot | _run_modern_analysis:251 | BTCUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:41,166 | INFO    | bot.features | prepare_symbol:1085 | BTCUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=100 optional_4h=40
+2026-04-23 16:51:41,217 | INFO    | bot.core.engine.engine | calculate_all:54 | BTCUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:41,885 | INFO    | bot.core.engine.engine | calculate_all:95 | GRASSUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:41,885 | INFO    | bot.application.bot | _run_modern_analysis:553 | GRASSUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:41,985 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=GRASSUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:42,347 | INFO    | bot.application.bot | _run_modern_analysis:251 | ETHUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:42,348 | INFO    | bot.features | prepare_symbol:1085 | ETHUSDT: prepared symbol successfully | work_15m=100 work_1h=100 work_5m=100 optional_4h=40
+2026-04-23 16:51:42,373 | INFO    | bot.core.engine.engine | calculate_all:54 | ETHUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:42,376 | INFO    | bot.core.engine.engine | calculate_all:95 | NMRUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:42,377 | INFO    | bot.application.bot | _run_modern_analysis:553 | NMRUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:42,445 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=NMRUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:42,786 | INFO    | bot.application.bot | _run_modern_analysis:251 | SOLUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:42,786 | INFO    | bot.features | prepare_symbol:1085 | SOLUSDT: prepared symbol successfully | work_15m=100 work_1h=100 work_5m=100 optional_4h=40
+2026-04-23 16:51:42,810 | INFO    | bot.core.engine.engine | calculate_all:54 | SOLUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:43,159 | INFO    | bot.core.engine.engine | calculate_all:95 | NMRUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:43,160 | INFO    | bot.application.bot | _run_modern_analysis:553 | NMRUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:43,220 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=NMRUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:43,571 | INFO    | bot.application.bot | _run_modern_analysis:251 | DOTUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:43,571 | INFO    | bot.features | prepare_symbol:1085 | DOTUSDT: prepared symbol successfully | work_15m=100 work_1h=100 work_5m=100 optional_4h=40
+2026-04-23 16:51:43,635 | INFO    | bot.core.engine.engine | calculate_all:54 | DOTUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:43,642 | INFO    | bot.core.engine.engine | calculate_all:95 | STABLEUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:43,643 | INFO    | bot.application.bot | _run_modern_analysis:553 | STABLEUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:43,753 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=STABLEUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:43,793 | INFO    | bot.application.bot | _fetch_frames:1454 | NMRUSDT: frames merged | 15m=299/210 1h=299/210 optional_5m=299/96 optional_4h=239/210
+2026-04-23 16:51:44,288 | INFO    | bot.application.bot | _run_modern_analysis:251 | XRPUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:44,315 | INFO    | bot.features | prepare_symbol:1085 | XRPUSDT: prepared symbol successfully | work_15m=100 work_1h=100 work_5m=100 optional_4h=40
+2026-04-23 16:51:44,559 | INFO    | bot.core.engine.engine | calculate_all:54 | XRPUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:44,779 | INFO    | bot.core.engine.engine | calculate_all:95 | STABLEUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:44,782 | INFO    | bot.application.bot | _run_modern_analysis:553 | STABLEUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:44,865 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=STABLEUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:45,198 | INFO    | bot.application.bot | _run_modern_analysis:251 | HYPEUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:45,198 | INFO    | bot.features | prepare_symbol:1085 | HYPEUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:45,248 | INFO    | bot.core.engine.engine | calculate_all:54 | HYPEUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:45,250 | INFO    | bot.core.engine.engine | calculate_all:95 | HOLOUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:45,251 | INFO    | bot.application.bot | _run_modern_analysis:553 | HOLOUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:45,337 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=HOLOUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:45,600 | INFO    | bot.application.bot | _run_modern_analysis:251 | PAXGUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:45,602 | INFO    | bot.features | prepare_symbol:1085 | PAXGUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:45,646 | INFO    | bot.core.engine.engine | calculate_all:54 | PAXGUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:45,658 | INFO    | bot.application.bot | _fetch_frames:1454 | HOLOUSDT: frames merged | 15m=239/210 1h=239/210 optional_5m=239/96 optional_4h=239/210
+2026-04-23 16:51:45,777 | INFO    | bot.core.engine.engine | calculate_all:95 | HOLOUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:45,779 | INFO    | bot.application.bot | _run_modern_analysis:553 | HOLOUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:45,863 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=HOLOUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:46,124 | INFO    | bot.application.bot | _run_modern_analysis:251 | STRKUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:46,125 | INFO    | bot.features | prepare_symbol:1085 | STRKUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:46,145 | INFO    | bot.core.engine.engine | calculate_all:54 | STRKUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:46,147 | INFO    | bot.core.engine.engine | calculate_all:95 | BTCUSDT: calculate_all complete | results=15 signals=0 errors=0
+2026-04-23 16:51:46,147 | INFO    | bot.application.bot | _run_modern_analysis:553 | BTCUSDT: analysis complete | trigger=intra_candle raw_strategies=15 signals_found=0 perf_rejected=0 candidates=0
+2026-04-23 16:51:46,241 | INFO    | bot.application.bot | _emit_cycle_log:2695 | cycle | symbol=BTCUSDT detector_runs=15 candidates=0 delivered=0 rejected=15 status=ok
+2026-04-23 16:51:46,446 | INFO    | bot.application.bot | _run_modern_analysis:251 | ONUSDT: starting modern analysis | trigger=intra_candle
+2026-04-23 16:51:46,447 | INFO    | bot.features | prepare_symbol:1085 | ONUSDT: prepared symbol successfully | work_15m=40 work_1h=40 work_5m=40 optional_4h=40
+2026-04-23 16:51:46,468 | INFO    | bot.core.engine.engine | calculate_all:54 | ONUSDT: calculate_all called | strategies=15
+2026-04-23 16:51:46,509 | INFO    | bot.application.bot | _fetch_frames:1454 | OPUSDT: frames merged | 15m=299/210 1h=299/210 optional_5m=299/96 optional_4h=239/210

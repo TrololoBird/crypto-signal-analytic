@@ -1,0 +1,9 @@
+# Optional runtime dependencies for non-core features.
+# Install this alongside requirements.txt when enabling the dashboard,
+# ML scoring, or self-learning paths.
+
+fastapi>=0.115.0
+uvicorn[standard]>=0.34.0
+joblib>=1.4.2
+xgboost>=2.1.0
+optuna>=4.3.0

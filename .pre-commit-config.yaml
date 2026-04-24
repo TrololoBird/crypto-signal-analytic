@@ -1,0 +1,31 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.9
+    hooks:
+      - id: ruff
+        args: [--fix]
+        files: ^bot/
+      - id: ruff-format
+        files: ^bot/
+
+  - repo: local
+    hooks:
+      - id: no-pandas
+        name: Check no pandas usage
+        entry: python -c "import sys; sys.exit(1 if any(p in open(sys.argv[1]).read() for p in ['import pandas', 'from pandas']) else 0)"
+        language: system
+        files: \.py$
+        
+      - id: type-check
+        name: Run pyright type check
+        entry: pyright
+        language: system
+        files: ^bot/.*\.py$
+        pass_filenames: true
+        
+      - id: validate-strategies
+        name: Validate strategy files
+        entry: python scripts/validate_strategies.py
+        language: system
+        files: ^bot/strategies/.*\.py$
+        pass_filenames: true

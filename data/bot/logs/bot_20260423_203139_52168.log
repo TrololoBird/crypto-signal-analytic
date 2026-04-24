@@ -1,0 +1,48 @@
+2026-04-23 23:31:39,545 | INFO    | bot.cli | configure_logging:121 | ================================================================================
+2026-04-23 23:31:39,546 | INFO    | bot.cli | configure_logging:122 | BOT SESSION STARTED | 2026-04-23 20:31:39 UTC
+2026-04-23 23:31:39,547 | INFO    | bot.cli | configure_logging:123 | LOG FILE | data\bot\logs\bot_20260423_203139_52168.log
+2026-04-23 23:31:39,547 | INFO    | bot.cli | configure_logging:124 | DEBUG MODE | False
+2026-04-23 23:31:39,548 | INFO    | bot.cli | configure_logging:125 | ASYNCIO DEBUG | False
+2026-04-23 23:31:39,698 | INFO    | bot.cli | configure_logging:126 | ================================================================================
+2026-04-23 23:31:39,700 | INFO    | bot.cli | _run_doctor_check:49 | DOCTOR OK | {"pid_lock": "data\\bot\\bot.pid", "logs_dir": "data\\bot\\logs", "telemetry_dir": "data\\bot\\telemetry", "db_path": "data\\bot\\bot.db", "config_filters": {"min_atr_pct": 0.5, "min_score": 0.66, "freshness_15m_minutes": 16, "freshness_1h_hours": 2}, "ws": {"base_url": "wss://fstream.binance.com", "public_base_url": "wss://fstream.binance.com/public", "market_base_url": "wss://fstream.binance.com/market", "subscribe_book_ticker": true}, "setups_enabled": {"structure_pullback": true, "structure_break_retest": true, "wick_trap_reversal": true, "squeeze_setup": true, "ema_bounce": true, "order_block": true, "breaker_block": true, "fvg_setup": true, "bos_choch": true, "liquidity_sweep": true, "turtle_soup": true, "cvd_divergence": true, "hidden_divergence": true, "funding_reversal": true, "session_killzone": true}}
+2026-04-23 23:31:39,890 | INFO    | bot.ws_manager | set_event_bus:300 | EventBus attached to ws_manager
+2026-04-23 23:31:39,890 | INFO    | bot.application.bot | __init__:91 | ws_manager initialized | pinned_symbols=4
+2026-04-23 23:31:41,121 | INFO    | bot.application.bot | __init__:108 | MemoryRepository initialized | db=data\bot\bot.db
+2026-04-23 23:31:41,473 | INFO    | bot.metrics | __init__:194 | metrics collector initialized on port 9090
+2026-04-23 23:31:41,486 | INFO    | bot.metrics | start_server:203 | metrics server started on port 9090
+2026-04-23 23:31:44,279 | INFO    | bot.dashboard | start_server:266 | dashboard server started on port 8080
+2026-04-23 23:31:44,320 | INFO    | bot.tracking | _load_features_store:132 | features_store loaded | entries=1
+2026-04-23 23:31:44,324 | INFO    | bot.core.engine.registry | register:51 | Registered strategy: structure_pullback (enabled=True)
+2026-04-23 23:31:44,328 | INFO    | bot.application.bot | _register_strategies:207 | registered strategy structure_pullback (enabled=True)
+2026-04-23 23:31:44,331 | INFO    | bot.core.engine.registry | register:51 | Registered strategy: structure_break_retest (enabled=True)
+2026-04-23 23:31:44,338 | INFO    | bot.application.bot | _register_strategies:207 | registered strategy structure_break_retest (enabled=True)
+2026-04-23 23:31:44,340 | INFO    | bot.core.engine.registry | register:51 | Registered strategy: wick_trap_reversal (enabled=True)
+2026-04-23 23:31:44,344 | INFO    | bot.application.bot | _register_strategies:207 | registered strategy wick_trap_reversal (enabled=True)
+2026-04-23 23:31:44,347 | INFO    | bot.core.engine.registry | register:51 | Registered strategy: squeeze_setup (enabled=True)
+2026-04-23 23:31:44,348 | INFO    | bot.application.bot | _register_strategies:207 | registered strategy squeeze_setup (enabled=True)
+2026-04-23 23:31:44,349 | INFO    | bot.core.engine.registry | register:51 | Registered strategy: ema_bounce (enabled=True)
+2026-04-23 23:31:44,351 | INFO    | bot.application.bot | _register_strategies:207 | registered strategy ema_bounce (enabled=True)
+2026-04-23 23:31:44,352 | INFO    | bot.core.engine.registry | register:51 | Registered strategy: fvg_setup (enabled=True)
+2026-04-23 23:31:44,353 | INFO    | bot.application.bot | _register_strategies:207 | registered strategy fvg_setup (enabled=True)
+2026-04-23 23:31:44,355 | INFO    | bot.core.engine.registry | register:51 | Registered strategy: order_block (enabled=True)
+2026-04-23 23:31:44,358 | INFO    | bot.application.bot | _register_strategies:207 | registered strategy order_block (enabled=True)
+2026-04-23 23:31:44,360 | INFO    | bot.core.engine.registry | register:51 | Registered strategy: liquidity_sweep (enabled=True)
+2026-04-23 23:31:44,361 | INFO    | bot.application.bot | _register_strategies:207 | registered strategy liquidity_sweep (enabled=True)
+2026-04-23 23:31:44,362 | INFO    | bot.core.engine.registry | register:51 | Registered strategy: bos_choch (enabled=True)
+2026-04-23 23:31:44,367 | INFO    | bot.application.bot | _register_strategies:207 | registered strategy bos_choch (enabled=True)
+2026-04-23 23:31:44,368 | INFO    | bot.core.engine.registry | register:51 | Registered strategy: hidden_divergence (enabled=True)
+2026-04-23 23:31:44,369 | INFO    | bot.application.bot | _register_strategies:207 | registered strategy hidden_divergence (enabled=True)
+2026-04-23 23:31:44,369 | INFO    | bot.core.engine.registry | register:51 | Registered strategy: funding_reversal (enabled=True)
+2026-04-23 23:31:44,370 | INFO    | bot.application.bot | _register_strategies:207 | registered strategy funding_reversal (enabled=True)
+2026-04-23 23:31:44,371 | INFO    | bot.core.engine.registry | register:51 | Registered strategy: cvd_divergence (enabled=True)
+2026-04-23 23:31:44,372 | INFO    | bot.application.bot | _register_strategies:207 | registered strategy cvd_divergence (enabled=True)
+2026-04-23 23:31:44,373 | INFO    | bot.core.engine.registry | register:51 | Registered strategy: session_killzone (enabled=True)
+2026-04-23 23:31:44,378 | INFO    | bot.application.bot | _register_strategies:207 | registered strategy session_killzone (enabled=True)
+2026-04-23 23:31:44,378 | INFO    | bot.core.engine.registry | register:51 | Registered strategy: breaker_block (enabled=True)
+2026-04-23 23:31:44,379 | INFO    | bot.application.bot | _register_strategies:207 | registered strategy breaker_block (enabled=True)
+2026-04-23 23:31:44,380 | INFO    | bot.core.engine.registry | register:51 | Registered strategy: turtle_soup (enabled=True)
+2026-04-23 23:31:44,381 | INFO    | bot.application.bot | _register_strategies:207 | registered strategy turtle_soup (enabled=True)
+2026-04-23 23:31:44,381 | INFO    | bot.application.bot | _register_strategies:209 | strategies registered | total=15 enabled=15
+2026-04-23 23:31:44,382 | INFO    | bot.application.bot | __init__:153 | SignalEngine initialized with 15 strategies
+2026-04-23 23:31:44,384 | INFO    | bot.application.bot | __init__:179 | EventBus subscriptions registered | handlers=3 (kline_close, reconnect, book_ticker)
+2026-04-23 23:31:44,440 | WARNING | stderr | write:271 | STDERR: another bot process is already running with pid 81988

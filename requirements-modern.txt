@@ -1,0 +1,58 @@
+# Modern, stable stack for crypto signal bot (2025)
+# Key improvements: Polars instead of pandas, simplified dependencies
+#
+# Optional dashboard / ML / self-learning extras live in requirements-optional.txt.
+
+# Core async & data processing
+polars>=1.39.0        # Latest stable, works with NumPy 2.x
+numpy>=1.26.4         # No <2.0 pin needed, Polars 1.39+ compatible
+
+# API & validation (unchanged - already modern)
+pydantic>=2.8.0
+fastapi>=0.115.0      # Latest stable
+uvicorn[standard]>=0.34.0
+
+# Data sources
+websockets>=14.0      # Latest stable
+binance-connector>=3.12.0  # Optional helper SDK
+python-binance>=1.0.22     # Required by bot.market_data.AsyncClient
+aiohttp>=3.11.0       # For REST fallback
+
+# TA Library for classical indicators
+polars_ta>=0.5.17     # Runtime path is Polars-native; polars_talib stays optional
+
+# Telegram Bot
+aiogram>=3.27.0       # Updated from 3.15.0 (April 2026 latest)
+
+# Serialization (choose ONE)
+msgspec>=0.19.0       # Fastest, native Python
+# orjson>=3.10.0      # Alternative if msgspec issues
+
+# Reliability
+tenacity>=9.0.0
+python-dotenv>=1.0.0
+structlog>=24.1.0     # Better logging than standard
+
+# ML (simplified - choose ONE)
+xgboost>=2.1.0        # Most stable for tabular data
+# lightgbm>=4.5.0       # Alternative: faster training, smaller models
+# Remove: scikit-learn (if only using XGBoost)
+
+# Metrics & monitoring
+prometheus-client>=0.21.0
+# Optional: opentelemetry-api>=1.28.0  # For distributed tracing
+
+# Testing
+pytest>=8.3.0
+pytest-asyncio>=0.25.0
+pytest-xdist>=3.6.0   # Parallel test execution
+
+# Development tools
+ruff>=0.8.0           # Replaces: flake8, black, isort
+pyright>=1.1.390
+pre-commit>=4.0.0
+
+# Removed from old stack:
+# - pandas (replaced by Polars)
+# - orjson (msgspec is enough)
+# - scikit-learn (if using only XGBoost)

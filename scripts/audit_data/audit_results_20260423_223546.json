@@ -1,0 +1,1508 @@
+{
+  "started_at": "2026-04-23T22:34:55.251771",
+  "symbols": [
+    "BTCUSDT",
+    "ETHUSDT",
+    "SOLUSDT"
+  ],
+  "indicators_checked": 67,
+  "symbol_results": {
+    "BTCUSDT": {
+      "symbol": "BTCUSDT",
+      "timestamp": "2026-04-23T22:35:38.001641",
+      "indicators": {
+        "open": {
+          "name": "open",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 77657.4,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "high": {
+          "name": "high",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 77859.9,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "low": {
+          "name": "low",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 77657.4,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "close": {
+          "name": "close",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 77812.5,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "volume": {
+          "name": "volume",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 1298.383,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "close_time": {
+          "name": "close_time",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": "2026-04-23 19:29:59.999000+00:00",
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "ema20": {
+          "name": "ema20",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 77822.2051190435,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "ema50": {
+          "name": "ema50",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 77850.30472371295,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "ema200": {
+          "name": "ema200",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 77493.38396763142,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "rsi14": {
+          "name": "rsi14",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 49.70707005482898,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "adx14": {
+          "name": "adx14",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 25.54578601717443,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "atr14": {
+          "name": "atr14",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 331.96359617509853,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "atr_pct": {
+          "name": "atr_pct",
+          "category": "computed",
+          "status": "ok",
+          "value": 0.42661988263466477,
+          "error": null
+        },
+        "volume_ratio20": {
+          "name": "volume_ratio20",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 0.45079144550231914,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "supertrend_dir": {
+          "name": "supertrend_dir",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": -1.0,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "bb_pct_b": {
+          "name": "bb_pct_b",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 0.39276024115829533,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "bb_width": {
+          "name": "bb_width",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 1.6659432447067495,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "kc_upper": {
+          "name": "kc_upper",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 78589.75397597489,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "kc_lower": {
+          "name": "kc_lower",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 77321.1460240251,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "kc_width": {
+          "name": "kc_width",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 0.016303395366422967,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "vwap": {
+          "name": "vwap",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 77392.09007805205,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "donchian_upper": {
+          "name": "donchian_upper",
+          "category": "dataframe_column",
+          "status": "warning",
+          "value": null,
+          "error": "Column not found or null (but nullable)",
+          "source_frame": null
+        },
+        "donchian_lower": {
+          "name": "donchian_lower",
+          "category": "dataframe_column",
+          "status": "warning",
+          "value": null,
+          "error": "Column not found or null (but nullable)",
+          "source_frame": null
+        },
+        "donchian_mid": {
+          "name": "donchian_mid",
+          "category": "dataframe_column",
+          "status": "warning",
+          "value": null,
+          "error": "Column not found or null (but nullable)",
+          "source_frame": null
+        },
+        "macd_line": {
+          "name": "macd_line",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": -22.402885554809473,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "macd_signal": {
+          "name": "macd_signal",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 5.340091258259157,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "macd_histogram": {
+          "name": "macd_histogram",
+          "category": "dataframe_column",
+          "status": "warning",
+          "value": null,
+          "error": "Column not found or null (but nullable)",
+          "source_frame": null
+        },
+        "delta_ratio": {
+          "name": "delta_ratio",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 0.525741903659053,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "cmf20": {
+          "name": "cmf20",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": -0.009482065805551778,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "mfi14": {
+          "name": "mfi14",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 38.5733868477253,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "bid_price": {
+          "name": "bid_price",
+          "category": "prepared_field",
+          "status": "ok",
+          "value": 77610.8,
+          "error": null
+        },
+        "ask_price": {
+          "name": "ask_price",
+          "category": "prepared_field",
+          "status": "ok",
+          "value": 77610.9,
+          "error": null
+        },
+        "spread_bps": {
+          "name": "spread_bps",
+          "category": "prepared_field",
+          "status": "ok",
+          "value": 0.012884796390101235,
+          "error": null
+        },
+        "bias_1h": {
+          "name": "bias_1h",
+          "category": "prepared_field",
+          "status": "ok",
+          "value": "uptrend",
+          "error": null
+        },
+        "bias_4h": {
+          "name": "bias_4h",
+          "category": "prepared_field",
+          "status": "ok",
+          "value": "uptrend",
+          "error": null
+        },
+        "market_regime": {
+          "name": "market_regime",
+          "category": "prepared_field",
+          "status": "ok",
+          "value": "neutral",
+          "error": null
+        },
+        "structure_1h": {
+          "name": "structure_1h",
+          "category": "prepared_field",
+          "status": "ok",
+          "value": "ranging",
+          "error": null
+        },
+        "regime_4h_confirmed": {
+          "name": "regime_4h_confirmed",
+          "category": "prepared_field",
+          "status": "ok",
+          "value": "uptrend",
+          "error": null
+        },
+        "regime_1h_confirmed": {
+          "name": "regime_1h_confirmed",
+          "category": "prepared_field",
+          "status": "ok",
+          "value": "uptrend",
+          "error": null
+        },
+        "poc_1h": {
+          "name": "poc_1h",
+          "category": "prepared_field",
+          "status": "ok",
+          "value": 78047.785,
+          "error": null
+        },
+        "poc_15m": {
+          "name": "poc_15m",
+          "category": "prepared_field",
+          "status": "ok",
+          "value": 77629.88500000001,
+          "error": null
+        },
+        "mark_price": {
+          "name": "mark_price",
+          "category": "enrichment",
+          "status": "ok",
+          "value": 77626.17727886,
+          "error": null
+        },
+        "ticker_price": {
+          "name": "ticker_price",
+          "category": "enrichment",
+          "status": "ok",
+          "value": 77615.3,
+          "error": null
+        },
+        "funding_rate": {
+          "name": "funding_rate",
+          "category": "enrichment",
+          "status": "ok",
+          "value": -0.00010287,
+          "error": null
+        },
+        "oi_change_pct": {
+          "name": "oi_change_pct",
+          "category": "enrichment",
+          "status": "ok",
+          "value": 0.0026680130055520834,
+          "error": null
+        },
+        "oi_slope_5m": {
+          "name": "oi_slope_5m",
+          "category": "enrichment",
+          "status": "warning",
+          "value": null,
+          "error": null
+        },
+        "ls_ratio": {
+          "name": "ls_ratio",
+          "category": "enrichment",
+          "status": "ok",
+          "value": 0.6883,
+          "error": null
+        },
+        "global_ls_ratio": {
+          "name": "global_ls_ratio",
+          "category": "enrichment",
+          "status": "ok",
+          "value": 0.6504,
+          "error": null
+        },
+        "taker_ratio": {
+          "name": "taker_ratio",
+          "category": "enrichment",
+          "status": "warning",
+          "value": null,
+          "error": null
+        },
+        "liquidation_score": {
+          "name": "liquidation_score",
+          "category": "enrichment",
+          "status": "warning",
+          "value": null,
+          "error": null
+        },
+        "basis_pct": {
+          "name": "basis_pct",
+          "category": "enrichment",
+          "status": "ok",
+          "value": -0.06840945343427,
+          "error": null
+        },
+        "mark_index_spread_bps": {
+          "name": "mark_index_spread_bps",
+          "category": "enrichment",
+          "status": "ok",
+          "value": -6.840945343427,
+          "error": null
+        },
+        "premium_zscore_5m": {
+          "name": "premium_zscore_5m",
+          "category": "enrichment",
+          "status": "ok",
+          "value": -1.1073772291210584,
+          "error": null
+        },
+        "premium_slope_5m": {
+          "name": "premium_slope_5m",
+          "category": "enrichment",
+          "status": "ok",
+          "value": -0.005436959665905558,
+          "error": null
+        },
+        "depth_imbalance": {
+          "name": "depth_imbalance",
+          "category": "enrichment",
+          "status": "ok",
+          "value": 1.2885327669536296e-06,
+          "error": null
+        },
+        "microprice_bias": {
+          "name": "microprice_bias",
+          "category": "enrichment",
+          "status": "ok",
+          "value": 0.0,
+          "error": null
+        },
+        "funding_trend": {
+          "name": "funding_trend",
+          "category": "enrichment",
+          "status": "warning",
+          "value": null,
+          "error": null
+        },
+        "top_trader_position_ratio": {
+          "name": "top_trader_position_ratio",
+          "category": "enrichment",
+          "status": "warning",
+          "value": null,
+          "error": null
+        },
+        "top_vs_global_ls_gap": {
+          "name": "top_vs_global_ls_gap",
+          "category": "enrichment",
+          "status": "warning",
+          "value": null,
+          "error": null
+        },
+        "agg_trade_delta_30s": {
+          "name": "agg_trade_delta_30s",
+          "category": "enrichment",
+          "status": "warning",
+          "value": null,
+          "error": null
+        },
+        "aggression_shift": {
+          "name": "aggression_shift",
+          "category": "enrichment",
+          "status": "warning",
+          "value": null,
+          "error": null
+        },
+        "mark_price_age_seconds": {
+          "name": "mark_price_age_seconds",
+          "category": "enrichment",
+          "status": "warning",
+          "value": null,
+          "error": null
+        },
+        "ticker_price_age_seconds": {
+          "name": "ticker_price_age_seconds",
+          "category": "enrichment",
+          "status": "warning",
+          "value": null,
+          "error": null
+        },
+        "book_ticker_age_seconds": {
+          "name": "book_ticker_age_seconds",
+          "category": "enrichment",
+          "status": "warning",
+          "value": null,
+          "error": null
+        },
+        "adx_1h": {
+          "name": "adx_1h",
+          "category": "computed",
+          "status": "ok",
+          "value": 27.672277805983832,
+          "error": null
+        },
+        "risk_reward": {
+          "name": "risk_reward",
+          "category": "computed",
+          "status": "warning",
+          "value": null,
+          "error": null
+        }
+      }
+    },
+    "ETHUSDT": {
+      "symbol": "ETHUSDT",
+      "timestamp": "2026-04-23T22:35:41.567474",
+      "indicators": {
+        "open": {
+          "name": "open",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 2307.23,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "high": {
+          "name": "high",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 2313.14,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "low": {
+          "name": "low",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 2307.23,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "close": {
+          "name": "close",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 2312.14,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "volume": {
+          "name": "volume",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 22807.288,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "close_time": {
+          "name": "close_time",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": "2026-04-23 19:29:59.999000+00:00",
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "ema20": {
+          "name": "ema20",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 2315.6262154159763,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "ema50": {
+          "name": "ema50",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 2325.8933295858947,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "ema200": {
+          "name": "ema200",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 2343.088113535688,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "rsi14": {
+          "name": "rsi14",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 45.62095815622602,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "adx14": {
+          "name": "adx14",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 32.26122327350162,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "atr14": {
+          "name": "atr14",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 10.873036215569035,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "atr_pct": {
+          "name": "atr_pct",
+          "category": "computed",
+          "status": "ok",
+          "value": 0.4702585576811541,
+          "error": null
+        },
+        "volume_ratio20": {
+          "name": "volume_ratio20",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 0.36751540320600057,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "supertrend_dir": {
+          "name": "supertrend_dir",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": -1.0,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "bb_pct_b": {
+          "name": "bb_pct_b",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 0.3539133760026588,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "bb_width": {
+          "name": "bb_width",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 2.1041032092229766,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "kc_upper": {
+          "name": "kc_upper",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 2340.2408450973194,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "kc_lower": {
+          "name": "kc_lower",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 2298.3841549026806,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "kc_width": {
+          "name": "kc_width",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 0.01810300855252656,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "vwap": {
+          "name": "vwap",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 2347.322407735589,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "donchian_upper": {
+          "name": "donchian_upper",
+          "category": "dataframe_column",
+          "status": "warning",
+          "value": null,
+          "error": "Column not found or null (but nullable)",
+          "source_frame": null
+        },
+        "donchian_lower": {
+          "name": "donchian_lower",
+          "category": "dataframe_column",
+          "status": "warning",
+          "value": null,
+          "error": "Column not found or null (but nullable)",
+          "source_frame": null
+        },
+        "donchian_mid": {
+          "name": "donchian_mid",
+          "category": "dataframe_column",
+          "status": "warning",
+          "value": null,
+          "error": "Column not found or null (but nullable)",
+          "source_frame": null
+        },
+        "macd_line": {
+          "name": "macd_line",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": -5.416791166950134,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "macd_signal": {
+          "name": "macd_signal",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": -4.763751323283687,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "macd_histogram": {
+          "name": "macd_histogram",
+          "category": "dataframe_column",
+          "status": "warning",
+          "value": null,
+          "error": "Column not found or null (but nullable)",
+          "source_frame": null
+        },
+        "delta_ratio": {
+          "name": "delta_ratio",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 0.4470085734530258,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "cmf20": {
+          "name": "cmf20",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": -0.002401890578455879,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "mfi14": {
+          "name": "mfi14",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 38.83200221614545,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "bid_price": {
+          "name": "bid_price",
+          "category": "prepared_field",
+          "status": "ok",
+          "value": 2306.66,
+          "error": null
+        },
+        "ask_price": {
+          "name": "ask_price",
+          "category": "prepared_field",
+          "status": "ok",
+          "value": 2306.67,
+          "error": null
+        },
+        "spread_bps": {
+          "name": "spread_bps",
+          "category": "prepared_field",
+          "status": "ok",
+          "value": 0.043352632481172076,
+          "error": null
+        },
+        "bias_1h": {
+          "name": "bias_1h",
+          "category": "prepared_field",
+          "status": "ok",
+          "value": "downtrend",
+          "error": null
+        },
+        "bias_4h": {
+          "name": "bias_4h",
+          "category": "prepared_field",
+          "status": "ok",
+          "value": "uptrend",
+          "error": null
+        },
+        "market_regime": {
+          "name": "market_regime",
+          "category": "prepared_field",
+          "status": "ok",
+          "value": "neutral",
+          "error": null
+        },
+        "structure_1h": {
+          "name": "structure_1h",
+          "category": "prepared_field",
+          "status": "ok",
+          "value": "downtrend",
+          "error": null
+        },
+        "regime_4h_confirmed": {
+          "name": "regime_4h_confirmed",
+          "category": "prepared_field",
+          "status": "ok",
+          "value": "uptrend",
+          "error": null
+        },
+        "regime_1h_confirmed": {
+          "name": "regime_1h_confirmed",
+          "category": "prepared_field",
+          "status": "ok",
+          "value": "ranging",
+          "error": null
+        },
+        "poc_1h": {
+          "name": "poc_1h",
+          "category": "prepared_field",
+          "status": "ok",
+          "value": 2391.56975,
+          "error": null
+        },
+        "poc_15m": {
+          "name": "poc_15m",
+          "category": "prepared_field",
+          "status": "ok",
+          "value": 2317.83875,
+          "error": null
+        },
+        "mark_price": {
+          "name": "mark_price",
+          "category": "enrichment",
+          "status": "ok",
+          "value": 2307.37,
+          "error": null
+        },
+        "ticker_price": {
+          "name": "ticker_price",
+          "category": "enrichment",
+          "status": "ok",
+          "value": 2306.59,
+          "error": null
+        },
+        "funding_rate": {
+          "name": "funding_rate",
+          "category": "enrichment",
+          "status": "ok",
+          "value": -6.255e-05,
+          "error": null
+        },
+        "oi_change_pct": {
+          "name": "oi_change_pct",
+          "category": "enrichment",
+          "status": "ok",
+          "value": 0.0019073352056813153,
+          "error": null
+        },
+        "oi_slope_5m": {
+          "name": "oi_slope_5m",
+          "category": "enrichment",
+          "status": "warning",
+          "value": null,
+          "error": null
+        },
+        "ls_ratio": {
+          "name": "ls_ratio",
+          "category": "enrichment",
+          "status": "ok",
+          "value": 1.5556,
+          "error": null
+        },
+        "global_ls_ratio": {
+          "name": "global_ls_ratio",
+          "category": "enrichment",
+          "status": "ok",
+          "value": 1.9464,
+          "error": null
+        },
+        "taker_ratio": {
+          "name": "taker_ratio",
+          "category": "enrichment",
+          "status": "warning",
+          "value": null,
+          "error": null
+        },
+        "liquidation_score": {
+          "name": "liquidation_score",
+          "category": "enrichment",
+          "status": "ok",
+          "value": -1.0,
+          "error": null
+        },
+        "basis_pct": {
+          "name": "basis_pct",
+          "category": "enrichment",
+          "status": "ok",
+          "value": -0.06372759411877808,
+          "error": null
+        },
+        "mark_index_spread_bps": {
+          "name": "mark_index_spread_bps",
+          "category": "enrichment",
+          "status": "ok",
+          "value": -6.372759411877809,
+          "error": null
+        },
+        "premium_zscore_5m": {
+          "name": "premium_zscore_5m",
+          "category": "enrichment",
+          "status": "ok",
+          "value": -0.6786862505584716,
+          "error": null
+        },
+        "premium_slope_5m": {
+          "name": "premium_slope_5m",
+          "category": "enrichment",
+          "status": "ok",
+          "value": -0.015609964971314304,
+          "error": null
+        },
+        "depth_imbalance": {
+          "name": "depth_imbalance",
+          "category": "enrichment",
+          "status": "ok",
+          "value": 4.335263248117208e-06,
+          "error": null
+        },
+        "microprice_bias": {
+          "name": "microprice_bias",
+          "category": "enrichment",
+          "status": "ok",
+          "value": 0.0,
+          "error": null
+        },
+        "funding_trend": {
+          "name": "funding_trend",
+          "category": "enrichment",
+          "status": "warning",
+          "value": null,
+          "error": null
+        },
+        "top_trader_position_ratio": {
+          "name": "top_trader_position_ratio",
+          "category": "enrichment",
+          "status": "warning",
+          "value": null,
+          "error": null
+        },
+        "top_vs_global_ls_gap": {
+          "name": "top_vs_global_ls_gap",
+          "category": "enrichment",
+          "status": "warning",
+          "value": null,
+          "error": null
+        },
+        "agg_trade_delta_30s": {
+          "name": "agg_trade_delta_30s",
+          "category": "enrichment",
+          "status": "warning",
+          "value": null,
+          "error": null
+        },
+        "aggression_shift": {
+          "name": "aggression_shift",
+          "category": "enrichment",
+          "status": "warning",
+          "value": null,
+          "error": null
+        },
+        "mark_price_age_seconds": {
+          "name": "mark_price_age_seconds",
+          "category": "enrichment",
+          "status": "warning",
+          "value": null,
+          "error": null
+        },
+        "ticker_price_age_seconds": {
+          "name": "ticker_price_age_seconds",
+          "category": "enrichment",
+          "status": "warning",
+          "value": null,
+          "error": null
+        },
+        "book_ticker_age_seconds": {
+          "name": "book_ticker_age_seconds",
+          "category": "enrichment",
+          "status": "warning",
+          "value": null,
+          "error": null
+        },
+        "adx_1h": {
+          "name": "adx_1h",
+          "category": "computed",
+          "status": "ok",
+          "value": 33.5654295646943,
+          "error": null
+        },
+        "risk_reward": {
+          "name": "risk_reward",
+          "category": "computed",
+          "status": "warning",
+          "value": null,
+          "error": null
+        }
+      }
+    },
+    "SOLUSDT": {
+      "symbol": "SOLUSDT",
+      "timestamp": "2026-04-23T22:35:43.676244",
+      "indicators": {
+        "open": {
+          "name": "open",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 85.28,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "high": {
+          "name": "high",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 85.52,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "low": {
+          "name": "low",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 85.27,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "close": {
+          "name": "close",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 85.28,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "volume": {
+          "name": "volume",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 202706.86,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "close_time": {
+          "name": "close_time",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": "2026-04-23 19:29:59.999000+00:00",
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "ema20": {
+          "name": "ema20",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 85.48575718355201,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "ema50": {
+          "name": "ema50",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 85.72030511842024,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "ema200": {
+          "name": "ema200",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 86.33419196171782,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "rsi14": {
+          "name": "rsi14",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 43.93013875829069,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "adx14": {
+          "name": "adx14",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 24.683619847509082,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "atr14": {
+          "name": "atr14",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 0.3743947778018471,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "atr_pct": {
+          "name": "atr_pct",
+          "category": "computed",
+          "status": "ok",
+          "value": 0.4390182666531978,
+          "error": null
+        },
+        "volume_ratio20": {
+          "name": "volume_ratio20",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 0.5459105723578326,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "supertrend_dir": {
+          "name": "supertrend_dir",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": -1.0,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "bb_pct_b": {
+          "name": "bb_pct_b",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 0.3144599055501911,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "bb_width": {
+          "name": "bb_width",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 2.17473907523669,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "kc_upper": {
+          "name": "kc_upper",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 86.36947763421124,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "kc_lower": {
+          "name": "kc_lower",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 84.93618903245543,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "kc_width": {
+          "name": "kc_width",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 0.016806855086254752,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "vwap": {
+          "name": "vwap",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 86.54950671124286,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "donchian_upper": {
+          "name": "donchian_upper",
+          "category": "dataframe_column",
+          "status": "warning",
+          "value": null,
+          "error": "Column not found or null (but nullable)",
+          "source_frame": null
+        },
+        "donchian_lower": {
+          "name": "donchian_lower",
+          "category": "dataframe_column",
+          "status": "warning",
+          "value": null,
+          "error": "Column not found or null (but nullable)",
+          "source_frame": null
+        },
+        "donchian_mid": {
+          "name": "donchian_mid",
+          "category": "dataframe_column",
+          "status": "warning",
+          "value": null,
+          "error": "Column not found or null (but nullable)",
+          "source_frame": null
+        },
+        "macd_line": {
+          "name": "macd_line",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": -0.15345612024962918,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "macd_signal": {
+          "name": "macd_signal",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": -0.12092785917299909,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "macd_histogram": {
+          "name": "macd_histogram",
+          "category": "dataframe_column",
+          "status": "warning",
+          "value": null,
+          "error": "Column not found or null (but nullable)",
+          "source_frame": null
+        },
+        "delta_ratio": {
+          "name": "delta_ratio",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 0.47710472473701004,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "cmf20": {
+          "name": "cmf20",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": -0.21538389527651436,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "mfi14": {
+          "name": "mfi14",
+          "category": "dataframe_column",
+          "status": "ok",
+          "value": 32.133190962179995,
+          "error": null,
+          "source_frame": "work_15m"
+        },
+        "bid_price": {
+          "name": "bid_price",
+          "category": "prepared_field",
+          "status": "ok",
+          "value": 85.13,
+          "error": null
+        },
+        "ask_price": {
+          "name": "ask_price",
+          "category": "prepared_field",
+          "status": "ok",
+          "value": 85.14,
+          "error": null
+        },
+        "spread_bps": {
+          "name": "spread_bps",
+          "category": "prepared_field",
+          "status": "ok",
+          "value": 1.1746050390562186,
+          "error": null
+        },
+        "bias_1h": {
+          "name": "bias_1h",
+          "category": "prepared_field",
+          "status": "ok",
+          "value": "neutral",
+          "error": null
+        },
+        "bias_4h": {
+          "name": "bias_4h",
+          "category": "prepared_field",
+          "status": "ok",
+          "value": "uptrend",
+          "error": null
+        },
+        "market_regime": {
+          "name": "market_regime",
+          "category": "prepared_field",
+          "status": "ok",
+          "value": "choppy",
+          "error": null
+        },
+        "structure_1h": {
+          "name": "structure_1h",
+          "category": "prepared_field",
+          "status": "ok",
+          "value": "downtrend",
+          "error": null
+        },
+        "regime_4h_confirmed": {
+          "name": "regime_4h_confirmed",
+          "category": "prepared_field",
+          "status": "ok",
+          "value": "uptrend",
+          "error": null
+        },
+        "regime_1h_confirmed": {
+          "name": "regime_1h_confirmed",
+          "category": "prepared_field",
+          "status": "ok",
+          "value": "ranging",
+          "error": null
+        },
+        "poc_1h": {
+          "name": "poc_1h",
+          "category": "prepared_field",
+          "status": "ok",
+          "value": 85.75925000000001,
+          "error": null
+        },
+        "poc_15m": {
+          "name": "poc_15m",
+          "category": "prepared_field",
+          "status": "ok",
+          "value": 86.00775,
+          "error": null
+        },
+        "mark_price": {
+          "name": "mark_price",
+          "category": "enrichment",
+          "status": "ok",
+          "value": 85.14051036,
+          "error": null
+        },
+        "ticker_price": {
+          "name": "ticker_price",
+          "category": "enrichment",
+          "status": "ok",
+          "value": 85.13,
+          "error": null
+        },
+        "funding_rate": {
+          "name": "funding_rate",
+          "category": "enrichment",
+          "status": "ok",
+          "value": -5.677e-05,
+          "error": null
+        },
+        "oi_change_pct": {
+          "name": "oi_change_pct",
+          "category": "enrichment",
+          "status": "ok",
+          "value": -0.004347930451566562,
+          "error": null
+        },
+        "oi_slope_5m": {
+          "name": "oi_slope_5m",
+          "category": "enrichment",
+          "status": "warning",
+          "value": null,
+          "error": null
+        },
+        "ls_ratio": {
+          "name": "ls_ratio",
+          "category": "enrichment",
+          "status": "ok",
+          "value": 2.4352,
+          "error": null
+        },
+        "global_ls_ratio": {
+          "name": "global_ls_ratio",
+          "category": "enrichment",
+          "status": "ok",
+          "value": 2.3256,
+          "error": null
+        },
+        "taker_ratio": {
+          "name": "taker_ratio",
+          "category": "enrichment",
+          "status": "warning",
+          "value": null,
+          "error": null
+        },
+        "liquidation_score": {
+          "name": "liquidation_score",
+          "category": "enrichment",
+          "status": "warning",
+          "value": null,
+          "error": null
+        },
+        "basis_pct": {
+          "name": "basis_pct",
+          "category": "enrichment",
+          "status": "ok",
+          "value": -0.06442646882487581,
+          "error": null
+        },
+        "mark_index_spread_bps": {
+          "name": "mark_index_spread_bps",
+          "category": "enrichment",
+          "status": "ok",
+          "value": -6.442646882487581,
+          "error": null
+        },
+        "premium_zscore_5m": {
+          "name": "premium_zscore_5m",
+          "category": "enrichment",
+          "status": "ok",
+          "value": -0.8608135959204765,
+          "error": null
+        },
+        "premium_slope_5m": {
+          "name": "premium_slope_5m",
+          "category": "enrichment",
+          "status": "ok",
+          "value": -0.002038212244359995,
+          "error": null
+        },
+        "depth_imbalance": {
+          "name": "depth_imbalance",
+          "category": "enrichment",
+          "status": "ok",
+          "value": 0.00011746050390562186,
+          "error": null
+        },
+        "microprice_bias": {
+          "name": "microprice_bias",
+          "category": "enrichment",
+          "status": "ok",
+          "value": 0.0,
+          "error": null
+        },
+        "funding_trend": {
+          "name": "funding_trend",
+          "category": "enrichment",
+          "status": "warning",
+          "value": null,
+          "error": null
+        },
+        "top_trader_position_ratio": {
+          "name": "top_trader_position_ratio",
+          "category": "enrichment",
+          "status": "warning",
+          "value": null,
+          "error": null
+        },
+        "top_vs_global_ls_gap": {
+          "name": "top_vs_global_ls_gap",
+          "category": "enrichment",
+          "status": "warning",
+          "value": null,
+          "error": null
+        },
+        "agg_trade_delta_30s": {
+          "name": "agg_trade_delta_30s",
+          "category": "enrichment",
+          "status": "warning",
+          "value": null,
+          "error": null
+        },
+        "aggression_shift": {
+          "name": "aggression_shift",
+          "category": "enrichment",
+          "status": "warning",
+          "value": null,
+          "error": null
+        },
+        "mark_price_age_seconds": {
+          "name": "mark_price_age_seconds",
+          "category": "enrichment",
+          "status": "warning",
+          "value": null,
+          "error": null
+        },
+        "ticker_price_age_seconds": {
+          "name": "ticker_price_age_seconds",
+          "category": "enrichment",
+          "status": "warning",
+          "value": null,
+          "error": null
+        },
+        "book_ticker_age_seconds": {
+          "name": "book_ticker_age_seconds",
+          "category": "enrichment",
+          "status": "warning",
+          "value": null,
+          "error": null
+        },
+        "adx_1h": {
+          "name": "adx_1h",
+          "category": "computed",
+          "status": "ok",
+          "value": 25.37556094322144,
+          "error": null
+        },
+        "risk_reward": {
+          "name": "risk_reward",
+          "category": "computed",
+          "status": "warning",
+          "value": null,
+          "error": null
+        }
+      }
+    }
+  },
+  "summary": {
+    "total_ok": 151,
+    "total_warnings": 47,
+    "total_errors": 0
+  },
+  "completed_at": "2026-04-23T22:35:46.224546"
+}

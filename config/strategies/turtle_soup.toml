@@ -1,0 +1,43 @@
+# Turtle Soup Strategy Configuration
+# All parameters can be tuned without modifying code
+
+[strategy]
+enabled = true
+name = "turtle_soup"
+
+[detection]
+# Rolling window for highs/lows
+roll_bars = 20
+
+# Break detection threshold (ATR multiplier)
+# How far price must break rolling high/low to trigger
+break_atr_mult = 0.1
+
+# Confirmation requirements
+confirm_on_15m = true
+min_15m_bars = 3
+
+[risk_management]
+# Stop loss buffer beyond wick extreme
+sl_buffer_atr = 0.5
+
+# Minimum risk/reward ratio
+min_rr = 1.5
+
+# Maximum entry distance from wick
+max_entry_atr_mult = 0.3
+
+[scoring]
+# Base signal score
+base_score = 0.52
+
+# Penalties
+bias_mismatch_penalty = 0.75
+
+# Volume confirmation
+volume_threshold = 0.8
+volume_compare_bars = 20
+
+[execution]
+# Single target mode for quick reversals
+single_target_mode = false

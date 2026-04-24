@@ -1,0 +1,25 @@
+# BOS/CHoCH Strategy Configuration
+
+[strategy]
+enabled = true
+name = "bos_choch"
+
+[detection]
+# Structure detection
+swing_lookback = 5
+break_confirmation_bars = 2
+
+# BOS/CHoCH specific
+min_swing_size_atr = 0.5
+internal_structure = false
+
+[risk_management]
+sl_buffer_atr = 0.5
+min_rr = 1.5
+
+[scoring]
+base_score = 0.53
+
+[filters]
+min_volume_ratio = 0.8
+require_bias_alignment = true

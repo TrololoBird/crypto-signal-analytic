@@ -1,0 +1,24 @@
+# EMA Bounce Strategy Configuration
+
+[strategy]
+enabled = true
+name = "ema_bounce"
+
+[detection]
+# EMA touch tolerance
+ema_touch_tolerance_pct = 0.008
+bounce_threshold_pct = 0.005
+
+# EMA periods to check
+ema_periods = [9, 21, 50, 200]
+
+[risk_management]
+sl_buffer_atr = 0.4
+target_atr_mult = 2.0
+
+[scoring]
+base_score = 0.52
+
+[filters]
+min_adx = 18.0
+require_trend_alignment = true

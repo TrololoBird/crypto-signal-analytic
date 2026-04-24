@@ -1,0 +1,37 @@
+# Session Killzone Strategy Configuration
+
+[strategy]
+enabled = true
+name = "session_killzone"
+
+[time_windows]
+# NY Session (UTC)
+ny_open = 14
+ny_close = 22
+
+# London Session (UTC)
+london_open = 8
+london_close = 16
+
+# Tokyo Session (UTC)
+tokyo_open = 0
+tokyo_close = 8
+
+[detection]
+# Momentum requirements
+min_momentum = 0.3
+lookback_bars = 10
+
+# Killzone confirmation
+min_killzone_bars = 2
+
+[risk_management]
+sl_buffer_atr = 0.5
+min_rr = 1.5
+
+[scoring]
+base_score = 0.53
+
+[filters]
+# Session volume multiplier
+volume_multiplier = 1.2

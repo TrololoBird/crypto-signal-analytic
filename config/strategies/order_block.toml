@@ -1,0 +1,27 @@
+# Order Block Strategy Configuration
+
+[strategy]
+enabled = true
+name = "order_block"
+
+[detection]
+# Order block parameters
+ob_lookback_bars = 10
+min_ob_size_atr = 0.5
+mitigation_threshold = 0.3
+
+# Swing detection
+swing_lookback_n = 5
+
+[risk_management]
+sl_buffer_atr = 0.5
+min_rr = 1.5
+
+[scoring]
+base_score = 0.54
+bias_mismatch_penalty = 0.75
+tp_too_close_penalty = 0.75
+
+[filters]
+min_volume_ratio = 0.8
+require_imbalance = true

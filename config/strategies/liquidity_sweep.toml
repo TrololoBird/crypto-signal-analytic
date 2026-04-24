@@ -1,0 +1,23 @@
+# Liquidity Sweep Strategy Configuration
+
+[strategy]
+enabled = true
+name = "liquidity_sweep"
+
+[detection]
+# Sweep detection
+sweep_atr_mult = 0.2
+reclaim_threshold = 0.3
+
+# Liquidity lookback
+swing_lookback_n = 5
+
+[risk_management]
+sl_buffer_atr = 0.5
+min_rr = 1.5
+
+[scoring]
+base_score = 0.54
+
+[filters]
+min_volume_ratio = 0.8

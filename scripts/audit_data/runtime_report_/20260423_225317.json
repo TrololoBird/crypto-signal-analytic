@@ -1,0 +1,26 @@
+{
+  "monitoring_session": {
+    "started_at": "2026-04-23T22:53:17.564050",
+    "ended_at": "2026-04-23T23:23:26.875856",
+    "duration_seconds": 1809.2743
+  },
+  "statistics": {
+    "total_cycles": 0,
+    "unique_symbols_processed": 0,
+    "detector_runs_total": 0,
+    "candidates_total": 0,
+    "delivered_total": 0,
+    "rejected_total": 0,
+    "errors_count": 0
+  },
+  "performance": {
+    "cycles_per_minute": 0.0,
+    "candidates_per_cycle": 0,
+    "delivery_rate": 0
+  },
+  "signals": {
+    "symbols_with_candidates": [],
+    "last_signals": []
+  },
+  "errors_sample": []
+}

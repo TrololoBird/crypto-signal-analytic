@@ -1,0 +1,25 @@
+# Breaker Block Strategy Configuration
+
+[strategy]
+enabled = true
+name = "breaker_block"
+
+[detection]
+# Break detection
+break_lookback = 20
+min_break_size_atr = 0.3
+
+# Block parameters
+block_validity_bars = 50
+retest_tolerance_pct = 0.002
+
+[risk_management]
+sl_buffer_atr = 0.5
+min_rr = 1.5
+
+[scoring]
+base_score = 0.53
+
+[filters]
+min_volume_ratio = 0.8
+require_break_confirmation = true

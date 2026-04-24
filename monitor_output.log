@@ -1,0 +1,32 @@
+
+======================================================================
+  BOT RUNTIME MONITORING | Start: 2026-04-23 13:52:53 UTC
+======================================================================
+
+Planned runtime: 30 minutes
+Check interval: 30 seconds
+Expected end: 2026-04-23 14:22:53 UTC
+
+PID file: bot.pid
+Telemetry dir: telemetry
+Database: data\bot_memory.db
+Traceback (most recent call last):
+  File "C:\Users\undea\Documents\bot\scripts\monitor_runtime.py", line 356, in <module>
+    asyncio.run(monitor_loop())
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "C:\Users\undea\AppData\Local\Programs\Python\Python313\Lib\asyncio\runners.py", line 195, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "C:\Users\undea\AppData\Local\Programs\Python\Python313\Lib\asyncio\runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\undea\AppData\Local\Programs\Python\Python313\Lib\asyncio\base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "C:\Users\undea\Documents\bot\scripts\monitor_runtime.py", line 182, in monitor_loop
+    print(f"\n{'\u2500'*70}")
+    ~~~~~^^^^^^^^^^^^^^^
+  File "C:\Users\undea\AppData\Local\Programs\Python\Python313\Lib\encodings\cp1251.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 2-71: character maps to <undefined>

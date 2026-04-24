@@ -1,0 +1,28 @@
+# Hidden Divergence Strategy Configuration
+
+[strategy]
+enabled = true
+name = "hidden_divergence"
+
+[detection]
+# RSI parameters
+rsi_lookback = 14
+rsi_overbought = 70
+rsi_oversold = 30
+
+# Price tolerance
+price_tolerance_pct = 0.001
+
+# MACD threshold
+macd_threshold = 0.0
+
+[risk_management]
+sl_buffer_atr = 0.5
+min_rr = 1.5
+
+[scoring]
+base_score = 0.52
+
+[filters]
+min_adx = 18.0
+confirm_with_macd = true

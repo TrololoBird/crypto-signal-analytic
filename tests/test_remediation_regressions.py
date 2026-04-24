@@ -17,6 +17,8 @@ from bot.market_data import BinanceFuturesMarketData, MarketDataUnavailable
 from bot.models import PipelineResult, PreparedSymbol, Signal, UniverseSymbol
 from bot.setup_base import BaseSetup, SetupParams
 from bot.strategies.ema_bounce import EmaBounceSetup
+from bot.strategies.fvg import FVGSetup
+from bot.strategies.structure_pullback import StructurePullbackSetup
 from bot.setups import _build_signal
 from bot.setups.utils import build_structural_targets
 from bot.tracked_signals import TrackedSignalState
@@ -638,6 +640,175 @@ def test_ema_bounce_emits_1h_timeframe() -> None:
 
     assert signal is not None
     assert signal.timeframe == "1h"
+
+
+@pytest.mark.parametrize(
+    ("min_adx", "expect_signal"),
+    [
+        (20.0, True),
+        (30.0, False),
+    ],
+)
+def test_ema_bounce_config_min_adx_changes_outcome(monkeypatch: pytest.MonkeyPatch, min_adx: float, expect_signal: bool) -> None:
+    setup = EmaBounceSetup()
+    settings = SimpleNamespace(filters=SimpleNamespace(setups={}))
+    t0 = datetime.now(UTC) - timedelta(hours=2)
+    prepared = make_prepared(price=101.0)
+    prepared.bias_1h = "uptrend"
+    prepared.regime_1h_confirmed = "uptrend"
+    prepared.work_1h = pl.DataFrame(
+        {
+            "time": [t0, t0 + timedelta(hours=1), t0 + timedelta(hours=2)],
+            "close_time": [t0, t0 + timedelta(hours=1), t0 + timedelta(hours=2)],
+            "open": [98.5, 99.0, 99.6],
+            "high": [99.8, 100.5, 101.2],
+            "low": [98.2, 98.7, 99.4],
+            "close": [99.2, 99.4, 100.1],
+            "volume": [900.0, 950.0, 1100.0],
+            "atr14": [1.2, 1.3, 1.4],
+            "rsi14": [52.0, 54.0, 56.0],
+            "volume_ratio20": [1.0, 1.1, 1.3],
+            "ema20": [99.5, 100.0, 100.4],
+            "ema50": [99.0, 99.3, 99.7],
+            "adx14": [21.0, 22.0, 24.0],
+        }
+    )
+    monkeypatch.setattr(
+        "bot.strategies.ema_bounce.load_strategy_config",
+        lambda _: {"filters": {"min_adx": min_adx}},
+    )
+
+    signal = setup.detect(prepared, settings)
+
+    assert (signal is not None) is expect_signal
+
+
+@pytest.mark.parametrize(
+    ("min_trend_score", "expect_signal"),
+    [
+        (0.40, True),
+        (0.95, False),
+    ],
+)
+def test_structure_pullback_config_trend_threshold_changes_outcome(
+    monkeypatch: pytest.MonkeyPatch, min_trend_score: float, expect_signal: bool
+) -> None:
+    setup = StructurePullbackSetup()
+    settings = SimpleNamespace(filters=SimpleNamespace(min_adx_1h=18.0, setups={}))
+    prepared = make_prepared(price=106.0)
+    prepared.bias_1h = "uptrend"
+    prepared.regime_1h_confirmed = "uptrend"
+    prepared.regime_4h_confirmed = "uptrend"
+    prepared.structure_1h = "uptrend"
+    now = datetime.now(UTC)
+    prepared.work_1h = pl.DataFrame(
+        {
+            "time": [now - timedelta(hours=4), now - timedelta(hours=3), now - timedelta(hours=2), now - timedelta(hours=1), now],
+            "close_time": [now - timedelta(hours=4), now - timedelta(hours=3), now - timedelta(hours=2), now - timedelta(hours=1), now],
+            "open": [100.0, 101.0, 102.0, 103.0, 104.0],
+            "high": [102.0, 104.0, 106.0, 109.0, 112.0],
+            "low": [99.0, 100.0, 101.0, 102.0, 103.0],
+            "close": [101.0, 103.0, 105.0, 107.0, 108.0],
+            "volume": [900.0, 950.0, 1000.0, 1050.0, 1100.0],
+            "atr14": [1.2, 1.3, 1.4, 1.5, 1.6],
+            "rsi14": [50.0, 52.0, 54.0, 55.0, 56.0],
+            "volume_ratio20": [1.0, 1.1, 1.2, 1.2, 1.3],
+            "ema20": [100.5, 101.5, 102.5, 103.5, 104.5],
+            "ema50": [99.0, 99.5, 100.0, 100.5, 101.0],
+            "adx14": [24.0, 25.0, 26.0, 27.0, 28.0],
+            "bb_pct_b": [0.50, 0.55, 0.60, 0.65, 0.70],
+        }
+    )
+    prepared.work_15m = pl.DataFrame(
+        {
+            "time": [now - timedelta(minutes=60), now - timedelta(minutes=45), now - timedelta(minutes=30), now - timedelta(minutes=15), now],
+            "close_time": [now - timedelta(minutes=60), now - timedelta(minutes=45), now - timedelta(minutes=30), now - timedelta(minutes=15), now],
+            "open": [104.5, 104.2, 104.0, 103.8, 106.0],
+            "high": [104.8, 104.3, 104.2, 104.0, 107.0],
+            "low": [104.1, 103.9, 103.6, 103.2, 105.8],
+            "close": [104.2, 104.0, 103.8, 103.5, 106.0],
+            "volume": [800.0, 820.0, 850.0, 900.0, 1200.0],
+            "atr14": [0.8, 0.8, 0.9, 1.0, 1.0],
+            "rsi14": [48.0, 47.0, 45.0, 43.0, 55.0],
+            "volume_ratio20": [0.9, 0.95, 1.0, 1.05, 1.2],
+            "bb_pct_b": [0.40, 0.38, 0.36, 0.35, 0.60],
+            "ema20": [104.0, 103.9, 103.8, 103.7, 103.9],
+            "adx14": [20.0, 21.0, 22.0, 23.0, 24.0],
+        }
+    )
+    prepared.work_4h = pl.DataFrame(
+        {
+            "time": [now - timedelta(hours=8), now - timedelta(hours=4), now],
+            "close_time": [now - timedelta(hours=8), now - timedelta(hours=4), now],
+            "open": [98.0, 102.0, 106.0],
+            "high": [103.0, 109.0, 120.0],
+            "low": [97.0, 101.0, 105.0],
+            "close": [102.0, 106.0, 111.0],
+            "volume": [5000.0, 5500.0, 6000.0],
+            "atr14": [2.5, 2.6, 2.7],
+            "rsi14": [52.0, 54.0, 56.0],
+            "volume_ratio20": [1.0, 1.1, 1.2],
+            "ema20": [100.0, 103.0, 106.0],
+            "ema50": [95.0, 98.0, 101.0],
+            "adx14": [24.0, 25.0, 26.0],
+            "bb_pct_b": [0.55, 0.58, 0.62],
+        }
+    )
+    monkeypatch.setattr(
+        "bot.strategies.structure_pullback.load_strategy_config",
+        lambda _: {"detection": {"min_trend_score": min_trend_score}},
+    )
+
+    signal = setup.detect(prepared, settings)
+
+    assert (signal is not None) is expect_signal
+
+
+@pytest.mark.parametrize(
+    ("min_mitigation_pct", "expect_signal"),
+    [
+        (0.20, True),
+        (0.70, False),
+    ],
+)
+def test_fvg_config_mitigation_threshold_changes_outcome(
+    monkeypatch: pytest.MonkeyPatch, min_mitigation_pct: float, expect_signal: bool
+) -> None:
+    setup = FVGSetup()
+    settings = SimpleNamespace(filters=SimpleNamespace(setups={}))
+    now = datetime.now(UTC)
+    prepared = make_prepared(price=100.0)
+    prepared.bias_1h = "uptrend"
+    prepared.regime_1h_confirmed = "uptrend"
+    prepared.structure_1h = "uptrend"
+    prepared.work_15m = pl.DataFrame(
+        {
+            "time": [now - timedelta(minutes=60), now - timedelta(minutes=45), now - timedelta(minutes=30), now - timedelta(minutes=15), now],
+            "close_time": [now - timedelta(minutes=60), now - timedelta(minutes=45), now - timedelta(minutes=30), now - timedelta(minutes=15), now],
+            "open": [98.2, 99.6, 99.8, 99.7, 100.0],
+            "high": [98.6, 100.0, 100.0, 100.2, 100.3],
+            "low": [98.0, 99.4, 99.9, 99.7, 99.9],
+            "close": [98.4, 99.8, 100.0, 100.0, 100.0],
+            "volume": [800.0, 950.0, 1100.0, 1050.0, 1000.0],
+            "atr14": [1.0, 1.0, 1.0, 1.0, 1.0],
+            "rsi14": [50.0, 52.0, 54.0, 55.0, 56.0],
+            "volume_ratio20": [1.0, 1.1, 1.2, 1.1, 1.0],
+            "ema20": [98.5, 99.0, 99.4, 99.7, 99.9],
+            "ema50": [98.0, 98.5, 98.8, 99.0, 99.2],
+            "adx14": [20.0, 21.0, 22.0, 23.0, 24.0],
+        }
+    )
+    monkeypatch.setattr(
+        "bot.strategies.fvg.load_strategy_config",
+        lambda _: {
+            "detection": {"min_mitigation_pct": min_mitigation_pct, "min_fvg_size_atr": 0.05},
+            "risk_management": {"sl_buffer_atr": 0.5},
+        },
+    )
+
+    signal = setup.detect(prepared, settings)
+
+    assert (signal is not None) is expect_signal
 
 
 @pytest.mark.asyncio

@@ -16,7 +16,6 @@ from ..setups import _build_signal, _compute_dynamic_score, _reject
 from ..setups.utils import (
     build_structural_targets,
     validate_rr_or_penalty,
-    apply_graded_penalty,
     get_dynamic_params,
 )
 
@@ -92,14 +91,20 @@ class EmaBounceSetup(BaseSetup):
         # Direction detection with graded scoring instead of reject
         signal_direction: str | None = None
         if bias_1h == "uptrend":
-            touch_ema = prev_close <= ema20 * 1.008 or prev_close <= ema50 * 1.015
-            bounce = close > prev_close and close > ema20 * 0.995
+            touch_ema = (
+                prev_close <= ema20 * (1.0 + float(ema_touch_tolerance_pct))
+                or prev_close <= ema50 * (1.0 + float(ema_touch_tolerance_pct) * 2.0)
+            )
+            bounce = close > prev_close * (1.0 + float(bounce_threshold_pct)) and close > ema20
             if touch_ema and bounce:
                 signal_direction = "long"
                 reasons = ["ema_bounce_long", f"ema20_1h={ema20:.4f}", f"ema50_1h={ema50:.4f}"]
         elif bias_1h == "downtrend":
-            touch_ema = prev_close >= ema20 * 0.992 or prev_close >= ema50 * 0.985
-            bounce = close < prev_close and close < ema20 * 1.005
+            touch_ema = (
+                prev_close >= ema20 * (1.0 - float(ema_touch_tolerance_pct))
+                or prev_close >= ema50 * (1.0 - float(ema_touch_tolerance_pct) * 2.0)
+            )
+            bounce = close < prev_close * (1.0 - float(bounce_threshold_pct)) and close < ema20
             if touch_ema and bounce:
                 signal_direction = "short"
                 reasons = ["ema_bounce_short", f"ema20_1h={ema20:.4f}", f"ema50_1h={ema50:.4f}"]
@@ -109,6 +114,10 @@ class EmaBounceSetup(BaseSetup):
             return None
 
         vol_ratio = float(work_1h.item(-1, "volume_ratio20") or 1.0)
+        adx_1h = float(work_1h.item(-1, "adx14") or 0.0)
+        if adx_1h > 0.0 and adx_1h < float(min_adx):
+            _reject(prepared, setup_id, "adx_too_low", adx_1h=adx_1h, min_adx=min_adx)
+            return None
         price_anchor = close
 
         # --- Compute structural SL/TP via unified utility ---

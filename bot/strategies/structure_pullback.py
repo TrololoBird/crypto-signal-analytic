@@ -102,7 +102,7 @@ class StructurePullbackSetup(BaseSetup):
         if close_1h > ema20_1h:
             long_score += 0.30
             long_reasons.append("price_above_ema20")
-        elif close_1h >= ema20_1h * 0.995:
+        elif close_1h >= ema20_1h * float(ema_proximity_pct):
             long_score += 0.15
             long_reasons.append("price_near_ema20")
 
@@ -123,11 +123,11 @@ class StructurePullbackSetup(BaseSetup):
         if close_1h < ema20_1h:
             short_score += 0.30
             short_reasons.append("price_below_ema20")
-        elif close_1h <= ema20_1h * 1.005:
+        elif close_1h <= ema20_1h * (2.0 - float(ema_proximity_pct)):
             short_score += 0.15
             short_reasons.append("price_near_ema20")
 
-        if max(long_score, short_score) < 0.40 or abs(long_score - short_score) < 0.03:
+        if max(long_score, short_score) < float(min_trend_score) or abs(long_score - short_score) < 0.03:
             _reject(prepared, "structure_pullback", "trend_score_too_low",
                     long_score=round(long_score, 3), short_score=round(short_score, 3),
                     regime=regime_1h, structure=structure,
@@ -160,14 +160,17 @@ class StructurePullbackSetup(BaseSetup):
         selected_level_name: str | None = None
         selected_level: float | None = None
         touch_tolerance = max(atr * 0.20, trig_close * 0.0015)
+        recent_pullback = work_15m.tail(int(max(2, pullback_lookback)))
         for level_name, level in _pullback_levels(prepared, direction):
             if level <= 0.0:
                 continue
             if direction == "long":
-                touched = prev_low <= level + touch_tolerance
+                local_low = _as_float(recent_pullback["low"].min(), prev_low)
+                touched = min(prev_low, local_low) <= level + touch_tolerance
                 bounced = trig_close > level
             else:
-                touched = prev_high >= level - touch_tolerance
+                local_high = _as_float(recent_pullback["high"].max(), prev_high)
+                touched = max(prev_high, local_high) >= level - touch_tolerance
                 bounced = trig_close < level
             if touched and bounced:
                 if selected_level is None or abs(trig_close - level) < abs(trig_close - selected_level):
@@ -234,7 +237,7 @@ class StructurePullbackSetup(BaseSetup):
                 if sl_candidates.len() > 0
                 else _as_float(fallback_low)
             )
-            stop = pullback_low - atr * 0.4
+            stop = pullback_low - atr * float(sl_buffer_atr)
 
             # TP1: prior 1h swing high above entry (trend extreme before pullback)
             sh_1h_mask, sl_mask = _sp(work_1h, n=3)
@@ -268,7 +271,7 @@ class StructurePullbackSetup(BaseSetup):
                 if sh_candidates.len() > 0
                 else _as_float(fallback_high)
             )
-            stop = pullback_high + atr * 0.4
+            stop = pullback_high + atr * float(sl_buffer_atr)
 
             # TP1: prior 1h swing low below entry
             _, sl_1h_mask = _sp(work_1h, n=3)
@@ -298,9 +301,10 @@ class StructurePullbackSetup(BaseSetup):
         if risk <= 0:
             _reject(prepared, "structure_pullback", "invalid_stop", stop=stop)
             return None
-        if tp1 is None or abs(tp1 - price_anchor) < risk * 1.5:
+        min_rr_cfg = float(min_rr)
+        if tp1 is None or abs(tp1 - price_anchor) < risk * min_rr_cfg:
             _reject(prepared, "structure_pullback", "tp1_too_close_or_missing",
-                    tp1=tp1, risk=risk, min_required=risk * 1.5)
+                    tp1=tp1, risk=risk, min_required=risk * min_rr_cfg)
             return None
         if tp2 is None:
             tp2 = tp1  # Use TP1 as TP2 if no extended target found

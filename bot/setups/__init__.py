@@ -285,6 +285,7 @@ def _build_signal(
     tp2: float,
     price_anchor: float,
     atr: float,
+    timeframe: str = "15m",
     entry_pad_atr_mult: float = 0.08,
 ) -> Signal | None:
     if not math.isfinite(float(atr)) or atr <= 0.0:
@@ -333,7 +334,7 @@ def _build_signal(
         setup_id=setup_id,
         direction=direction,
         score=score,
-        timeframe="15m",
+        timeframe=str(timeframe or "15m"),
         entry_low=min(entry_low, entry_high),
         entry_high=max(entry_low, entry_high),
         stop=normalized_stop,

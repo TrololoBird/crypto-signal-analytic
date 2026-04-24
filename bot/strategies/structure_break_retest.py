@@ -210,6 +210,6 @@ class StructureBreakRetestSetup(BaseSetup):
 
         return _build_signal(
             prepared=prepared, setup_id=setup_id, direction=direction,
-            score=score, reasons=reasons, stop=stop, tp1=final_tp1, tp2=final_tp2,
+            score=score, timeframe="15m+1h", reasons=reasons, stop=stop, tp1=final_tp1, tp2=final_tp2,
             price_anchor=price_anchor, atr=atr,
         )

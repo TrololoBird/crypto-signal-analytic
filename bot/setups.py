@@ -33,6 +33,7 @@ def _build_signal(
     tp2: float,
     price_anchor: float,
     atr: float,
+    timeframe: str = "15m",
     entry_pad_atr_mult: float = 0.08,
 ) -> Signal | None:
     if atr <= 0.0 or stop <= 0.0 or tp1 <= 0.0 or tp2 <= 0.0:
@@ -59,7 +60,7 @@ def _build_signal(
         setup_id=setup_id,
         direction=direction,
         score=score,
-        timeframe="15m",
+        timeframe=str(timeframe or "15m"),
         entry_low=min(entry_low, entry_high),
         entry_high=max(entry_low, entry_high),
         stop=stop,

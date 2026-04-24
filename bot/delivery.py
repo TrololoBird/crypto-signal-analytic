@@ -91,7 +91,13 @@ def _tradingview_interval(timeframe: str) -> str:
         "4h": "240",
         "1d": "1D",
     }
-    return mapping.get(raw, "15")
+    if raw in mapping:
+        return mapping[raw]
+
+    for token in ("15m", "1h", "5m", "30m", "4h"):
+        if token in raw:
+            return mapping[token]
+    return "15"
 
 
 def tradingview_chart_url(symbol: str, timeframe: str) -> str:

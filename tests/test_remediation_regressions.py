@@ -16,6 +16,7 @@ from bot.core.events import BookTickerEvent
 from bot.market_data import BinanceFuturesMarketData, MarketDataUnavailable
 from bot.models import PipelineResult, PreparedSymbol, Signal, UniverseSymbol
 from bot.setup_base import BaseSetup, SetupParams
+from bot.strategies.ema_bounce import EmaBounceSetup
 from bot.setups import _build_signal
 from bot.setups.utils import build_structural_targets
 from bot.tracked_signals import TrackedSignalState
@@ -605,6 +606,38 @@ def test_build_signal_reads_adx14_and_preserves_zero_metrics() -> None:
     assert signal.premium_zscore_5m == pytest.approx(0.0)
     assert signal.premium_slope_5m == pytest.approx(0.0)
     assert signal.ls_ratio == pytest.approx(0.0)
+
+
+def test_ema_bounce_emits_1h_timeframe() -> None:
+    setup = EmaBounceSetup()
+    settings = SimpleNamespace(filters=SimpleNamespace(setups={}))
+
+    t0 = datetime.now(UTC) - timedelta(hours=2)
+    prepared = make_prepared(price=101.0)
+    prepared.bias_1h = "uptrend"
+    prepared.regime_1h_confirmed = "uptrend"
+    prepared.work_1h = pl.DataFrame(
+        {
+            "time": [t0, t0 + timedelta(hours=1), t0 + timedelta(hours=2)],
+            "close_time": [t0, t0 + timedelta(hours=1), t0 + timedelta(hours=2)],
+            "open": [99.0, 99.4, 100.2],
+            "high": [100.5, 100.8, 102.0],
+            "low": [98.8, 99.1, 100.0],
+            "close": [99.8, 100.0, 101.2],
+            "volume": [900.0, 950.0, 1100.0],
+            "atr14": [1.2, 1.3, 1.4],
+            "rsi14": [52.0, 54.0, 56.0],
+            "volume_ratio20": [1.0, 1.1, 1.3],
+            "ema20": [99.6, 100.2, 100.5],
+            "ema50": [99.0, 99.4, 99.8],
+            "adx14": [21.0, 22.0, 24.0],
+        }
+    )
+
+    signal = setup.detect(prepared, settings)
+
+    assert signal is not None
+    assert signal.timeframe == "1h"
 
 
 @pytest.mark.asyncio

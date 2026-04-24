@@ -20,9 +20,7 @@ from ..config_loader import load_strategy_config, get_nested
 from ..models import PreparedSymbol, Signal
 from ..setups import _build_signal, _compute_dynamic_score, _reject
 from ..setups.utils import (
-    build_structural_targets,
     validate_rr_or_penalty,
-    apply_graded_penalty,
     get_dynamic_params,
 )
 
@@ -119,7 +117,13 @@ class FVGSetup(BaseSetup):
             gap_top = lows[i]
             if gap_bot < gap_top:
                 width = gap_top - gap_bot
-                if width / price >= (min_gap_width_bps / 10000) and gap_bot <= price <= gap_top:
+                mitigation_pct = (price - gap_bot) / width if width > 0 else 0.0
+                if (
+                    width / price >= (min_gap_width_bps / 10000)
+                    and width >= atr * float(min_fvg_size_atr)
+                    and float(min_mitigation_pct) <= mitigation_pct <= 1.0
+                    and gap_bot <= price <= gap_top
+                ):
                     # Require: the middle candle (i-1) or impulse candle (i) had elevated volume
                     vol_ok = True
                     if vol_ratios is not None:
@@ -134,7 +138,13 @@ class FVGSetup(BaseSetup):
             gap_bot2 = highs[i]
             if gap_top2 > gap_bot2:
                 width = gap_top2 - gap_bot2
-                if width / price >= (min_gap_width_bps / 10000) and gap_bot2 <= price <= gap_top2:
+                mitigation_pct = (gap_top2 - price) / width if width > 0 else 0.0
+                if (
+                    width / price >= (min_gap_width_bps / 10000)
+                    and width >= atr * float(min_fvg_size_atr)
+                    and float(min_mitigation_pct) <= mitigation_pct <= 1.0
+                    and gap_bot2 <= price <= gap_top2
+                ):
                     vol_ok = True
                     if vol_ratios is not None:
                         candle_vol = float(vol_ratios[i - 1]) if not math.isnan(vol_ratios[i - 1]) else 1.0
@@ -186,14 +196,14 @@ class FVGSetup(BaseSetup):
         fvg_mid = (fvg_low + fvg_high) / 2.0
         if direction == "long":
             # SL: beyond opposite side of FVG + 0.5×ATR (was 0.1)
-            stop = fvg_low - atr * 0.5
+            stop = fvg_low - atr * float(sl_buffer_atr)
             # TP1: FVG midpoint (50% fill)
             tp1 = fvg_mid if fvg_mid > price else fvg_high
             # TP2: full FVG fill (opposite boundary)
             tp2 = fvg_high
         else:
             # SL: beyond opposite side of FVG + 0.5×ATR (was 0.1)
-            stop = fvg_high + atr * 0.5
+            stop = fvg_high + atr * float(sl_buffer_atr)
             # TP1: FVG midpoint (50% fill)
             tp1 = fvg_mid if fvg_mid < price else fvg_low
             # TP2: full FVG fill

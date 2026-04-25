@@ -19,7 +19,7 @@ confirmation_bars = 2
 price_reversal_pct = 0.003
 
 [risk_management]
-sl_buffer_atr = 0.5
+sl_buffer_atr = 1.5
 min_rr = 1.2
 
 [scoring]

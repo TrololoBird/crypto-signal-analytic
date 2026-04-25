@@ -19,7 +19,7 @@ min_15m_bars = 3
 
 [risk_management]
 # Stop loss buffer beyond wick extreme
-sl_buffer_atr = 0.5
+sl_buffer_atr = 1.5
 
 # Minimum risk/reward ratio
 min_rr = 1.5

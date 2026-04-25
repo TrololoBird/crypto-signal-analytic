@@ -14,7 +14,7 @@ price_tolerance_pct = 0.001
 min_cvd_slope = 0.01
 
 [risk_management]
-sl_buffer_atr = 0.5
+sl_buffer_atr = 1.5
 min_rr = 1.5
 
 [scoring]

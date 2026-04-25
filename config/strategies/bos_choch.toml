@@ -14,7 +14,7 @@ min_swing_size_atr = 0.5
 internal_structure = false
 
 [risk_management]
-sl_buffer_atr = 0.5
+sl_buffer_atr = 1.5
 min_rr = 1.5
 
 [scoring]

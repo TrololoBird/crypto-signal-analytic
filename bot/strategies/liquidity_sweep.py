@@ -45,7 +45,11 @@ class LiquiditySweepSetup(BaseSetup):
         defaults = {
             "base_score": 0.50,
             "equal_level_tol": 0.0015,
+            "threshold_tol": 0.0015,  # Backward-compatible alias from existing config files.
             "min_level_hits": 2,
+            "sweep_atr_mult": 0.30,
+            "reclaim_threshold": 0.30,
+            "sl_buffer_atr": 0.50,
             "bias_mismatch_penalty": 0.75,
             "min_rr": 1.5,
         }
@@ -60,12 +64,30 @@ class LiquiditySweepSetup(BaseSetup):
     def detect(self, prepared: PreparedSymbol, settings: BotSettings) -> Signal | None:
         dynamic_params = get_dynamic_params(prepared, self.setup_id)
         defaults = self.get_optimizable_params(settings)
-        sweep_atr_mult = dynamic_params.get("sweep_atr_mult", defaults["sweep_atr_mult"])
-        reclaim_threshold = dynamic_params.get("reclaim_threshold", defaults["reclaim_threshold"])
-        sl_buffer_atr = dynamic_params.get("sl_buffer_atr", defaults["sl_buffer_atr"])
+        equal_level_tol = float(
+            dynamic_params.get(
+                "equal_level_tol",
+                dynamic_params.get("threshold_tol", defaults["equal_level_tol"]),
+            )
+        )
+        min_level_hits = max(2, int(dynamic_params.get("min_level_hits", defaults["min_level_hits"])))
+        sweep_atr_mult = float(dynamic_params.get("sweep_atr_mult", defaults["sweep_atr_mult"]))
+        reclaim_threshold = float(dynamic_params.get("reclaim_threshold", defaults["reclaim_threshold"]))
+        sl_buffer_atr = float(dynamic_params.get("sl_buffer_atr", defaults["sl_buffer_atr"]))
+        min_rr = float(dynamic_params.get("min_rr", defaults["min_rr"]))
+        base_score = float(dynamic_params.get("base_score", defaults["base_score"]))
 
         try:
-            return self._detect(prepared, settings)
+            return self._detect(
+                prepared,
+                equal_level_tol=equal_level_tol,
+                min_level_hits=min_level_hits,
+                sweep_atr_mult=sweep_atr_mult,
+                reclaim_threshold=reclaim_threshold,
+                sl_buffer_atr=sl_buffer_atr,
+                min_rr=min_rr,
+                base_score=base_score,
+            )
         except Exception as exc:
             LOG.exception("%s liquidity_sweep: unexpected error", prepared.symbol)
             _reject(
@@ -77,10 +99,19 @@ class LiquiditySweepSetup(BaseSetup):
             )
             return None
 
-    def _detect(self, prepared: PreparedSymbol, settings: BotSettings) -> Signal | None:
+    def _detect(
+        self,
+        prepared: PreparedSymbol,
+        *,
+        equal_level_tol: float,
+        min_level_hits: int,
+        sweep_atr_mult: float,
+        reclaim_threshold: float,
+        sl_buffer_atr: float,
+        min_rr: float,
+        base_score: float,
+    ) -> Signal | None:
         setup_id = self.setup_id
-        dynamic_params = get_dynamic_params(prepared, setup_id)
-        defaults = self.get_optimizable_params(settings)
 
         w = prepared.work_1h
         if w.height < 10:
@@ -97,9 +128,6 @@ class LiquiditySweepSetup(BaseSetup):
             _reject(prepared, setup_id, "price_missing")
             return None
 
-        # 1H context for 15M signals (not 4H - too lagging for <4h trades)
-        bias_1h = getattr(prepared, 'bias_1h', prepared.bias_4h)
-
         scan = w.tail(_SCAN_BARS) if w.height >= _SCAN_BARS else w
         highs = scan["high"].to_numpy()
         lows = scan["low"].to_numpy()
@@ -113,28 +141,25 @@ class LiquiditySweepSetup(BaseSetup):
         sweep_bar_h = highs[-1]
         sweep_bar_l = lows[-1]
         sweep_bar_c = closes[-1]
-        sweep_bar_o = float(scan["open"][-1])
 
         # --- Bearish sweep: wick into equal highs, close back below ---
         # Scan newest-to-oldest to find the most recent cluster of equal highs.
         prev_highs = highs[:-1]
         eq_high_level = None
         for ref in prev_highs[::-1]:
-            matches = [h for h in prev_highs if abs(h - ref) / ref < _EQUAL_TOL]
-            if len(matches) >= 2:
+            matches = [h for h in prev_highs if abs(h - ref) / ref < equal_level_tol]
+            if len(matches) >= min_level_hits:
                 eq_high_level = ref
                 break
 
         if eq_high_level is not None:
             if sweep_bar_h > eq_high_level and sweep_bar_c < eq_high_level:
-                if abs(price - sweep_bar_c) <= 0.3 * atr:
+                if abs(price - sweep_bar_c) <= sweep_atr_mult * atr:
                     # SL: beyond swept liquidity level + 0.5×ATR
-                    stop = sweep_bar_h + 0.5 * atr
+                    stop = sweep_bar_h + sl_buffer_atr * atr
                     risk = stop - price
                     if risk > 0:
-                        # TP1: equilibrium price = origin of the sweep (midpoint of pre-sweep impulse)
-                        impulse_low = _as_float(scan["low"].slice(-6, 5).min()) if n > 6 else sweep_bar_l
-                        tp1 = min(eq_high_level, price - risk * 1.5)
+                        tp1 = min(eq_high_level, price - risk * min_rr)
                         if tp1 >= price:
                             _reject(prepared, setup_id, "tp1_invalid_short", tp1=tp1, price=price)
                             return None
@@ -145,7 +170,7 @@ class LiquiditySweepSetup(BaseSetup):
                         tp2_candidates = sl_prices.filter(sl_prices < price)
                         tp2 = _as_float(tp2_candidates[-1]) if tp2_candidates.len() > 0 else None
                         # Validate: TP1 must be at least 1.5× risk distance
-                        if abs(tp1 - price) < risk * 1.5:
+                        if abs(tp1 - price) < risk * min_rr:
                             _reject(prepared, setup_id, "tp1_too_close_or_missing", tp1=tp1, risk=risk, price=price)
                             return None  # Reject this sweep setup
                         if tp2 is None or abs(tp2 - price) <= abs(tp1 - price):
@@ -154,7 +179,7 @@ class LiquiditySweepSetup(BaseSetup):
                         rsi = _as_float(w.item(-1, "rsi14"), 50.0)
                         score = _compute_dynamic_score(
                             direction="short",
-                            base_score=0.52,
+                            base_score=base_score,
                             vol_ratio=vol_ratio,
                             rsi=rsi,
                         )
@@ -181,21 +206,19 @@ class LiquiditySweepSetup(BaseSetup):
         prev_lows = lows[:-1]
         eq_low_level = None
         for ref in prev_lows[::-1]:
-            matches = [l for l in prev_lows if abs(l - ref) / ref < _EQUAL_TOL]
-            if len(matches) >= 2:
+            matches = [l for l in prev_lows if abs(l - ref) / ref < equal_level_tol]
+            if len(matches) >= min_level_hits:
                 eq_low_level = ref
                 break
 
         if eq_low_level is not None:
             if sweep_bar_l < eq_low_level and sweep_bar_c > eq_low_level:
-                if abs(price - sweep_bar_c) <= 0.3 * atr:
+                if abs(price - sweep_bar_c) <= reclaim_threshold * atr:
                     # SL: beyond swept liquidity level + 0.5×ATR
-                    stop = sweep_bar_l - 0.5 * atr
+                    stop = sweep_bar_l - sl_buffer_atr * atr
                     risk = price - stop
                     if risk > 0:
-                        # TP1: equilibrium price = midpoint of pre-sweep impulse
-                        impulse_high = _as_float(scan["high"].slice(-6, 5).max()) if n > 6 else sweep_bar_h
-                        tp1 = max(eq_low_level, price + risk * 1.5)
+                        tp1 = max(eq_low_level, price + risk * min_rr)
                         if tp1 <= price:
                             _reject(prepared, setup_id, "tp1_invalid_long", tp1=tp1, price=price)
                             return None
@@ -206,7 +229,7 @@ class LiquiditySweepSetup(BaseSetup):
                         tp2_candidates = sh_prices.filter(sh_prices > price)
                         tp2 = _as_float(tp2_candidates[0]) if tp2_candidates.len() > 0 else None
                         # Validate: TP1 must be at least 1.5× risk distance
-                        if abs(tp1 - price) < risk * 1.5:
+                        if abs(tp1 - price) < risk * min_rr:
                             _reject(prepared, setup_id, "tp1_too_close_or_missing", tp1=tp1, risk=risk, price=price)
                             return None  # Reject this sweep setup
                         if tp2 is None or abs(tp2 - price) <= abs(tp1 - price):
@@ -215,7 +238,7 @@ class LiquiditySweepSetup(BaseSetup):
                         rsi = _as_float(w.item(-1, "rsi14"), 50.0)
                         score = _compute_dynamic_score(
                             direction="long",
-                            base_score=0.52,
+                            base_score=base_score,
                             vol_ratio=vol_ratio,
                             rsi=rsi,
                         )

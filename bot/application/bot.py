@@ -1675,10 +1675,14 @@ class SignalBot:
                 # Staggered batch processing to prevent REST API flood
                 batch_size = self.settings.runtime.startup_batch_size
                 batch_delay = self.settings.runtime.startup_batch_delay_seconds
-                sem = asyncio.Semaphore(2)  # Reduced from 4 to be gentler on API
+                rest_concurrency = max(
+                    1,
+                    int(self.settings.runtime.max_concurrent_rest_requests),
+                )
+                sem = asyncio.Semaphore(rest_concurrency)
 
-                async def _fetch_one(symbol: str) -> None:
-                    async with sem:
+                async def _fetch_one(symbol: str, limiter: asyncio.Semaphore) -> None:
+                    async with limiter:
                         try:
                             await self.client.fetch_open_interest_change(symbol, period="1h")
                         except Exception:
@@ -1729,14 +1733,19 @@ class SignalBot:
                 for i in range(0, len(shortlist), batch_size):
                     batch = shortlist[i:i + batch_size]
                     await asyncio.gather(
-                        *[asyncio.create_task(_fetch_one(item.symbol)) for item in batch],
+                        *[_fetch_one(item.symbol, sem) for item in batch],
                         return_exceptions=True,
                     )
                     processed += len(batch)
                     if i + batch_size < len(shortlist):
                         await asyncio.sleep(batch_delay)
 
-                LOG.info("oi/ls cache refreshed | symbols=%d batches=%d", processed, (len(shortlist) + batch_size - 1) // batch_size)
+                LOG.info(
+                    "oi/ls cache refreshed | symbols=%d batches=%d rest_concurrency=%d",
+                    processed,
+                    (len(shortlist) + batch_size - 1) // batch_size,
+                    rest_concurrency,
+                )
                 await self._update_memory_market_context(shortlist)
 
             try:

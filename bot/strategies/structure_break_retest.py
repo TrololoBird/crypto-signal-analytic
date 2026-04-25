@@ -4,10 +4,6 @@
 """
 from __future__ import annotations
 
-from typing import cast
-
-import polars as pl
-
 from ..config import BotSettings
 from ..features import _swing_points
 from ..models import PreparedSymbol, Signal
@@ -38,8 +34,11 @@ class StructureBreakRetestSetup(BaseSetup):
         """Tunable parameters for self-learner optimization."""
         defaults = {
             "base_score": 0.62,
+            "swing_lookback": 3,
             "min_vol_breakout": 1.3,
             "retest_atr_tol": 0.5,
+            "retest_atr_mult": 0.5,  # Backward-compatible alias.
+            "sl_buffer_atr": 0.5,
             "breakout_threshold": 0.002,
             "bias_mismatch_penalty": 0.75,
             "tp_too_close_penalty": 0.75,
@@ -58,9 +57,14 @@ class StructureBreakRetestSetup(BaseSetup):
         dynamic_params = get_dynamic_params(prepared, setup_id)
         defaults = self.get_optimizable_params(settings)
         
-        swing_lookback = int(dynamic_params.get("swing_lookback", defaults["swing_lookback"]))
-        retest_atr_mult = dynamic_params.get("retest_atr_mult", defaults["retest_atr_tol"])
-        sl_buffer_atr = dynamic_params.get("sl_buffer_atr", defaults["sl_buffer_atr"])
+        swing_lookback = max(2, int(dynamic_params.get("swing_lookback", defaults["swing_lookback"])))
+        retest_atr_mult = float(
+            dynamic_params.get(
+                "retest_atr_mult",
+                dynamic_params.get("retest_atr_tol", defaults["retest_atr_tol"]),
+            )
+        )
+        sl_buffer_atr = float(dynamic_params.get("sl_buffer_atr", defaults["sl_buffer_atr"]))
 
         work_1h = prepared.work_1h
         work_15m = prepared.work_15m
@@ -78,13 +82,12 @@ class StructureBreakRetestSetup(BaseSetup):
         regime_1h = prepared.regime_1h_confirmed
         bias_1h = prepared.bias_1h
 
-        sh_mask, sl_mask = _swing_points(work_1h, n=3)
+        sh_mask, sl_mask = _swing_points(work_1h, n=swing_lookback)
         if not sh_mask.any() and not sl_mask.any():
             _reject(prepared, setup_id, "no_swing_points")
             return None
 
         trig_close = _as_float(work_15m.item(-1, "close"))
-        prev_close = _as_float(work_15m.item(-2, "close"))
         atr = _as_float(work_15m.item(-1, "atr14"))
         if atr <= 0.0:
             _reject(prepared, setup_id, "atr_non_positive_15m", atr=atr)
@@ -95,7 +98,6 @@ class StructureBreakRetestSetup(BaseSetup):
         breakout_bar_idx: int | None = None
 
         min_vol_breakout = dynamic_params.get("min_vol_breakout", defaults["min_vol_breakout"])
-        retest_atr_tol = dynamic_params.get("retest_atr_tol", defaults["retest_atr_tol"])
         breakout_threshold = dynamic_params.get("breakout_threshold", defaults["breakout_threshold"])
 
         if regime_1h != "uptrend" and sh_mask.any():
@@ -116,7 +118,7 @@ class StructureBreakRetestSetup(BaseSetup):
                             break
                 if breakout_detected and broken_level is not None:
                     retest_distance = abs(trig_close - broken_level)
-                    if retest_distance < atr * retest_atr_tol and trig_close > broken_level * 1.001:
+                    if retest_distance < atr * retest_atr_mult and trig_close > broken_level * 1.001:
                         direction = "long"
 
         if regime_1h != "downtrend" and sl_mask.any() and direction is None:
@@ -137,7 +139,7 @@ class StructureBreakRetestSetup(BaseSetup):
                             break
                 if breakout_detected and broken_level is not None:
                     retest_distance = abs(trig_close - broken_level)
-                    if retest_distance < atr * retest_atr_tol and trig_close < broken_level * 0.999:
+                    if retest_distance < atr * retest_atr_mult and trig_close < broken_level * 0.999:
                         direction = "short"
 
         if direction is None or broken_level is None:
@@ -168,11 +170,16 @@ class StructureBreakRetestSetup(BaseSetup):
             atr=atr,
             work_1h=work_1h,
             min_rr=dynamic_params.get("min_rr", defaults["min_rr"]),
+            sl_buffer_atr=sl_buffer_atr,
             sh_mask=sh_mask,
             sl_mask=sl_mask,
             breakout_bar_idx=breakout_bar_idx,
             broken_level=broken_level_value,
         )
+        if direction == "long":
+            stop = min(stop, broken_level_value - sl_buffer_atr * atr)
+        else:
+            stop = max(stop, broken_level_value + sl_buffer_atr * atr)
 
         # Graded RR validation (penalty instead of reject)
         min_rr = dynamic_params.get("min_rr", defaults["min_rr"])

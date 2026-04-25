@@ -43,6 +43,8 @@ class TurtleSoupSetup(BaseSetup):
             "base_score": 0.52,
             "roll_bars": 20.0,
             "break_atr_mult": 0.1,
+            "sl_buffer_atr": 0.5,
+            "volume_threshold": 1.0,
             "bias_mismatch_penalty": 0.75,
             "min_rr": 1.5,
         }
@@ -67,10 +69,12 @@ class TurtleSoupSetup(BaseSetup):
         
         dynamic_params = get_dynamic_params(prepared, setup_id)
         defaults = self.get_optimizable_params(settings)
-        roll_bars = int(dynamic_params.get("roll_bars", defaults["roll_bars"]))
-        break_atr_mult = dynamic_params.get("break_atr_mult", defaults["break_atr_mult"])
-        sl_buffer_atr = dynamic_params.get("sl_buffer_atr", defaults["sl_buffer_atr"])
-        volume_threshold = dynamic_params.get("volume_threshold", defaults["volume_threshold"])
+        roll_bars = max(5, int(dynamic_params.get("roll_bars", defaults["roll_bars"])))
+        break_atr_mult = float(dynamic_params.get("break_atr_mult", defaults["break_atr_mult"]))
+        sl_buffer_atr = float(dynamic_params.get("sl_buffer_atr", defaults["sl_buffer_atr"]))
+        volume_threshold = float(dynamic_params.get("volume_threshold", defaults["volume_threshold"]))
+        min_rr = float(dynamic_params.get("min_rr", defaults["min_rr"]))
+        base_score = float(dynamic_params.get("base_score", defaults["base_score"]))
         
         w1h = prepared.work_1h
         if w1h.height < roll_bars + 3:
@@ -95,8 +99,6 @@ class TurtleSoupSetup(BaseSetup):
         bar_high = _as_float(w1h.item(-1, "high"))
         bar_low = _as_float(w1h.item(-1, "low"))
         bar_close = _as_float(w1h.item(-1, "close"))
-        bar_open = _as_float(w1h.item(-1, "open"))
-
         direction = None
         wick_extreme = None
 
@@ -159,8 +161,8 @@ class TurtleSoupSetup(BaseSetup):
             tp2_candidates = sl_prices.filter(sl_prices < bar_close)
             tp2 = _as_float(tp2_candidates[-1]) if tp2_candidates.len() > 0 else None
 
-        # Validate: TP1 must be at least 1.5× risk distance, else reject
-        if tp1 is None or abs(tp1 - bar_close) < risk * 1.5:
+        # Validate: TP1 must be at least configured risk distance, else reject.
+        if tp1 is None or abs(tp1 - bar_close) < risk * min_rr:
             _reject(prepared, setup_id, "tp1_too_close_or_missing", tp1=tp1, risk=risk)
             return None  # Reject this turtle soup setup
         if tp2 is None:
@@ -170,7 +172,7 @@ class TurtleSoupSetup(BaseSetup):
         rsi = float(w1h.item(-1, "rsi14") or 50.0)
         score = _compute_dynamic_score(
             direction=direction,
-            base_score=0.50,
+            base_score=base_score,
             vol_ratio=vol_ratio,
             rsi=rsi,
         )

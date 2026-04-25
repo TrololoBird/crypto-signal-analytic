@@ -34,7 +34,10 @@ class SignalEngine:
         self._registry = registry
         self._settings = settings
         self._timeout = timeout_seconds
-        self._semaphore = asyncio.Semaphore(10)  # Limit concurrent calculations
+        configured_concurrency = getattr(self._settings.runtime, "analysis_concurrency", 10)
+        self._semaphore = asyncio.Semaphore(
+            max(1, int(configured_concurrency))
+        )
     
     async def calculate_all(
         self, 
@@ -77,7 +80,7 @@ class SignalEngine:
         signals_found = 0
         errors = 0
         
-        for strategy, result in zip(strategies, results):
+        for strategy, result in zip(strategies, results, strict=True):
             if isinstance(result, BaseException):
                 LOG.error("%s: Strategy %s failed: %s", symbol, strategy.strategy_id, result)
                 decision = StrategyDecision.error_result(
@@ -157,7 +160,7 @@ class SignalEngine:
                     )
                 
                 # Run calculation with timeout
-                loop = asyncio.get_event_loop()
+                loop = asyncio.get_running_loop()
                 result = await asyncio.wait_for(
                     loop.run_in_executor(None, strategy.calculate, prepared),
                     timeout=self._timeout

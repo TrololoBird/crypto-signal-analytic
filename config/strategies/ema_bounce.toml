@@ -13,7 +13,7 @@ bounce_threshold_pct = 0.005
 ema_periods = [9, 21, 50, 200]
 
 [risk_management]
-sl_buffer_atr = 0.4
+sl_buffer_atr = 1.5
 target_atr_mult = 2.0
 
 [scoring]

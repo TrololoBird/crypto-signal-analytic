@@ -31,6 +31,9 @@ class BreakerBlockSetup(BaseSetup):
         """Tunable parameters for self-learner optimization."""
         defaults = {
             "base_score": 0.52,
+            "scan_bars": 40,
+            "mitigation_threshold": 0.20,
+            "sl_buffer_atr": 0.20,
             "min_atr": 0.0001,
             "bias_mismatch_penalty": 0.75,
             "min_rr": 1.5,
@@ -62,9 +65,11 @@ class BreakerBlockSetup(BaseSetup):
         dynamic_params = get_dynamic_params(prepared, setup_id)
         defaults = self.get_optimizable_params(settings)
 
-        scan_bars = int(dynamic_params.get("scan_bars", defaults["scan_bars"]))
-        mitigation_threshold = dynamic_params.get("mitigation_threshold", defaults["mitigation_threshold"])
-        sl_buffer_atr = dynamic_params.get("sl_buffer_atr", defaults["sl_buffer_atr"])
+        scan_bars = max(15, int(dynamic_params.get("scan_bars", defaults["scan_bars"])))
+        mitigation_threshold = float(dynamic_params.get("mitigation_threshold", defaults["mitigation_threshold"]))
+        sl_buffer_atr = float(dynamic_params.get("sl_buffer_atr", defaults["sl_buffer_atr"]))
+        min_rr = float(dynamic_params.get("min_rr", defaults["min_rr"]))
+        base_score = float(dynamic_params.get("base_score", defaults["base_score"]))
 
         w1h = prepared.work_1h
         if w1h.height < 15:
@@ -81,7 +86,7 @@ class BreakerBlockSetup(BaseSetup):
             _reject(prepared, setup_id, "price_missing")
             return None
 
-        scan = w1h.tail(_SCAN_BARS) if w1h.height >= _SCAN_BARS else w1h
+        scan = w1h.tail(scan_bars) if w1h.height >= scan_bars else w1h
         closes = scan["close"].to_numpy()
         opens = scan["open"].to_numpy()
         highs = scan["high"].to_numpy()
@@ -111,7 +116,7 @@ class BreakerBlockSetup(BaseSetup):
                 if not any(l < ob_low for l in future_lows):
                     continue
                 # Price returning to test OB zone from below → short setup
-                if ob_low <= current_price <= ob_high:
+                if (ob_low - mitigation_threshold * atr) <= current_price <= (ob_high + mitigation_threshold * atr):
                     breaker = ("short", ob_low, ob_high)
                     break
 
@@ -129,7 +134,7 @@ class BreakerBlockSetup(BaseSetup):
                 if not any(h > ob_high for h in future_highs):
                     continue
                 # Price returning to test OB zone from above → long setup
-                if ob_low <= current_price <= ob_high:
+                if (ob_low - mitigation_threshold * atr) <= current_price <= (ob_high + mitigation_threshold * atr):
                     breaker = ("long", ob_low, ob_high)
                     break
 
@@ -142,8 +147,8 @@ class BreakerBlockSetup(BaseSetup):
         # --- Compute structural SL/TP ---
         from ..features import _swing_points as _sp
         if direction == "long":
-            # SL: beyond breaker block level + 0.2×ATR
-            stop = bb_low - 0.2 * atr
+            # SL: beyond breaker block level + sl_buffer_atr×ATR.
+            stop = bb_low - sl_buffer_atr * atr
             risk = price - stop
             if risk <= 0:
                 _reject(prepared, setup_id, "risk_non_positive_long", stop=stop, price=price)
@@ -162,8 +167,8 @@ class BreakerBlockSetup(BaseSetup):
                 tp2_cands = sh4_prices.filter(sh4_prices > price)
                 tp2 = float(tp2_cands[0]) if tp2_cands.len() > 0 else None
         else:
-            # SL: beyond breaker block level + 0.2×ATR
-            stop = bb_high + 0.2 * atr
+            # SL: beyond breaker block level + sl_buffer_atr×ATR.
+            stop = bb_high + sl_buffer_atr * atr
             risk = stop - price
             if risk <= 0:
                 _reject(prepared, setup_id, "risk_non_positive_short", stop=stop, price=price)
@@ -182,8 +187,8 @@ class BreakerBlockSetup(BaseSetup):
                 tp2_cands = sl4_prices.filter(sl4_prices < price)
                 tp2 = float(tp2_cands[-1]) if tp2_cands.len() > 0 else None
 
-        # Validate: TP1 must be at least 1.5× risk distance, else reject
-        if tp1 is None or abs(tp1 - price) < risk * 1.5:
+        # Validate: TP1 must be at least min_rr × risk distance, else reject.
+        if tp1 is None or abs(tp1 - price) < risk * min_rr:
             _reject(prepared, setup_id, "tp1_too_close_or_missing", tp1=tp1, risk=risk, price=price)
             return None  # Reject this breaker block setup
         if tp2 is None:
@@ -193,7 +198,7 @@ class BreakerBlockSetup(BaseSetup):
         rsi = float(w1h.item(-1, "rsi14") or 50.0)
         score = _compute_dynamic_score(
             direction=direction,
-            base_score=0.50,
+            base_score=base_score,
             vol_ratio=vol_ratio,
             rsi=rsi,
         )

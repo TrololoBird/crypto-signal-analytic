@@ -6,14 +6,19 @@ import json
 import logging
 from collections import Counter
 from pathlib import Path
+import sys
 from typing import Any
 
 import structlog
 
+ROOT_DIR = Path(__file__).resolve().parents[1]
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
 from bot.config import load_settings
 from bot.core.engine import SignalEngine, StrategyRegistry
 from bot.features import min_required_bars, prepare_symbol
-from bot.market_data import BinanceFuturesMarketData
+from bot.market_data import BinanceFuturesMarketData, MarketDataUnavailable
 from bot.models import SymbolFrames, UniverseSymbol
 from bot.setup_base import SetupParams
 from bot.strategies import STRATEGY_CLASSES
@@ -33,7 +38,8 @@ def _configure_logging() -> None:
 def _symbols_from_run(run_id: str) -> list[str]:
     target = Path("data") / "bot" / "telemetry" / "runs" / run_id / "analysis" / "symbol_analysis.jsonl"
     if not target.exists():
-        raise FileNotFoundError(target)
+        LOG.warning("symbols_from_run_missing", run_id=run_id, path=str(target))
+        return []
     symbols: list[str] = []
     seen: set[str] = set()
     for line in target.read_text(encoding="utf-8").splitlines():
@@ -168,9 +174,16 @@ def main() -> None:
     symbols = [str(symbol).upper() for symbol in args.symbols if str(symbol).strip()]
     if not symbols:
         symbols = _symbols_from_run(args.symbols_from_run)
+    if not symbols:
+        symbols = ["BTCUSDT", "ETHUSDT", "SOLUSDT"]
+        LOG.info("symbols_fallback_used", symbols=symbols)
     if args.limit > 0:
         symbols = symbols[: args.limit]
-    asyncio.run(_run(symbols, args.concurrency))
+    try:
+        asyncio.run(_run(symbols, args.concurrency))
+    except MarketDataUnavailable as exc:
+        LOG.error("live_strategies_unavailable", operation=exc.operation, detail=exc.detail, symbol=exc.symbol)
+        raise SystemExit(2) from exc
 
 
 if __name__ == "__main__":

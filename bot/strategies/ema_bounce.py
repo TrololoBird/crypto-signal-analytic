@@ -60,7 +60,10 @@ class EmaBounceSetup(BaseSetup):
         
         ema_touch_tolerance_pct = dynamic_params.get("ema_touch_tolerance_pct", 0.008)
         bounce_threshold_pct = dynamic_params.get("bounce_threshold_pct", 0.005)
-        min_adx = dynamic_params.get("min_adx", defaults["min_adx_1h"])
+        min_adx = dynamic_params.get(
+            "min_adx",
+            dynamic_params.get("min_adx_1h", defaults.get("min_adx", defaults["min_adx_1h"])),
+        )
         
         work_1h = prepared.work_1h
         if work_1h.height < 3:
@@ -92,7 +95,10 @@ class EmaBounceSetup(BaseSetup):
                 prev_close <= ema20 * (1.0 + float(ema_touch_tolerance_pct))
                 or prev_close <= ema50 * (1.0 + float(ema_touch_tolerance_pct) * 2.0)
             )
-            bounce = close > prev_close * (1.0 + float(bounce_threshold_pct)) and close > ema20
+            bounce = (
+                close > prev_close * (1.0 + float(bounce_threshold_pct))
+                and close >= ema20 * (1.0 - float(ema_touch_tolerance_pct))
+            )
             if touch_ema and bounce:
                 signal_direction = "long"
                 reasons = ["ema_bounce_long", f"ema20_1h={ema20:.4f}", f"ema50_1h={ema50:.4f}"]
@@ -101,7 +107,10 @@ class EmaBounceSetup(BaseSetup):
                 prev_close >= ema20 * (1.0 - float(ema_touch_tolerance_pct))
                 or prev_close >= ema50 * (1.0 - float(ema_touch_tolerance_pct) * 2.0)
             )
-            bounce = close < prev_close * (1.0 - float(bounce_threshold_pct)) and close < ema20
+            bounce = (
+                close < prev_close * (1.0 - float(bounce_threshold_pct))
+                and close <= ema20 * (1.0 + float(ema_touch_tolerance_pct))
+            )
             if touch_ema and bounce:
                 signal_direction = "short"
                 reasons = ["ema_bounce_short", f"ema20_1h={ema20:.4f}", f"ema50_1h={ema50:.4f}"]
@@ -137,6 +146,12 @@ class EmaBounceSetup(BaseSetup):
             sh_mask=sh_mask,
             sl_mask=sl_mask,
         )
+        if signal_direction == "long" and stop >= price_anchor:
+            stop = price_anchor - atr * 0.5
+            reasons.append("stop_reanchored_below_entry")
+        if signal_direction == "short" and stop <= price_anchor:
+            stop = price_anchor + atr * 0.5
+            reasons.append("stop_reanchored_above_entry")
         
         # Graded RR validation (penalty instead of reject)
         min_rr = dynamic_params.get("min_rr", defaults["min_rr"])
@@ -156,8 +171,16 @@ class EmaBounceSetup(BaseSetup):
             reasons.append("tp_too_close_penalty")
         
         if tp1 is None:
-            _reject(prepared, setup_id, "tp1_missing", direction=signal_direction, price_anchor=price_anchor)
-            return None
+            risk = abs(price_anchor - stop)
+            if risk <= 0.0:
+                _reject(prepared, setup_id, "tp1_missing_invalid_risk", direction=signal_direction, price_anchor=price_anchor)
+                return None
+            rr_multiplier = float(min_rr)
+            if signal_direction == "long":
+                tp1 = price_anchor + risk * rr_multiplier
+            else:
+                tp1 = price_anchor - risk * rr_multiplier
+            reasons.append("tp1_atr_fallback")
 
         # Fallback TP2
         if tp2 is None:

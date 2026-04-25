@@ -3,12 +3,18 @@ from __future__ import annotations
 import argparse
 import asyncio
 import logging
+import sys
+from pathlib import Path
 from typing import Sequence
 
 import structlog
 
+ROOT_DIR = Path(__file__).resolve().parents[1]
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
 from bot.config import load_settings
-from bot.market_data import BinanceFuturesMarketData
+from bot.market_data import BinanceFuturesMarketData, MarketDataUnavailable
 from bot.ws_manager import FuturesWSManager
 
 
@@ -84,7 +90,11 @@ def main() -> None:
     args = parser.parse_args()
 
     _configure_logging()
-    asyncio.run(_run(args.symbols, args.warmup_seconds, args.reconnect_wait_seconds))
+    try:
+        asyncio.run(_run(args.symbols, args.warmup_seconds, args.reconnect_wait_seconds))
+    except MarketDataUnavailable as exc:
+        LOG.error("live_binance_api_unavailable", operation=exc.operation, detail=exc.detail, symbol=exc.symbol)
+        raise SystemExit(2) from exc
 
 
 if __name__ == "__main__":

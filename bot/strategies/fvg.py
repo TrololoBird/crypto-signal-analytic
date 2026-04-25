@@ -43,6 +43,9 @@ class FVGSetup(BaseSetup):
             "rsi_oversold": 30.0,
             "min_rr": 1.5,
             "tp_too_close_penalty": 0.8,
+            "min_fvg_size_atr": 0.25,
+            "min_mitigation_pct": 0.20,
+            "sl_buffer_atr": 0.50,
         }
         if settings is not None:
             filters = getattr(settings, 'filters', None)
@@ -76,7 +79,7 @@ class FVGSetup(BaseSetup):
         sl_buffer_atr = dynamic_params.get("sl_buffer_atr", defaults["sl_buffer_atr"])
 
         w = prepared.work_15m
-        if w.height < 10:
+        if w.height < 5:
             _reject(prepared, setup_id, "insufficient_15m_bars", bars=w.height)
             return None
 
@@ -114,12 +117,14 @@ class FVGSetup(BaseSetup):
             gap_top = lows[i]
             if gap_bot < gap_top:
                 width = gap_top - gap_bot
-                mitigation_pct = (price - gap_bot) / width if width > 0 else 0.0
+                gap_mid = (gap_bot + gap_top) / 2.0
+                mitigation_pct = abs(price - gap_mid) / width if width > 0 else 0.0
+                near_gap = abs(price - gap_top) <= max(atr * 0.1, price * 0.001)
                 if (
                     width / price >= (min_gap_width_bps / 10000)
                     and width >= atr * float(min_fvg_size_atr)
                     and float(min_mitigation_pct) <= mitigation_pct <= 1.0
-                    and gap_bot <= price <= gap_top
+                    and (gap_bot <= price <= gap_top or near_gap)
                 ):
                     # Require: the middle candle (i-1) or impulse candle (i) had elevated volume
                     vol_ok = True
@@ -127,7 +132,7 @@ class FVGSetup(BaseSetup):
                         candle_vol = float(vol_ratios[i - 1]) if not math.isnan(vol_ratios[i - 1]) else 1.0
                         vol_ok = candle_vol >= min_volume_ratio
                     if vol_ok:
-                        best_fvg = ("long", gap_bot, gap_top)
+                        best_fvg = ("long", gap_bot, gap_top, width)
                         break
 
             # Bearish FVG: low[i-2] > high[i]
@@ -135,26 +140,28 @@ class FVGSetup(BaseSetup):
             gap_bot2 = highs[i]
             if gap_top2 > gap_bot2:
                 width = gap_top2 - gap_bot2
-                mitigation_pct = (gap_top2 - price) / width if width > 0 else 0.0
+                gap_mid = (gap_bot2 + gap_top2) / 2.0
+                mitigation_pct = abs(price - gap_mid) / width if width > 0 else 0.0
+                near_gap = abs(price - gap_bot2) <= max(atr * 0.1, price * 0.001)
                 if (
                     width / price >= (min_gap_width_bps / 10000)
                     and width >= atr * float(min_fvg_size_atr)
                     and float(min_mitigation_pct) <= mitigation_pct <= 1.0
-                    and gap_bot2 <= price <= gap_top2
+                    and (gap_bot2 <= price <= gap_top2 or near_gap)
                 ):
                     vol_ok = True
                     if vol_ratios is not None:
                         candle_vol = float(vol_ratios[i - 1]) if not math.isnan(vol_ratios[i - 1]) else 1.0
                         vol_ok = candle_vol >= min_volume_ratio
                     if vol_ok:
-                        best_fvg = ("short", gap_bot2, gap_top2)
+                        best_fvg = ("short", gap_bot2, gap_top2, width)
                         break
 
         if best_fvg is None:
             _reject(prepared, setup_id, "no_fvg_detected")
             return None
 
-        direction, fvg_low, fvg_high = best_fvg
+        direction, fvg_low, fvg_high, fvg_width = best_fvg
 
         # Use 1H context for 15M signals (not 4H - too lagging for <4h trades)
         bias_1h = getattr(prepared, 'bias_1h', prepared.bias_4h)
@@ -198,6 +205,10 @@ class FVGSetup(BaseSetup):
             tp1 = fvg_mid if fvg_mid > price else fvg_high
             # TP2: full FVG fill (opposite boundary)
             tp2 = fvg_high
+            if tp1 <= price:
+                tp1 = price + max(fvg_width, atr * 0.5)
+            if tp2 <= tp1:
+                tp2 = tp1 + max(fvg_width * 0.5, atr * 0.5)
         else:
             # SL: beyond opposite side of FVG + 0.5×ATR (was 0.1)
             stop = fvg_high + atr * float(sl_buffer_atr)
@@ -205,6 +216,10 @@ class FVGSetup(BaseSetup):
             tp1 = fvg_mid if fvg_mid < price else fvg_low
             # TP2: full FVG fill
             tp2 = fvg_low
+            if tp1 >= price:
+                tp1 = price - max(fvg_width, atr * 0.5)
+            if tp2 >= tp1:
+                tp2 = tp1 - max(fvg_width * 0.5, atr * 0.5)
 
         # Graded RR validation instead of hard reject
         min_rr = dynamic_params.get("min_rr", defaults["min_rr"])

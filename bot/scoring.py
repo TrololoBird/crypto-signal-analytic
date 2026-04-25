@@ -175,48 +175,47 @@ def _risk_reward_quality(signal: Signal) -> float:
     return max(0.0, min((rr - 1.9) / 2.1, 1.0))
 
 
-def _crowd_position(prepared: PreparedSymbol, signal: Signal, settings: BotSettings) -> float:
-    """Score based on funding rate, L/S ratio, and taker buy/sell pressure (contrarian).
+def _funding_contrarian(prepared: PreparedSymbol, signal: Signal, settings: BotSettings) -> float:
+    """Contrarian funding score.
 
-    Funding rate component (weight 0.50):
-      Extreme funding against direction → crowd is wrong → high score
-    L/S ratio component (weight 0.30):
+    Extreme funding against direction → crowding opportunity (higher score).
+    """
+    funding = prepared.funding_rate
+    if funding is None:
+        return 0.5
+    extreme = settings.scoring.funding_rate_extreme
+    moderate = settings.scoring.funding_rate_moderate
+    if signal.direction == "long":
+        if funding <= -extreme:
+            return 1.0
+        if funding <= -moderate:
+            return 0.75
+        if funding >= extreme:
+            return 0.0
+        if funding >= moderate:
+            return 0.25
+        return 0.5
+    if funding >= extreme:
+        return 1.0
+    if funding >= moderate:
+        return 0.75
+    if funding <= -extreme:
+        return 0.0
+    if funding <= -moderate:
+        return 0.25
+    return 0.5
+
+
+def _crowd_position(prepared: PreparedSymbol, signal: Signal, settings: BotSettings) -> float:
+    """Score based on L/S ratio and taker buy/sell pressure.
+
+    L/S ratio component (weight 0.60):
       ls_ratio > 1.5 → crowd is very long → bullish for SHORT, bearish for LONG
       ls_ratio < 0.7 → crowd is very short → bearish for SHORT, bullish for LONG
-    Taker ratio component (weight 0.20):
+    Taker ratio component (weight 0.40):
       taker_ratio > 1.3 → aggressive net buyers → confirms LONG, penalises SHORT
       taker_ratio < 0.7 → aggressive net sellers → confirms SHORT, penalises LONG
     """
-    # --- Funding rate component ---
-    funding = prepared.funding_rate
-    if funding is None:
-        funding_score = 0.5
-    else:
-        extreme = settings.scoring.funding_rate_extreme
-        moderate = settings.scoring.funding_rate_moderate
-        if signal.direction == "long":
-            if funding <= -extreme:
-                funding_score = 1.0
-            elif funding <= -moderate:
-                funding_score = 0.75
-            elif funding >= extreme:
-                funding_score = 0.0
-            elif funding >= moderate:
-                funding_score = 0.25
-            else:
-                funding_score = 0.5
-        else:
-            if funding >= extreme:
-                funding_score = 1.0
-            elif funding >= moderate:
-                funding_score = 0.75
-            elif funding <= -extreme:
-                funding_score = 0.0
-            elif funding <= -moderate:
-                funding_score = 0.25
-            else:
-                funding_score = 0.5
-
     # --- L/S ratio component (top trader positioning) ---
     ls = prepared.ls_ratio
     if ls is None:
@@ -276,4 +275,4 @@ def _crowd_position(prepared: PreparedSymbol, signal: Signal, settings: BotSetti
             else:
                 taker_score = 0.5
 
-    return round(funding_score * 0.50 + ls_score * 0.30 + taker_score * 0.20, 4)
+    return round(ls_score * 0.60 + taker_score * 0.40, 4)

@@ -1140,18 +1140,17 @@ class FuturesWSManager:
         return round(time.monotonic() - updated_at, 3)
 
     def get_depth_imbalance(self, symbol: str) -> float | None:
-        """Calculate depth imbalance from order book.
+        """Return a directional order-flow imbalance proxy in [-1, 1].
 
-        Returns (ask - bid) / mid_price, or None if book data unavailable.
-        Positive = more ask pressure (selling), Negative = more bid pressure (buying).
+        Primary source is aggTrade ``delta_ratio`` already normalized to [-1, 1]:
+        positive values imply net buyer pressure, negative imply seller pressure.
+        Falls back to None when no directional proxy is available.
         """
-        bid, ask = self.get_book_snapshot(symbol)
-        if bid is None or ask is None or bid <= 0 or ask <= 0:
-            return None
-        mid = (bid + ask) / 2.0
-        if mid <= 0:
-            return None
-        return (ask - bid) / mid
+        snapshot = self.get_agg_trade_snapshot(symbol)
+        if snapshot is not None and snapshot.delta_ratio is not None:
+            return round(max(-1.0, min(1.0, float(snapshot.delta_ratio))), 4)
+        # Without level sizes we cannot compute true book imbalance from bids/asks only.
+        return None
 
     def get_microprice_bias(self, symbol: str) -> float | None:
         """Calculate microprice bias from order book.

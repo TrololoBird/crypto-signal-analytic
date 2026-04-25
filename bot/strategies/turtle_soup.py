@@ -143,7 +143,7 @@ class TurtleSoupSetup(BaseSetup):
                 return None
             # TP1: the broken level itself (rolling low that was falsely broken)
             tp1 = rolling_low
-            sh_mask, _ = _sp(w1h, n=3)
+            sh_mask, _ = _sp(w1h, n=3, include_unconfirmed_tail=True)
             sh_prices = w1h.filter(sh_mask)["high"]
             tp2_candidates = sh_prices.filter(sh_prices > bar_close)
             tp2_series = tp2_candidates.drop_nulls()
@@ -157,7 +157,7 @@ class TurtleSoupSetup(BaseSetup):
                 return None
             # TP1: the broken level itself (rolling high that was falsely broken)
             tp1 = rolling_high
-            _, sl_mask = _sp(w1h, n=3)
+            _, sl_mask = _sp(w1h, n=3, include_unconfirmed_tail=True)
             sl_prices = w1h.filter(sl_mask)["low"]
             tp2_candidates = sl_prices.filter(sl_prices < bar_close)
             tp2 = _as_float(tp2_candidates[-1]) if tp2_candidates.len() > 0 else None

@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import asyncio
+import collections
 from collections import Counter
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+import time
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock
 
@@ -12,14 +14,15 @@ import pytest
 
 from bot.application.bot import SignalBot
 from bot.cli import _is_preformatted_log_stderr
-from bot.config import load_settings
+from bot.confluence import ConfluenceEngine
+from bot.config import WSConfig, load_settings
 from bot.core.engine import SignalEngine, StrategyRegistry
 from bot.core.engine.base import StrategyDecision
 from bot.core.events import BookTickerEvent
-from bot.features import _swing_points
+from bot.features import _ichimoku_lines, _swing_points, _weighted_moving_average
 from bot.market_data import BinanceFuturesMarketData, MarketDataUnavailable
 from bot.ml_filter import MLFilter
-from bot.models import PipelineResult, PreparedSymbol, Signal, UniverseSymbol
+from bot.models import AggTrade, PipelineResult, PreparedSymbol, Signal, UniverseSymbol
 from bot.setup_base import BaseSetup, SetupParams
 from bot.strategies.ema_bounce import EmaBounceSetup
 from bot.strategies.fvg import FVGSetup
@@ -29,6 +32,7 @@ from bot.setups import _build_signal
 from bot.setups.utils import build_structural_targets
 from bot.tracked_signals import TrackedSignalState
 from bot.tracking import SignalTracker
+from bot.ws_manager import FuturesWSManager
 
 UTC = timezone.utc
 
@@ -615,6 +619,75 @@ def test_swing_points_can_include_unconfirmed_tail() -> None:
     assert sl_confirmed[-1] is False
     assert sh_tail[-1] is True
     assert sl_tail[-1] is True
+
+
+def test_ws_depth_imbalance_uses_signed_delta_ratio() -> None:
+    ws = FuturesWSManager(rest_client=Mock(), config=WSConfig())
+    now_ms = int(time.time() * 1000)
+    ws._agg_trades["BTCUSDT"] = collections.deque(
+        [
+            AggTrade("BTCUSDT", 1, 100.0, 4.0, now_ms, is_buyer_maker=False),  # buy
+            AggTrade("BTCUSDT", 2, 100.1, 1.0, now_ms, is_buyer_maker=True),   # sell
+        ],
+        maxlen=32,
+    )
+
+    imbalance = ws.get_depth_imbalance("BTCUSDT")
+    assert imbalance is not None
+    assert imbalance == pytest.approx(0.6, rel=1e-6)
+
+
+def test_ws_microprice_bias_keeps_signed_delta_ratio() -> None:
+    ws = FuturesWSManager(rest_client=Mock(), config=WSConfig())
+    now_ms = int(time.time() * 1000)
+    ws._book["BTCUSDT"] = (100.0, 100.1)
+    ws._agg_trades["BTCUSDT"] = collections.deque(
+        [
+            AggTrade("BTCUSDT", 3, 100.0, 1.0, now_ms, is_buyer_maker=False),  # buy
+            AggTrade("BTCUSDT", 4, 100.1, 4.0, now_ms, is_buyer_maker=True),   # sell
+        ],
+        maxlen=32,
+    )
+
+    bias = ws.get_microprice_bias("BTCUSDT")
+    assert bias is not None
+    assert bias == pytest.approx(-0.6, rel=1e-6)
+
+
+def test_weighted_moving_average_uses_linear_weights() -> None:
+    series = pl.Series("close", [1.0, 2.0, 3.0], dtype=pl.Float64)
+    wma3 = _weighted_moving_average(series, 3, name="wma3")
+    assert wma3[2] == pytest.approx((1.0 * 1 + 2.0 * 2 + 3.0 * 3) / 6.0, rel=1e-6)
+
+
+def test_ichimoku_senkou_is_forward_projected() -> None:
+    highs = [float(i + 10) for i in range(80)]
+    lows = [float(i) for i in range(80)]
+    frame = pl.DataFrame({"high": highs, "low": lows})
+    _, _, senkou_a, senkou_b = _ichimoku_lines(frame)
+    # Forward projection leaves trailing null tail instead of leading null head.
+    assert senkou_a.tail(26).null_count() == 26
+    assert senkou_b.tail(26).null_count() == 26
+    assert senkou_a.head(26).null_count() == 0
+
+
+def test_confluence_includes_explicit_funding_component() -> None:
+    scoring_cfg = SimpleNamespace(
+        weight_mtf_alignment=0.25,
+        weight_volume_quality=0.2,
+        weight_structure_clarity=0.2,
+        weight_risk_reward=0.15,
+        weight_crowd_position=0.1,
+        weight_oi_momentum=0.1,
+        setup_prior_weight=0.5,
+        funding_rate_extreme=0.001,
+        funding_rate_moderate=0.0005,
+    )
+    settings = SimpleNamespace(scoring=scoring_cfg)
+    engine = ConfluenceEngine(settings)
+    components = engine._compute_components(make_signal(), make_prepared(), scoring_cfg)
+    names = [component.name for component in components]
+    assert "funding_score" in names
 
 
 def test_ml_filter_converts_polars_input_before_predict_proba() -> None:

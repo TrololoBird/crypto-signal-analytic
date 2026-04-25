@@ -151,7 +151,7 @@ class OrderBlockSetup(BaseSetup):
 
             # --- Compute structural SL/TP via unified utility ---
             from ..features import _swing_points as _sp
-            sh_mask, sl_mask = _sp(w1h, n=3)
+            sh_mask, sl_mask = _sp(w1h, n=3, include_unconfirmed_tail=True)
             
             if direction == "long":
                 # SL: beyond OB zone boundary + 0.15×ATR (close below OB = invalidated)

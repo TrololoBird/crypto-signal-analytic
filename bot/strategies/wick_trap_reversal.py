@@ -230,3 +230,7 @@ class WickTrapReversalSetup(BaseSetup):
             score=score, timeframe="15m+1h", reasons=reasons, stop=stop, tp1=tp1, tp2=tp2,
             price_anchor=price_anchor, atr=atr,
         )
+
+
+class WickTrapReversal(WickTrapReversalSetup):
+    """Backward-compatible alias for legacy imports."""

@@ -26,7 +26,8 @@ from .models import PreparedSymbol, SymbolFrames, UniverseSymbol
 # Optional polars_ta import. All strategy-critical indicators keep pure-Polars
 # fallbacks, so this remains optional rather than a hard dependency.
 _plta_module = importlib_util.find_spec("polars_ta.talib")
-if _plta_module is not None:
+_talib_module = importlib_util.find_spec("talib")
+if _plta_module is not None and _talib_module is not None:
     plta = cast(Any, importlib.import_module("polars_ta.talib"))
     _HAS_TALIB = True
 else:

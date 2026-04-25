@@ -32,9 +32,9 @@ class BaseSetup(AbstractStrategy):
     requires_funding: bool = False
     min_history_bars: int = 50
 
-    def __init__(self, params: SetupParams, settings: BotSettings | None = None) -> None:
+    def __init__(self, params: SetupParams | None = None, settings: BotSettings | None = None) -> None:
         super().__init__(settings)
-        self.params = params
+        self.params = params or SetupParams()
 
     def is_enabled(self) -> bool:
         return self.params.enabled

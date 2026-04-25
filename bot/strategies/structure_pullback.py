@@ -41,6 +41,11 @@ class StructurePullbackSetup(BaseSetup):
             "bias_mismatch_penalty": 0.75,
             "tp_too_close_penalty": 0.75,
             "min_rr": 1.5,
+            "min_trend_score": 0.40,
+            "ema_proximity_pct": 0.995,
+            "pullback_lookback": 12.0,
+            "sl_buffer_atr": 0.5,
+            "min_adx_1h": 15.0,
         }
         if settings is not None:
             filters = getattr(settings, 'filters', None)
@@ -99,7 +104,7 @@ class StructurePullbackSetup(BaseSetup):
             long_score += 0.15
             long_reasons.append("1h_ranging_in_1h_uptrend")
         if close_1h > ema20_1h:
-            long_score += 0.30
+            long_score += 0.20
             long_reasons.append("price_above_ema20")
         elif close_1h >= ema20_1h * float(ema_proximity_pct):
             long_score += 0.15
@@ -120,7 +125,7 @@ class StructurePullbackSetup(BaseSetup):
             short_score += 0.15
             short_reasons.append("1h_ranging_in_1h_downtrend")
         if close_1h < ema20_1h:
-            short_score += 0.30
+            short_score += 0.20
             short_reasons.append("price_below_ema20")
         elif close_1h <= ema20_1h * (2.0 - float(ema_proximity_pct)):
             short_score += 0.15
@@ -301,10 +306,13 @@ class StructurePullbackSetup(BaseSetup):
             _reject(prepared, "structure_pullback", "invalid_stop", stop=stop)
             return None
         min_rr_cfg = float(min_rr)
-        if tp1 is None or abs(tp1 - price_anchor) < risk * min_rr_cfg:
-            _reject(prepared, "structure_pullback", "tp1_too_close_or_missing",
-                    tp1=tp1, risk=risk, min_required=risk * min_rr_cfg)
-            return None
+        min_required = risk * min_rr_cfg
+        if tp1 is None or abs(tp1 - price_anchor) < min_required:
+            if direction == "long":
+                tp1 = price_anchor + min_required
+            else:
+                tp1 = price_anchor - min_required
+            reasons.append("tp1_rr_fallback")
         if tp2 is None:
             tp2 = tp1  # Use TP1 as TP2 if no extended target found
 

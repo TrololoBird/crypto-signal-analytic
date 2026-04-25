@@ -23,28 +23,22 @@ from dataclasses import replace
 from datetime import datetime, timezone
 from typing import Any, cast
 
-from ..alerts import AlertCoordinator
-from ..autotuner import compute_optimal_thresholds
 from ..config import BotSettings
-from ..core.event_bus import EventBus
-from ..core.events import BookTickerEvent, KlineCloseEvent, ReconnectEvent, ShortlistUpdatedEvent
-from ..core.engine import SignalEngine, StrategyDecision, StrategyRegistry
-from ..core.memory import MemoryRepository
-from ..delivery import SignalDelivery
+from ..core.events import BookTickerEvent, KlineCloseEvent, ReconnectEvent
+from ..core.engine import StrategyDecision, StrategyRegistry
 from ..features import min_required_bars, prepare_symbol
 from ..filters import apply_global_filters
 from ..market_data import BinanceFuturesMarketData, MarketDataUnavailable
-from ..messaging import TelegramBroadcaster
 from ..models import PreparedSymbol, Signal, SymbolFrames, UniverseSymbol, PipelineResult
 from ..outcomes import build_prepared_feature_snapshot, extract_features_from_signal
-from ..public_intelligence import PublicIntelligenceService
 from ..setup_base import SetupParams
 from ..strategies import STRATEGY_CLASSES
 from ..telemetry import TelemetryStore
-from ..tracking import SignalTracker, SignalTrackingEvent
-from ..universe import build_shortlist
-from ..ws_manager import FuturesWSManager
+from ..tracking import SignalTrackingEvent
 from ..confluence import ConfluenceEngine
+from .container import build_application_container
+from .cycle_runner import CycleRunner
+from .shortlist_service import ShortlistService
 
 UTC = timezone.utc
 LOG = logging.getLogger("bot.application.bot")
@@ -74,37 +68,21 @@ class SignalBot:
         telemetry: TelemetryStore | None = None,
     ) -> None:
         self.settings = settings
-        self.client = market_data or BinanceFuturesMarketData(
-            rest_timeout_seconds=settings.ws.rest_timeout_seconds,
+        container = build_application_container(
+            settings,
+            market_data=market_data,
+            broadcaster=broadcaster,
+            telemetry=telemetry,
+            register_strategies=self._register_strategies_to_registry,
         )
-
-        # EventBus — primary dispatch mechanism
-        self._bus = EventBus()
-
-        # WebSocket manager — publishes to EventBus
-        self._ws_manager: FuturesWSManager | None = None
-        if settings.ws.enabled and isinstance(self.client, BinanceFuturesMarketData):
-            self._ws_manager = FuturesWSManager(self.client, settings.ws)
-            self._ws_manager.set_event_bus(self._bus)
-            if hasattr(self.client, "_ws"):
-                self.client._ws = self._ws_manager
-            LOG.info("ws_manager initialized | pinned_symbols=%d", len(settings.universe.pinned_symbols))
-
-        # External services
-        self.telegram = broadcaster or TelegramBroadcaster(settings.tg_token, settings.target_chat_id)
-        self.delivery = SignalDelivery(
-            self.telegram, pending_expiry_minutes=settings.tracking.pending_expiry_minutes
-        )
-        self.telemetry = telemetry or TelemetryStore(settings.telemetry_dir)
-        self.alerts = AlertCoordinator(
-            settings=settings, broadcaster=self.telegram, telemetry=self.telemetry
-        )
-
-        # Modern MemoryRepository (SQLite-based, replaces all legacy state stores)
-        self._modern_repo = MemoryRepository(
-            db_path=settings.db_path,
-            data_dir=settings.data_dir / "parquet"
-        )
+        self.client = container.client
+        self._bus = container.bus
+        self._ws_manager = container.ws_manager
+        self.telegram = container.telegram
+        self.delivery = container.delivery
+        self.telemetry = container.telemetry
+        self.alerts = container.alerts
+        self._modern_repo = container.repository
         LOG.info("MemoryRepository initialized | db=%s", self._modern_repo._db_path)
 
         # Note: All persistence now uses MemoryRepository (SQLite)
@@ -136,20 +114,12 @@ class SignalBot:
 
         # Tracking & ML - uses Modern MemoryRepository
         # Legacy stores removed - all data in SQLite
-        self.tracker = SignalTracker(
-            settings,
-            market_data=self.client,
-            telemetry=self.telemetry,
-            memory_repo=self._modern_repo,  # Modern SQLite repository
-        )
-        self.intelligence: PublicIntelligenceService | None = None
-        if isinstance(self.client, BinanceFuturesMarketData):
-            self.intelligence = PublicIntelligenceService(settings, self.client, self.telemetry)
+        self.tracker = container.tracker
+        self.intelligence = container.intelligence
 
         # Modern SignalEngine — core/ architecture (replaces legacy SignalPipeline)
-        self._modern_registry = StrategyRegistry()
-        self._register_strategies()
-        self._modern_engine = SignalEngine(self._modern_registry, settings)
+        self._modern_registry = container.registry
+        self._modern_engine = container.engine
         LOG.info("SignalEngine initialized with %d strategies", len(self._modern_registry))
 
         # Track fire-and-forget tasks for graceful shutdown
@@ -173,6 +143,8 @@ class SignalBot:
 
         # Intra-candle scan throttle — monotonic timestamp of last scan per symbol
         self._last_intra_scan: dict[str, float] = {}
+        self._shortlist_service = ShortlistService(self)
+        self._cycle_runner = CycleRunner(self)
 
         # Subscribe to EventBus events
         self._bus.subscribe(KlineCloseEvent, self._on_kline_close)  # type: ignore[arg-type]
@@ -191,6 +163,20 @@ class SignalBot:
     @property
     def _delivery_timeout_seconds(self) -> float:
         return max(self.settings.ws.rest_timeout_seconds * 8.0, 30.0)
+
+    def _get_shortlist_service(self) -> ShortlistService:
+        service = getattr(self, "_shortlist_service", None)
+        if service is None:
+            service = ShortlistService(self)
+            self._shortlist_service = service
+        return service
+
+    def _get_cycle_runner(self) -> CycleRunner:
+        runner = getattr(self, "_cycle_runner", None)
+        if runner is None:
+            runner = CycleRunner(self)
+            self._cycle_runner = runner
+        return runner
 
     def _decision_to_reject_row(self, *, symbol: str, decision: StrategyDecision) -> dict[str, Any]:
         row: dict[str, Any] = {
@@ -259,14 +245,14 @@ class SignalBot:
     # Modern Engine Migration
     # ------------------------------------------------------------------
 
-    def _register_strategies(self) -> None:
-        """Register concrete strategies directly with the modern registry."""
+    def _register_strategies_to_registry(self, registry: StrategyRegistry) -> None:
+        """Register concrete strategies directly with a provided registry."""
         enabled_count = 0
         for strategy_cls in STRATEGY_CLASSES:
             setup_id = strategy_cls.setup_id
             is_enabled = bool(getattr(self.settings.setups, setup_id, False))
             strategy = strategy_cls(SetupParams(enabled=is_enabled), self.settings)
-            self._modern_registry.register(strategy, enabled=is_enabled)
+            registry.register(strategy, enabled=is_enabled)
             if is_enabled:
                 enabled_count += 1
             LOG.info("registered strategy %s (enabled=%s)", setup_id, is_enabled)
@@ -1126,56 +1112,14 @@ class SignalBot:
             LOG.debug("kline_close skipped | symbol=%s not in shortlist", symbol)
             return  # symbol not in shortlist, skip silently
 
-        # Fetch frames
-        frames = await self._fetch_frames(item)
-        if frames is None:
-            return
-
-        # Assemble ws_enrichments
-        ws_enrichments = self._ws_cache_enrichments(symbol)
-
-        # Run modern analysis engine (replaces legacy pipeline)
-        async with self._analysis_semaphore:
-            result = await self._run_modern_analysis(
-                item,
-                frames,
-                trigger=event.trigger,
-                event_ts=datetime.now(UTC),
-                ws_enrichments=ws_enrichments,
-            )
-            candidates = result.candidates
-            rejected = result.rejected
-
-        # Post-pipeline REST enrichment (OI, L/S ratio) — fire-and-forget so it
-        # does NOT block signal delivery.  Values are used only for telemetry;
-        # scoring already ran against the pre-warmed ws_cache_enrichments above.
-        task = asyncio.create_task(self._ws_enrich(result), name=f"ws_enrich:{symbol}")
-        self._background_tasks.add(task)
-        task.add_done_callback(self._background_tasks.discard)
-
-        # Select & deliver via shared path
-        candidates, rejected, delivered = await self._select_and_deliver_for_symbol(
-            symbol, result,
-        )
-
-        # Telemetry
-        for row in rejected:
-            self.telemetry.append_jsonl("rejected.jsonl", row)
-        for sig in candidates:
-            self.telemetry.append_jsonl(
-                "candidates.jsonl",
-                {"ts": datetime.now(UTC).isoformat(), **sig.to_log_row()},
-            )
-        for sig in delivered:
-            self.telemetry.append_jsonl(
-                "selected.jsonl",
-                {"ts": datetime.now(UTC).isoformat(), **sig.to_log_row()},
-            )
-
-        self._emit_cycle_log(
-            symbol=symbol, interval=event.interval, event_ts=datetime.now(UTC),
-            shortlist_size=len(shortlist), tracking_events=tracking_events,
-            result=result, candidates=candidates, rejected=rejected, delivered=delivered,
+        await self._get_cycle_runner().execute_symbol_cycle(
+            symbol=symbol,
+            item=item,
+            interval=event.interval,
+            trigger=event.trigger,
+            event_ts=datetime.now(UTC),
+            tracking_events=tracking_events,
+            shortlist_size=len(shortlist),
         )
 
     async def _on_reconnect(self, event: ReconnectEvent) -> None:
@@ -1210,56 +1154,20 @@ class SignalBot:
                 if item is None:
                     return
 
-                frames = await self._fetch_frames(item)
-                if frames is None:
-                    return
-
-                ws_enrichments = self._ws_cache_enrichments(symbol)
-
-                async with self._analysis_semaphore:
-                    result = await self._run_modern_analysis(
-                        item, frames, trigger="intra_candle",
-                        event_ts=datetime.now(UTC),
-                        ws_enrichments=ws_enrichments,
-                    )
-
-                task = asyncio.create_task(self._ws_enrich(result), name=f"ws_enrich:{symbol}")
-                self._background_tasks.add(task)
-                task.add_done_callback(self._background_tasks.discard)
-
-                # Select & deliver via shared path
-                candidates, rejected, delivered = await self._select_and_deliver_for_symbol(
-                    symbol, result,
-                )
-
-                # Telemetry (lightweight — no cycle log for intra-candle)
-                for row in rejected:
-                    self.telemetry.append_jsonl("rejected.jsonl", row)
-                for sig in candidates:
-                    self.telemetry.append_jsonl(
-                        "candidates.jsonl",
-                        {"ts": datetime.now(UTC).isoformat(), **sig.to_log_row()},
-                    )
-                for sig in delivered:
-                    self.telemetry.append_jsonl(
-                        "selected.jsonl",
-                        {"ts": datetime.now(UTC).isoformat(), **sig.to_log_row()},
-                    )
-                self._emit_cycle_log(
+                event_ts = datetime.now(UTC)
+                await self._get_cycle_runner().execute_symbol_cycle(
                     symbol=symbol,
+                    item=item,
                     interval="bookTicker",
-                    event_ts=result.event_ts,
+                    trigger="intra_candle",
+                    event_ts=event_ts,
                     shortlist_size=len(shortlist),
                     tracking_events=[],
-                    result=result,
-                    candidates=candidates,
-                    rejected=rejected,
-                    delivered=delivered,
                 )
 
                 LOG.debug(
-                    "intra_candle scan | symbol=%s candidates=%d delivered=%d",
-                    symbol, len(candidates), len(delivered),
+                    "intra_candle scan complete | symbol=%s",
+                    symbol,
                 )
             except Exception as exc:
                 LOG.debug("intra_candle scan failed for %s: %s", symbol, exc)
@@ -1373,143 +1281,7 @@ class SignalBot:
 
     async def _run_emergency_cycle(self) -> dict[str, Any]:
         """Full shortlist analysis — used for emergency fallback."""
-        tracking_events = await self.tracker.review_open_signals(dry_run=False)
-        if tracking_events:
-            await self._deliver_tracking(tracking_events)
-
-        async with self._shortlist_lock:
-            shortlist = list(self._shortlist)
-        if not shortlist:
-            shortlist = await self._do_refresh_shortlist()
-
-        semaphore = asyncio.Semaphore(self.settings.runtime.analysis_concurrency)
-
-        async def _analyze_one(item: UniverseSymbol) -> PipelineResult | None:
-            async with semaphore:
-                frames = await self._fetch_frames(item)
-                if frames is None:
-                    return None
-                ws_enrichments = self._ws_cache_enrichments(item.symbol)
-                result = await self._run_modern_analysis(
-                    item, frames, trigger="emergency_fallback",
-                    ws_enrichments=ws_enrichments,
-                )
-                asyncio.create_task(self._ws_enrich(result), name=f"ws_enrich:{item.symbol}")
-                return result
-
-        tasks = [asyncio.create_task(_analyze_one(item)) for item in shortlist]
-        results = await asyncio.gather(*tasks, return_exceptions=True)
-
-        pipeline_results: list[PipelineResult] = []
-        all_candidates: dict[str, list[Signal]] = {}
-        all_rejected: list[dict[str, Any]] = []
-        rejected_by_symbol: dict[str, list[dict[str, Any]]] = {}
-        bias_counter: Counter[str] = Counter()
-
-        for res in results:
-            if res is None or isinstance(res, Exception) or not isinstance(res, PipelineResult):
-                continue
-            pipeline_results.append(res)
-            rejected_by_symbol.setdefault(res.symbol, [])
-            rejected_by_symbol[res.symbol].extend(res.rejected)
-            all_rejected.extend(res.rejected)
-            for row in res.rejected:
-                self.telemetry.append_jsonl("rejected.jsonl", row)
-            if res.error:
-                continue
-            all_candidates[res.symbol] = res.candidates
-            if res.prepared is not None:
-                bias_counter[res.prepared.bias_4h] += 1
-
-        prepared_by_tracking_id: dict[str, PreparedSymbol] = {}
-        for res in pipeline_results:
-            if res.prepared is None:
-                continue
-            for signal in res.candidates:
-                prepared_by_tracking_id[signal.tracking_id] = res.prepared
-
-        selected = self._select_and_rank(
-            all_candidates,
-            max_signals=self.settings.runtime.max_signals_per_cycle,
-        )
-        delivered, cooldown_rejected, delivery_status_counts = await self._select_and_deliver(
-            selected,
-            prepared_by_tracking_id=prepared_by_tracking_id,
-        )
-        all_rejected.extend(cooldown_rejected)
-        for row in cooldown_rejected:
-            self.telemetry.append_jsonl("rejected.jsonl", row)
-            rejected_by_symbol.setdefault(str(row.get("symbol") or "unknown"), []).append(row)
-
-        selected_by_symbol: dict[str, list[Signal]] = {}
-        for signal in selected:
-            selected_by_symbol.setdefault(signal.symbol, []).append(signal)
-
-        delivered_by_symbol: dict[str, list[Signal]] = {}
-        for signal in delivered:
-            delivered_by_symbol.setdefault(signal.symbol, []).append(signal)
-
-        delivery_status_counts_by_symbol: dict[str, Counter[str]] = {}
-        for signal in delivered:
-            counter = delivery_status_counts_by_symbol.setdefault(signal.symbol, Counter())
-            counter["sent"] += 1
-        for res in pipeline_results:
-            if res.funnel:
-                res.funnel["selected"] = len(selected_by_symbol.get(res.symbol, []))
-                res.funnel["delivered"] = len(delivered_by_symbol.get(res.symbol, []))
-                res.funnel["delivery_status_counts"] = dict(delivery_status_counts_by_symbol.get(res.symbol, Counter()))
-
-        # Telemetry parity with the event-driven (per-symbol) path:
-        # - persist candidates for later calibration
-        # - persist delivered signals for the journal / audit trail
-        now_ts = datetime.now(UTC).isoformat()
-        for sym, candidates in all_candidates.items():
-            for sig in candidates:
-                self.telemetry.append_jsonl(
-                    "candidates.jsonl",
-                    {"ts": now_ts, **sig.to_log_row()},
-                )
-        for sig in delivered:
-            self.telemetry.append_jsonl(
-                "selected.jsonl",
-                {"ts": now_ts, **sig.to_log_row()},
-            )
-        for res in pipeline_results:
-            self._emit_cycle_log(
-                symbol=res.symbol,
-                interval="emergency_fallback",
-                event_ts=res.event_ts,
-                shortlist_size=len(shortlist),
-                tracking_events=[],
-                result=res,
-                candidates=res.candidates,
-                rejected=rejected_by_symbol.get(res.symbol, []),
-                delivered=delivered_by_symbol.get(res.symbol, []),
-            )
-
-        summary = {
-            "shortlist_size": len(shortlist),
-            "detector_runs": sum(
-                r.raw_setups for r in pipeline_results
-            ),
-            "post_filter_candidates": sum(
-                len(r.candidates) for r in pipeline_results
-            ),
-            "selected_signals": len(delivered),
-            "raw_setups": sum(
-                r.raw_setups for r in pipeline_results
-            ),
-            "candidates": sum(
-                len(r.candidates) for r in pipeline_results
-            ),
-            "selected": len(delivered),
-            "rejected": len(all_rejected),
-            "bias": dict(bias_counter),
-            "delivery_status_counts": dict(delivery_status_counts),
-        }
-        self.last_cycle_summary = summary
-        LOG.info("emergency cycle | %s", " ".join(f"{k}={v}" for k, v in summary.items()))
-        return summary
+        return await self._get_cycle_runner().run_emergency_cycle()
 
     # ------------------------------------------------------------------
     # Frame fetching & enrichments
@@ -2280,96 +2052,17 @@ class SignalBot:
     # ------------------------------------------------------------------
 
     async def _fetch_symbols_with_retry(self, max_retries: int = 1) -> list[Any]:
-        """Fetch exchange symbols with retry logic and safeguards."""
-        for attempt in range(max_retries + 1):
-            try:
-                # Use shorter timeout for individual calls
-                return await asyncio.wait_for(
-                    self.client.fetch_exchange_symbols(),
-                    timeout=10.0  # 10 seconds per attempt
-                )
-            except asyncio.TimeoutError:
-                LOG.warning("fetch_exchange_symbols attempt %d/%d timed out", attempt + 1, max_retries + 1)
-                if attempt < max_retries:
-                    await asyncio.sleep(1.0)  # Brief pause before retry
-                else:
-                    raise  # Re-raise on final attempt
-            except Exception as exc:
-                LOG.warning("fetch_exchange_symbols attempt %d/%d failed: %s", attempt + 1, max_retries + 1, exc)
-                if attempt < max_retries:
-                    await asyncio.sleep(1.0)
-                else:
-                    raise
-        return []
+        """Fetch exchange symbols with timeout and retry logic."""
+        return await self._get_shortlist_service().fetch_symbols_with_retry(max_retries=max_retries)
 
     def _extract_symbol_assets(self, symbol: str) -> tuple[str | None, str | None]:
-        sym = str(symbol).strip().upper()
-        meta = self._symbol_meta_by_symbol.get(sym)
-        if meta is None:
-            exchange_cache = getattr(self.client, "_exchange_info_cache", None)
-            if exchange_cache is not None:
-                _cached_at, rows = exchange_cache
-                cache_map = {
-                    str(getattr(row, "symbol", "")).strip().upper(): row
-                    for row in rows
-                }
-                self._symbol_meta_by_symbol.update(cache_map)
-                meta = self._symbol_meta_by_symbol.get(sym)
-        if meta is not None:
-            base = str(getattr(meta, "base_asset", "")).strip().upper()
-            quote = str(getattr(meta, "quote_asset", "")).strip().upper()
-            if base and quote:
-                return base, quote
-
-        configured_quote = str(self.settings.universe.quote_asset).strip().upper()
-        if configured_quote and sym.endswith(configured_quote):
-            base = sym[: -len(configured_quote)]
-            if base:
-                return base, configured_quote
-        return None, None
+        return self._get_shortlist_service().extract_symbol_assets(symbol)
 
     def _build_pinned_shortlist(self) -> list[UniverseSymbol]:
-        shortlist: list[UniverseSymbol] = []
-        for raw_symbol in self.settings.universe.pinned_symbols:
-            symbol = str(raw_symbol).strip().upper()
-            base_asset, quote_asset = self._extract_symbol_assets(symbol)
-            if not base_asset or not quote_asset:
-                LOG.warning(
-                    "skipping pinned symbol due to unresolved base/quote assets | symbol=%s configured_quote_asset=%s",
-                    symbol,
-                    self.settings.universe.quote_asset,
-                )
-                continue
-            shortlist.append(
-                UniverseSymbol(
-                    symbol=symbol,
-                    base_asset=base_asset,
-                    quote_asset=quote_asset,
-                    contract_type="PERPETUAL",
-                    status="TRADING",
-                    onboard_date_ms=0,
-                    quote_volume=0.0,
-                    price_change_pct=0.0,
-                    last_price=0.0,
-                    shortlist_bucket="pinned",
-                )
-            )
-        return shortlist
+        return self._get_shortlist_service().build_pinned_shortlist()
 
     async def _build_live_shortlist(self) -> tuple[list[UniverseSymbol], dict[str, int]]:
-        timeout_s = max(10.0, float(self.settings.ws.rest_timeout_seconds) * 2.0)
-        symbol_meta_list, tickers_24h = await asyncio.wait_for(
-            asyncio.gather(
-                self._fetch_symbols_with_retry(max_retries=1),
-                self.client.fetch_ticker_24h(),
-            ),
-            timeout=timeout_s,
-        )
-        self._symbol_meta_by_symbol = {
-            str(getattr(row, "symbol", "")).strip().upper(): row for row in symbol_meta_list
-        }
-        shortlist, summary = build_shortlist(symbol_meta_list, tickers_24h, self.settings)
-        return shortlist, summary
+        return await self._get_shortlist_service().build_live_shortlist()
 
     async def _sync_ws_tracked_symbols(self) -> None:
         if self._ws_manager is None:
@@ -2388,56 +2081,7 @@ class SignalBot:
             LOG.debug("tracked-symbol sync failed (non-fatal): %s", exc)
 
     async def _do_refresh_shortlist(self) -> list[UniverseSymbol]:
-        LOG.info("refreshing shortlist...")
-
-        source = "pinned_fallback"
-        summary: dict[str, Any] = {}
-        shortlist = self._build_pinned_shortlist()
-
-        try:
-            live_shortlist, live_summary = await self._build_live_shortlist()
-            if live_shortlist:
-                shortlist = live_shortlist
-                summary = live_summary
-                source = "live"
-                self._last_live_shortlist = list(live_shortlist)
-            elif self._last_live_shortlist:
-                shortlist = list(self._last_live_shortlist)
-                source = "cached"
-        except Exception as exc:
-            if self._last_live_shortlist:
-                shortlist = list(self._last_live_shortlist)
-                source = "cached"
-                LOG.warning("shortlist refresh failed, using cached shortlist: %s", exc)
-            else:
-                LOG.warning("shortlist refresh failed, using pinned fallback: %s", exc)
-
-        async with self._shortlist_lock:
-            self._shortlist = shortlist
-        self._shortlist_source = source
-
-        self.telemetry.append_jsonl(
-            "shortlist.jsonl",
-            {
-                "ts": datetime.now(UTC).isoformat(),
-                "source": source,
-                "size": len(shortlist),
-                "symbols": [item.symbol for item in shortlist[:20]],
-                "eligible": summary.get("eligible"),
-                "dynamic_pool": summary.get("dynamic_pool"),
-                "pinned": summary.get("pinned"),
-            },
-        )
-
-        LOG.info(
-            "shortlist refresh complete | source=%s size=%d eligible=%s dynamic_pool=%s pinned=%s",
-            source,
-            len(shortlist),
-            summary.get("eligible"),
-            summary.get("dynamic_pool"),
-            summary.get("pinned"),
-        )
-        return shortlist
+        return await self._get_shortlist_service().do_refresh_shortlist()
 
     async def _background_fetch_symbols(self) -> None:
         """Background task to fetch exchange symbols without blocking startup."""
@@ -2456,17 +2100,7 @@ class SignalBot:
             LOG.debug("background fetch: failed to get exchange symbols: %s", exc)
 
     async def _refresh_shortlist_periodic(self) -> None:
-        # Initial delay to let WS stabilize before making REST calls
-        await asyncio.sleep(5)
-        while not self._shutdown.is_set():
-            await self._do_refresh_shortlist()
-            try:
-                await asyncio.wait_for(
-                    self._shutdown.wait(),
-                    timeout=self.settings.runtime.shortlist_refresh_interval_seconds,
-                )
-            except asyncio.TimeoutError:
-                continue
+        await self._get_shortlist_service().refresh_shortlist_periodic()
 
     # ------------------------------------------------------------------
     # Delivery & tracking

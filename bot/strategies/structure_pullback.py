@@ -146,9 +146,18 @@ class StructurePullbackSetup(BaseSetup):
             trend_reasons = short_reasons
 
         adx_1h = _as_float(work_1h.item(-1, "adx14"))
-        # Use per-setup min_adx from config if available, else fallback to global
-        setup_params = self.get_optimizable_params(settings)
-        min_adx = setup_params.get("min_adx_1h", settings.filters.min_adx_1h)
+        filters = getattr(settings, "filters", None)
+        setup_overrides: object = {}
+        if filters is not None:
+            setups_config = getattr(filters, "setups", {})
+            if isinstance(setups_config, dict):
+                candidate = setups_config.get(self.setup_id, {})
+                if isinstance(candidate, dict):
+                    setup_overrides = candidate
+        min_adx = settings.filters.min_adx_1h
+        if isinstance(setup_overrides, dict):
+            min_adx = _as_float(setup_overrides.get("min_adx_1h"), min_adx)
+        min_adx = _as_float(dynamic_params.get("min_adx_1h"), min_adx)
         if adx_1h > 0.0 and adx_1h < min_adx:
             _reject(prepared, "structure_pullback", "adx_too_low_1h", adx_1h=round(adx_1h, 2), min_adx=min_adx)
             return None

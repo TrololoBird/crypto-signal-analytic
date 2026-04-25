@@ -2,31 +2,18 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-import logging
-import sys
-from pathlib import Path
 from typing import Sequence
 
-import structlog
+from common import bootstrap_repo_path, configure_script_logging
 
-ROOT_DIR = Path(__file__).resolve().parents[1]
-if str(ROOT_DIR) not in sys.path:
-    sys.path.insert(0, str(ROOT_DIR))
+bootstrap_repo_path()
 
 from bot.config import load_settings
 from bot.market_data import BinanceFuturesMarketData, MarketDataUnavailable
 from bot.ws_manager import FuturesWSManager
 
 
-LOG = structlog.get_logger("scripts.live_check_binance_api")
-
-
-def _configure_logging() -> None:
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s | %(levelname)-7s | %(name)s | %(message)s",
-        force=True,
-    )
+LOG = configure_script_logging("scripts.live_check_binance_api")
 
 
 async def _run(symbols: Sequence[str], warmup_seconds: float, reconnect_wait_seconds: float) -> None:
@@ -88,8 +75,6 @@ def main() -> None:
     parser.add_argument("--warmup-seconds", type=float, default=20.0)
     parser.add_argument("--reconnect-wait-seconds", type=float, default=20.0)
     args = parser.parse_args()
-
-    _configure_logging()
     try:
         asyncio.run(_run(args.symbols, args.warmup_seconds, args.reconnect_wait_seconds))
     except MarketDataUnavailable as exc:

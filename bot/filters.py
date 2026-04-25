@@ -164,6 +164,8 @@ def apply_global_filters(
     passed.append("spread_ok")
 
     # --- 4. ATR ---
+    if prepared.work_15m.is_empty() or "atr_pct" not in prepared.work_15m.columns:
+        return _reject("atr_unavailable", replace(base, atr_pct=0.0))
     atr_pct_raw = prepared.work_15m.item(-1, "atr_pct")
     if atr_pct_raw is None or (isinstance(atr_pct_raw, float) and math.isnan(atr_pct_raw)):
         return _reject("atr_nan", replace(base, atr_pct=0.0))

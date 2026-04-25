@@ -154,7 +154,7 @@ class BreakerBlockSetup(BaseSetup):
                 _reject(prepared, setup_id, "risk_non_positive_long", stop=stop, price=price)
                 return None
             # TP1: next 1h swing high (liquidity target / imbalance fill)
-            sh_mask, _ = _sp(w1h, n=3)
+            sh_mask, _ = _sp(w1h, n=3, include_unconfirmed_tail=True)
             sh_prices = w1h.filter(sh_mask)["high"]
             tp1_candidates = sh_prices.filter(sh_prices > price)
             tp1 = float(tp1_candidates[0]) if tp1_candidates.len() > 0 else None
@@ -174,7 +174,7 @@ class BreakerBlockSetup(BaseSetup):
                 _reject(prepared, setup_id, "risk_non_positive_short", stop=stop, price=price)
                 return None
             # TP1: next 1h swing low (liquidity target)
-            _, sl_mask = _sp(w1h, n=3)
+            _, sl_mask = _sp(w1h, n=3, include_unconfirmed_tail=True)
             sl_prices = w1h.filter(sl_mask)["low"]
             tp1_candidates = sl_prices.filter(sl_prices < price)
             tp1 = float(tp1_candidates[-1]) if tp1_candidates.len() > 0 else None

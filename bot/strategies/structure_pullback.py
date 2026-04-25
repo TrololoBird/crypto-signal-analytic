@@ -244,7 +244,7 @@ class StructurePullbackSetup(BaseSetup):
             stop = pullback_low - atr * float(sl_buffer_atr)
 
             # TP1: prior 1h swing high above entry (trend extreme before pullback)
-            sh_1h_mask, sl_mask = _sp(work_1h, n=3)
+            sh_1h_mask, sl_mask = _sp(work_1h, n=3, include_unconfirmed_tail=True)
             tp1 = select_structural_target(
                 work_1h,
                 mask=sh_1h_mask,
@@ -278,7 +278,7 @@ class StructurePullbackSetup(BaseSetup):
             stop = pullback_high + atr * float(sl_buffer_atr)
 
             # TP1: prior 1h swing low below entry
-            _, sl_1h_mask = _sp(work_1h, n=3)
+            _, sl_1h_mask = _sp(work_1h, n=3, include_unconfirmed_tail=True)
             tp1 = select_structural_target(
                 work_1h,
                 mask=sl_1h_mask,

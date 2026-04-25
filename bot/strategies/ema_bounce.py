@@ -131,7 +131,7 @@ class EmaBounceSetup(BaseSetup):
 
         # --- Compute structural SL/TP via unified utility ---
         from ..features import _swing_points as _sp
-        sh_mask, sl_mask = _sp(work_1h, n=3)
+        sh_mask, sl_mask = _sp(work_1h, n=3, include_unconfirmed_tail=True)
         
         # Determine bounce EMA for SL basis
         if signal_direction == "long":

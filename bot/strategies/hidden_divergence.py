@@ -105,7 +105,7 @@ class HiddenDivergenceSetup(BaseSetup):
         bias_1h = getattr(prepared, 'bias_1h', prepared.bias_4h)
         regime_1h = getattr(prepared, 'regime_1h_confirmed', prepared.regime_4h_confirmed)
 
-        sh_mask, sl_mask = _swing_points(w1h, n=3)
+        sh_mask, sl_mask = _swing_points(w1h, n=3, include_unconfirmed_tail=True)
         sh_prices = w1h.filter(sh_mask)["high"]
         sh_rsi = w1h.filter(sh_mask)["rsi14"] if "rsi14" in w1h.columns else None
         sl_prices = w1h.filter(sl_mask)["low"]

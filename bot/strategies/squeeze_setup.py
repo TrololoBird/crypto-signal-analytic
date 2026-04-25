@@ -169,7 +169,7 @@ class SqueezeSetup(BaseSetup):
             stop = _as_float(pre_breakout["low"].min()) - atr * 0.4
             # TP1: first swing/fractal in breakout direction on 15m
             from ..features import _swing_points as _sp
-            _sh_mask, sl_mask = _sp(work_15m, n=3)
+            _sh_mask, sl_mask = _sp(work_15m, n=3, include_unconfirmed_tail=True)
             sh_prices = work_15m.filter(_sh_mask)["high"]
             tp1_candidates = sh_prices.filter(sh_prices > price_anchor)
             tp1 = _as_float(tp1_candidates[0]) if tp1_candidates.len() > 0 else None

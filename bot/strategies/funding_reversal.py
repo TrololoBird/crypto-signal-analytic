@@ -146,7 +146,7 @@ class FundingReversalSetup(BaseSetup):
             w1h = prepared.work_1h
             tp2 = None
             if w1h.height > 5:
-                sh_mask, sl_mask = _sp(w1h, n=3)
+                sh_mask, sl_mask = _sp(w1h, n=3, include_unconfirmed_tail=True)
                 sl_prices = w1h.filter(sl_mask)["low"]
                 tp2_cands = sl_prices.filter(sl_prices < price)
                 tp2 = _as_float(tp2_cands[-1]) if tp2_cands.len() > 0 else None
@@ -172,7 +172,7 @@ class FundingReversalSetup(BaseSetup):
             w1h = prepared.work_1h
             tp2 = None
             if w1h.height > 5:
-                sh_mask, _ = _sp(w1h, n=3)
+                sh_mask, _ = _sp(w1h, n=3, include_unconfirmed_tail=True)
                 sh_prices = w1h.filter(sh_mask)["high"]
                 tp2_cands = sh_prices.filter(sh_prices > price)
                 tp2 = _as_float(tp2_cands[0]) if tp2_cands.len() > 0 else None

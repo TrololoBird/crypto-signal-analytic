@@ -68,7 +68,7 @@ class WickTrapReversalSetup(BaseSetup):
         wick_through_atr_mult = dynamic_params.get("wick_through_atr_mult", 0.3)
         closed_back_threshold = dynamic_params.get("closed_back_threshold", 0.0)
         
-        sh_mask, sl_mask = _swing_points(work_1h, n=3)
+        sh_mask, sl_mask = _swing_points(work_1h, n=3, include_unconfirmed_tail=True)
 
         direction: str | None = None
         wick_bar_idx: int | None = None

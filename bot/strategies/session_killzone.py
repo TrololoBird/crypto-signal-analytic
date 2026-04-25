@@ -162,7 +162,7 @@ class SessionKillzoneSetup(BaseSetup):
             # TP1: prior session's major level (previous 1h swing high or session high)
             tp1 = None
             if w1h.height > 5:
-                sh_mask, sl_mask = _sp(w1h, n=3)
+                sh_mask, sl_mask = _sp(w1h, n=3, include_unconfirmed_tail=True)
                 sh_prices = w1h.filter(sh_mask)["high"]
                 tp1_cands = sh_prices.filter(sh_prices > price)
                 tp1 = float(tp1_cands[0]) if tp1_cands.len() > 0 else None
@@ -179,7 +179,7 @@ class SessionKillzoneSetup(BaseSetup):
             # TP1: prior session's major level (previous 1h swing low)
             tp1 = None
             if w1h.height > 5:
-                _, sl_mask = _sp(w1h, n=3)
+                _, sl_mask = _sp(w1h, n=3, include_unconfirmed_tail=True)
                 sl_prices = w1h.filter(sl_mask)["low"]
                 tp1_cands = sl_prices.filter(sl_prices < price)
                 tp1 = float(tp1_cands[-1]) if tp1_cands.len() > 0 else None

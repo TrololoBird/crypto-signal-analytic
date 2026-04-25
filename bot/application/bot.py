@@ -775,7 +775,7 @@ class SignalBot:
                 or (prepared.mark_index_spread_bps is not None and prepared.mark_index_spread_bps <= 4.0)
             )
             depth_confirms = bool(
-                (depth_imbalance is not None and depth_imbalance >= 0.05)
+                (depth_imbalance is not None and depth_imbalance <= -0.05)
                 or (microprice_bias is not None and microprice_bias <= 0.0)
             )
             premium_exhaustion = bool(
@@ -1196,12 +1196,10 @@ class SignalBot:
                 ):
                     mid = (event.bid + event.ask) / 2.0
                     spread_bps = ((event.ask - event.bid) / mid) * 10000.0 if mid > 0.0 else None
-                    depth_imbalance = ((event.ask - event.bid) / mid) if mid > 0.0 else None
                     ws_override = {
                         "bid_price": event.bid,
                         "ask_price": event.ask,
                         "spread_bps": spread_bps,
-                        "depth_imbalance": depth_imbalance,
                     }
                 await self._get_cycle_runner().execute_symbol_cycle(
                     symbol=symbol,

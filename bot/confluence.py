@@ -10,6 +10,7 @@ from .models import PreparedSymbol, Signal
 from .scoring import (
     ScoringResult,
     _crowd_position,
+    _funding_contrarian,
     _mtf_alignment,
     _oi_momentum,
     _risk_reward_quality,
@@ -134,12 +135,15 @@ class ConfluenceEngine:
         prepared: PreparedSymbol,
         cfg,
     ) -> list[ComponentScore]:
+        funding_weight = max(0.0, min(cfg.weight_crowd_position * 0.5, cfg.weight_crowd_position))
+        crowd_weight = max(0.0, cfg.weight_crowd_position - funding_weight)
         specs = [
             ("mtf_alignment",     cfg.weight_mtf_alignment,    _mtf_alignment(prepared, signal)),
             ("volume_quality",    cfg.weight_volume_quality,   _volume_quality(prepared)),
             ("structure_clarity", cfg.weight_structure_clarity, _structure_clarity(prepared, signal)),
             ("risk_reward",       cfg.weight_risk_reward,      _risk_reward_quality(signal)),
-            ("crowd_position",    cfg.weight_crowd_position,   _crowd_position(prepared, signal, self.settings)),
+            ("funding_score",     funding_weight,              _funding_contrarian(prepared, signal, self.settings)),
+            ("crowd_position",    crowd_weight,                _crowd_position(prepared, signal, self.settings)),
             ("oi_momentum",       cfg.weight_oi_momentum,      _oi_momentum(prepared, signal)),
         ]
         return [

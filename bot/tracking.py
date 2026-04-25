@@ -1137,7 +1137,10 @@ class SignalTracker:
         try:
             loop = asyncio.get_running_loop()
         except RuntimeError:
-            asyncio.run(self.memory_repo.save_signal_outcome(outcome.to_dict()))
+            LOG.debug(
+                "save_signal_outcome skipped: no running loop | tracking_id=%s",
+                tracked.tracking_id,
+            )
         else:
             task = loop.create_task(self.memory_repo.save_signal_outcome(outcome.to_dict()))
             task.add_done_callback(

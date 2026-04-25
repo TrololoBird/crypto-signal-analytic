@@ -15,6 +15,7 @@ from __future__ import annotations
 import importlib
 from importlib import util as importlib_util
 from collections import OrderedDict
+import threading
 from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
@@ -50,24 +51,27 @@ class _FrameCache:
     Keys are (symbol, interval, close_time_ns) to avoid cross-symbol collisions.
     """
 
-    __slots__ = ("_store", "_max_size")
+    __slots__ = ("_store", "_max_size", "_lock")
 
     def __init__(self, max_size: int = 500) -> None:
         self._store: OrderedDict[tuple[str, str, int], pl.DataFrame] = OrderedDict()
         self._max_size = max_size
+        self._lock = threading.RLock()
 
     def get(self, key: tuple[str, str, int]) -> pl.DataFrame | None:
-        if key not in self._store:
-            return None
-        self._store.move_to_end(key)
-        return self._store[key]
+        with self._lock:
+            if key not in self._store:
+                return None
+            self._store.move_to_end(key)
+            return self._store[key]
 
     def put(self, key: tuple[str, str, int], value: pl.DataFrame) -> None:
-        if key in self._store:
-            self._store.move_to_end(key)
-        self._store[key] = value
-        while len(self._store) > self._max_size:
-            self._store.popitem(last=False)
+        with self._lock:
+            if key in self._store:
+                self._store.move_to_end(key)
+            self._store[key] = value
+            while len(self._store) > self._max_size:
+                self._store.popitem(last=False)
 
 
 # Module-level singleton kept for backward compatibility.
@@ -254,7 +258,7 @@ def _adx(df: pl.DataFrame, period: int = 14) -> pl.Series:
     )
     
     atr = _atr(df, period)
-    atr_safe = _clean_non_finite(atr, fill=1e-9)
+    atr_safe = _clean_non_finite(atr, fill=1e-9).replace(0.0, 1e-9)
     plus_di = 100.0 * plus_dm.ewm_mean(alpha=1.0 / period, adjust=False) / atr_safe
     minus_di = 100.0 * minus_dm.ewm_mean(alpha=1.0 / period, adjust=False) / atr_safe
     
@@ -395,9 +399,9 @@ def _ichimoku_lines(df: pl.DataFrame) -> tuple[pl.Series, pl.Series, pl.Series, 
     tenkan = ((high.rolling_max(9) + low.rolling_min(9)) / 2.0).rename("tenkan")
     kijun = ((high.rolling_max(26) + low.rolling_min(26)) / 2.0).rename("kijun")
     
-    # Shift back 26 periods to eliminate lookahead
-    senkou_a = (((tenkan + kijun) / 2.0).shift(26)).rename("senkou_a")
-    senkou_b = (((high.rolling_max(52) + low.rolling_min(52)) / 2.0).shift(26)).rename("senkou_b")
+    # Senkou spans are projected 26 periods ahead in standard Ichimoku plotting.
+    senkou_a = (((tenkan + kijun) / 2.0).shift(-26)).rename("senkou_a")
+    senkou_b = (((high.rolling_max(52) + low.rolling_min(52)) / 2.0).shift(-26)).rename("senkou_b")
     
     return tenkan, kijun, senkou_a, senkou_b
 
@@ -407,10 +411,7 @@ def _ichimoku_lines(df: pl.DataFrame) -> tuple[pl.Series, pl.Series, pl.Series, 
 # ---------------------------------------------------------------------------
 
 def _supertrend(df: pl.DataFrame, period: int = 10, multiplier: float = 3.0) -> tuple[pl.Series, pl.Series]:
-    """SuperTrend indicator - pure Polars implementation.
-    
-    Returns (supertrend_value, direction) where direction is +1 for uptrend, -1 for downtrend.
-    """
+    """SuperTrend indicator using canonical iterative band state updates."""
     high = df["high"]
     low = df["low"]
     close = df["close"]
@@ -424,28 +425,49 @@ def _supertrend(df: pl.DataFrame, period: int = 10, multiplier: float = 3.0) -> 
     )
     atr = _materialize_series(tr.ewm_mean(alpha=1.0 / period, adjust=False), df=df, name="supertrend_atr")
     
-    # Basic bands (ATR bands)
-    upper_band = (high + low) / 2.0 + multiplier * atr
-    lower_band = (high + low) / 2.0 - multiplier * atr
-    
-    # Initialize with forward fill for iterative calculation
-    # Use a simple vectorized approximation
-    st = _materialize_series(
-        pl.when(close > ((high + low) / 2.0 + multiplier * atr).shift(1))
-        .then(lower_band)
-        .otherwise(upper_band),
-        df=df,
-        name="supertrend",
+    hl2 = (high + low) / 2.0
+    basic_upper = hl2 + multiplier * atr
+    basic_lower = hl2 - multiplier * atr
+
+    close_vals = close.to_list()
+    upper_vals = basic_upper.to_list()
+    lower_vals = basic_lower.to_list()
+    size = len(close_vals)
+    if size == 0:
+        empty = pl.Series("supertrend", [], dtype=pl.Float64)
+        return empty, pl.Series("supertrend_dir", [], dtype=pl.Float64)
+
+    final_upper: list[float] = [float(upper_vals[0])]
+    final_lower: list[float] = [float(lower_vals[0])]
+    supertrend: list[float] = [float(upper_vals[0])]
+
+    for idx in range(1, size):
+        bu = float(upper_vals[idx])
+        bl = float(lower_vals[idx])
+        prev_close = float(close_vals[idx - 1])
+        prev_fu = final_upper[idx - 1]
+        prev_fl = final_lower[idx - 1]
+
+        fu = bu if (bu < prev_fu or prev_close > prev_fu) else prev_fu
+        fl = bl if (bl > prev_fl or prev_close < prev_fl) else prev_fl
+        final_upper.append(fu)
+        final_lower.append(fl)
+
+        prev_st = supertrend[idx - 1]
+        curr_close = float(close_vals[idx])
+        if prev_st == prev_fu:
+            st = fu if curr_close <= fu else fl
+        else:
+            st = fl if curr_close >= fl else fu
+        supertrend.append(st)
+
+    st_series = pl.Series("supertrend", supertrend, dtype=pl.Float64)
+    direction = pl.Series(
+        "supertrend_dir",
+        [1.0 if float(c) >= float(s) else -1.0 for c, s in zip(close_vals, supertrend, strict=False)],
+        dtype=pl.Float64,
     )
-    
-    # Direction: +1 when close > supertrend (uptrend), -1 otherwise (downtrend)
-    direction = _materialize_series(
-        pl.when(close > st).then(1.0).otherwise(-1.0),
-        df=df,
-        name="supertrend_dir",
-    )
-    
-    return st, direction
+    return st_series, direction
 
 
 def _bollinger_bands(close: pl.Series, period: int = 20, nbdev: float = 2.0) -> tuple[pl.Series, pl.Series, pl.Series]:
@@ -460,6 +482,30 @@ def _bollinger_bands(close: pl.Series, period: int = 20, nbdev: float = 2.0) -> 
     lower = middle - nbdev * std
     
     return upper, middle, lower
+
+
+def _weighted_moving_average(series: pl.Series, period: int, *, name: str) -> pl.Series:
+    if period <= 1:
+        return series.cast(pl.Float64).rename(name)
+    values = series.to_list()
+    weights = list(range(1, period + 1))
+    divisor = float(sum(weights))
+    out: list[float | None] = [None] * len(values)
+    for idx in range(period - 1, len(values)):
+        window = values[idx - period + 1 : idx + 1]
+        if any(v is None for v in window):
+            continue
+        out[idx] = sum(float(v) * w for v, w in zip(window, weights, strict=False)) / divisor
+    return _clean_non_finite(pl.Series(name, out, dtype=pl.Float64), fill=0.0)
+
+
+def _hull_moving_average(close: pl.Series, period: int, *, name: str) -> pl.Series:
+    half = max(1, period // 2)
+    sqrt_n = max(1, int(np.sqrt(period)))
+    wma_half = _weighted_moving_average(close, half, name=f"{name}_half")
+    wma_full = _weighted_moving_average(close, period, name=f"{name}_full")
+    raw = (2.0 * wma_half - wma_full).rename(f"{name}_raw")
+    return _weighted_moving_average(raw, sqrt_n, name=name)
 
 
 def _keltner_channels(df: pl.DataFrame, period: int = 20, multiplier: float = 2.0) -> tuple[pl.Series, pl.Series, pl.Series]:
@@ -547,13 +593,10 @@ def _add_advanced_indicators(df: pl.DataFrame) -> pl.DataFrame:
         kc_width.fill_nan(0.04).alias("kc_width"),
     ])
     
-    # --- HMA (Hull Moving Average) - UNUSED by strategies, simplified ---------
-    # Hull MA = 2*WMA(n/2) - WMA(n), then WMA(sqrt(n)) of result
+    # --- HMA (Hull Moving Average) --------------------------------------------
     close = df["close"]
-    wma_half = close.rolling_mean(window_size=5)  # Approximation
-    wma_full = close.rolling_mean(window_size=9)
-    hma9 = (2 * wma_half - wma_full)  # Simplified HMA
-    hma21 = close.rolling_mean(window_size=21)  # Use SMA as approximation
+    hma9 = _hull_moving_average(close, 9, name="hma9")
+    hma21 = _hull_moving_average(close, 21, name="hma21")
     result = result.with_columns([
         hma9.alias("hma9"),
         hma21.alias("hma21"),

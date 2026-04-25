@@ -160,14 +160,14 @@ class RuntimeMonitor:
         print(f"❌ Rejected: {stats['rejected_total']}")
         print(f"⚠️ Errors: {stats['errors_count']}")
         
-        print(f"\n📈 Performance:")
+        print("\n📈 Performance:")
         print(f"  Cycles/minute: {perf['cycles_per_minute']:.1f}")
         print(f"  Candidates/cycle: {perf['candidates_per_cycle']:.2f}")
         print(f"  Delivery rate: {perf['delivery_rate']*100:.1f}%")
         
         signals = report["signals"]["last_signals"]
         if signals:
-            print(f"\n🔔 Last Signals:")
+            print("\n🔔 Last Signals:")
             for sig in signals[-5:]:
                 print(f"  {sig['time'][-8:]} | {sig['symbol']}: {sig['delivered']} delivered")
         

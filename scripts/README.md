@@ -5,6 +5,7 @@
 | script | назначение | статус (active/deprecated) | входные параметры | пример запуска |
 |---|---|---|---|---|
 | `check_scripts_readme.py` | CI-guard: проверяет, что каждый `scripts/*.py` описан в этой таблице. | active | нет | `python scripts/check_scripts_readme.py` |
+| `common.py` | Общие утилиты для CLI-скриптов (например, нормализация `sys.path` до корня репозитория). | active | нет (модуль-утилита) | `python -c "from scripts.common import ensure_repo_root_on_syspath"` |
 | `full_indicators_registry.py` | Legacy-аудит полного реестра индикаторов (заменён более узкими live/runtime проверками). | deprecated | `--help` (wrapper) | `python -m scripts.full_indicators_registry` |
 | `generate_audit_artifacts.py` | Legacy-генерация audit-артефактов для разового внутреннего анализа. | deprecated | `--help` (wrapper) | `python -m scripts.generate_audit_artifacts` |
 | `live_check_binance_api.py` | Live smoke-check REST/WS Binance (коннект, реконы, свежесть потоков). | active | `--symbols`, `--warmup-seconds`, `--reconnect-wait-seconds` | `python -m scripts.live_check_binance_api --symbols BTCUSDT ETHUSDT` |

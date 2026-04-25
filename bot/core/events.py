@@ -43,6 +43,7 @@ class BookTickerEvent(msgspec.Struct, frozen=True):
     symbol: str
     bid: float | None
     ask: float | None
+    event_ts_ms: int | None = None
 
 
 # Union type for dispatcher type routing

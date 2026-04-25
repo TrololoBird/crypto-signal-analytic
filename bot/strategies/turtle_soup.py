@@ -146,7 +146,8 @@ class TurtleSoupSetup(BaseSetup):
             sh_mask, _ = _sp(w1h, n=3)
             sh_prices = w1h.filter(sh_mask)["high"]
             tp2_candidates = sh_prices.filter(sh_prices > bar_close)
-            tp2 = _as_float(tp2_candidates[0]) if tp2_candidates.len() > 0 else None
+            tp2_series = tp2_candidates.drop_nulls()
+            tp2 = _as_float(tp2_series[0]) if tp2_series.len() > 0 else None
         else:
             # SL: beyond false breakout extreme + sl_buffer_atr×ATR
             stop = wick_extreme + sl_buffer_atr * atr
@@ -190,6 +191,7 @@ class TurtleSoupSetup(BaseSetup):
             score=score,
             timeframe="15m+1h",
             reasons=reasons,
+            strategy_family=self.family,
             stop=stop,
             tp1=tp1,
             tp2=tp2,

@@ -16,11 +16,14 @@ from bot.config import load_settings
 from bot.core.engine import SignalEngine, StrategyRegistry
 from bot.core.engine.base import StrategyDecision
 from bot.core.events import BookTickerEvent
+from bot.features import _swing_points
 from bot.market_data import BinanceFuturesMarketData, MarketDataUnavailable
+from bot.ml_filter import MLFilter
 from bot.models import PipelineResult, PreparedSymbol, Signal, UniverseSymbol
 from bot.setup_base import BaseSetup, SetupParams
 from bot.strategies.ema_bounce import EmaBounceSetup
 from bot.strategies.fvg import FVGSetup
+from bot.strategies.funding_reversal import FundingReversalSetup
 from bot.strategies.structure_pullback import StructurePullbackSetup
 from bot.setups import _build_signal
 from bot.setups.utils import build_structural_targets
@@ -159,14 +162,23 @@ def make_prepared(symbol: str = "BTCUSDT", price: float = 100.0) -> PreparedSymb
     )
 
 
-def make_runtime_settings(*, strict_data_quality: bool = True, throttle_seconds: float = 0.0):
+def make_runtime_settings(
+    *,
+    strict_data_quality: bool = True,
+    throttle_seconds: float = 0.0,
+    min_move_bps: float = 0.0,
+):
     return SimpleNamespace(
         runtime=SimpleNamespace(
             strict_data_quality=strict_data_quality,
             diagnostic_trace_limit_per_symbol=20,
             max_signals_per_cycle=3,
         ),
-        ws=SimpleNamespace(rest_timeout_seconds=0.1, intra_candle_throttle_seconds=throttle_seconds),
+        ws=SimpleNamespace(
+            rest_timeout_seconds=0.1,
+            intra_candle_throttle_seconds=throttle_seconds,
+            intra_candle_min_move_bps=min_move_bps,
+        ),
         intelligence=SimpleNamespace(
             max_consecutive_stop_losses=3,
             stop_loss_pause_hours=0,
@@ -498,6 +510,136 @@ async def test_intra_candle_path_emits_cycle_log() -> None:
     assert kwargs["interval"] == "bookTicker"
     assert kwargs["result"].trigger == "intra_candle"
     assert kwargs["delivered"] == [signal]
+
+
+@pytest.mark.asyncio
+async def test_intra_candle_uses_event_timestamp_when_available() -> None:
+    signal = make_signal(created_at=datetime(2026, 4, 23, 0, 3, tzinfo=UTC))
+    event_ts_ms = int(datetime(2026, 4, 23, 0, 4, tzinfo=UTC).timestamp() * 1000)
+    bot = SignalBot.__new__(SignalBot)
+    bot.settings = make_runtime_settings()
+    bot._last_intra_scan = {}
+    bot._background_tasks = set()
+    bot._shortlist_lock = asyncio.Lock()
+    bot._shortlist = [make_universe_symbol()]
+    bot._analysis_semaphore = asyncio.Semaphore(1)
+    bot._fetch_frames = AsyncMock(return_value=SimpleNamespace())
+    bot._ws_cache_enrichments = lambda symbol: {}
+    bot._run_modern_analysis = AsyncMock(
+        return_value=PipelineResult(
+            symbol="BTCUSDT",
+            trigger="intra_candle",
+            event_ts=datetime.now(UTC),
+            raw_setups=1,
+            candidates=[signal],
+            rejected=[],
+            prepared=None,
+            funnel={},
+        )
+    )
+    bot._ws_enrich = AsyncMock(return_value=None)
+    bot._select_and_deliver_for_symbol = AsyncMock(return_value=([signal], [], [signal]))
+    bot._emit_cycle_log = Mock()
+    bot.telemetry = TelemetryStub()
+
+    await bot._on_book_ticker(BookTickerEvent(symbol="BTCUSDT", bid=100.0, ask=100.1, event_ts_ms=event_ts_ms))
+
+    for _ in range(3):
+        tasks = list(bot._background_tasks)
+        if not tasks:
+            break
+        await asyncio.gather(*tasks)
+
+    called_event_ts = bot._run_modern_analysis.await_args.kwargs["event_ts"]
+    assert called_event_ts == datetime.fromtimestamp(event_ts_ms / 1000.0, tz=UTC)
+    ws_enrichments = bot._run_modern_analysis.await_args.kwargs["ws_enrichments"]
+    assert ws_enrichments["bid_price"] == pytest.approx(100.0)
+    assert ws_enrichments["ask_price"] == pytest.approx(100.1)
+    assert ws_enrichments["spread_bps"] == pytest.approx(((100.1 - 100.0) / 100.05) * 10000.0)
+
+
+@pytest.mark.asyncio
+async def test_intra_candle_skips_small_book_move_when_min_move_bps_configured() -> None:
+    signal = make_signal(created_at=datetime(2026, 4, 23, 0, 5, tzinfo=UTC))
+    bot = SignalBot.__new__(SignalBot)
+    bot.settings = make_runtime_settings(min_move_bps=5.0)
+    bot._last_intra_scan = {}
+    bot._last_intra_mid = {}
+    bot._background_tasks = set()
+    bot._shortlist_lock = asyncio.Lock()
+    bot._shortlist = [make_universe_symbol()]
+    bot._analysis_semaphore = asyncio.Semaphore(1)
+    bot._fetch_frames = AsyncMock(return_value=SimpleNamespace())
+    bot._ws_cache_enrichments = lambda symbol: {}
+    bot._run_modern_analysis = AsyncMock(
+        return_value=PipelineResult(
+            symbol="BTCUSDT",
+            trigger="intra_candle",
+            event_ts=datetime.now(UTC),
+            raw_setups=1,
+            candidates=[signal],
+            rejected=[],
+            prepared=None,
+            funnel={},
+        )
+    )
+    bot._ws_enrich = AsyncMock(return_value=None)
+    bot._select_and_deliver_for_symbol = AsyncMock(return_value=([signal], [], [signal]))
+    bot._emit_cycle_log = Mock()
+    bot.telemetry = TelemetryStub()
+
+    await bot._on_book_ticker(BookTickerEvent(symbol="BTCUSDT", bid=100.0, ask=100.1))
+    for task in list(bot._background_tasks):
+        await asyncio.gather(task)
+
+    # ~0.5 bps move (< 5 bps threshold) should be ignored
+    await bot._on_book_ticker(BookTickerEvent(symbol="BTCUSDT", bid=100.004, ask=100.104))
+    for task in list(bot._background_tasks):
+        await asyncio.gather(task)
+
+    assert bot._run_modern_analysis.await_count == 1
+
+
+def test_swing_points_can_include_unconfirmed_tail() -> None:
+    work = pl.DataFrame(
+        {
+            "high": [10.0, 11.0, 12.0, 13.0, 14.0, 15.0],
+            "low": [9.5, 9.4, 9.3, 9.2, 9.1, 9.0],
+        }
+    )
+
+    sh_confirmed, sl_confirmed = _swing_points(work, n=2)
+    sh_tail, sl_tail = _swing_points(work, n=2, include_unconfirmed_tail=True)
+
+    assert sh_confirmed[-1] is False
+    assert sl_confirmed[-1] is False
+    assert sh_tail[-1] is True
+    assert sl_tail[-1] is True
+
+
+def test_ml_filter_converts_polars_input_before_predict_proba() -> None:
+    class _DummyModel:
+        def predict_proba(self, x):
+            assert x.__class__.__module__.startswith(("pandas", "numpy"))
+            return [[0.2, 0.8]]
+
+    ml = MLFilter.__new__(MLFilter)
+    ml.enabled = True
+    ml._model = _DummyModel()
+    ml._model_metadata = {"trained_at": "test"}
+    ml._feature_columns = None
+    ml._extract_features = lambda signal, prepared: {"score": 0.75, "atr_pct": 1.1}
+
+    result = ml.predict(make_signal(), SimpleNamespace())
+    assert result.error is None
+    assert result.probability == pytest.approx(0.8, rel=1e-4)
+
+
+def test_funding_reversal_defaults_cover_runtime_params() -> None:
+    defaults = FundingReversalSetup().get_optimizable_params()
+    assert "funding_trend_bars" in defaults
+    assert "min_delta_threshold" in defaults
+    assert "sl_buffer_atr" in defaults
 
 
 def test_build_structural_targets_prefers_nearest_long_resistance() -> None:

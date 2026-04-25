@@ -140,6 +140,10 @@ rest_timeout_seconds = 12.0
 subscribe_market_streams = true
 market_ticker_freshness_seconds = 120.0
 force_order_window_seconds = 60
+# Intra-candle analysis frequency (lower = more real-time, higher = less CPU load)
+intra_candle_throttle_seconds = 10.0  # Default: 60s. Set to 5-10s for aggressive real-time mode
+# Optional noise gate for intra-candle scans. 0 disables gating.
+intra_candle_min_move_bps = 0.0
 
 [bot.ml]
 use_ml_in_live = false

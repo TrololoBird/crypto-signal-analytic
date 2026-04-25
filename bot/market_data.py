@@ -775,10 +775,16 @@ class BinanceFuturesMarketData:
             now = time.monotonic()
             cached = self._klines_cache.get(key)
             if cached is not None and (now - cached[0]) < ttl:
-                return cached[1]
-            frame = await self.fetch_klines(symbol, interval, limit=limit)
-            self._klines_cache[key] = (time.monotonic(), frame)
-            return frame
+                frame = cached[1]
+            else:
+                frame = await self.fetch_klines(symbol, interval, limit=limit)
+                self._klines_cache[key] = (time.monotonic(), frame)
+        # Best-effort lock cleanup to avoid unbounded lock map growth.
+        # Remove only if this key's lock is currently unused.
+        active_lock = self._klines_locks.get(key)
+        if active_lock is lock and not lock.locked():
+            self._klines_locks.pop(key, None)
+        return frame
 
     async def _fetch_book_ticker_rest(self, symbol: str) -> tuple[float | None, float | None]:
         max_attempts = 3
@@ -1254,15 +1260,14 @@ class BinanceFuturesMarketData:
             return cached[1]
 
         try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(
-                    "https://fapi.binance.com/fapi/v1/fundingRate",
-                    params={"symbol": symbol, "limit": limit},
-                    timeout=aiohttp.ClientTimeout(total=self._rest_timeout),
-                ) as response:
-                    response.raise_for_status()
-                    self._track_weight("funding_rate_history")
-                    payload = await response.json()
+            session = await self._get_http_session()
+            async with session.get(
+                "https://fapi.binance.com/fapi/v1/fundingRate",
+                params={"symbol": symbol, "limit": limit},
+            ) as response:
+                response.raise_for_status()
+                self._track_weight("funding_rate_history")
+                payload = await response.json()
         except asyncio.TimeoutError:
             return []
         except (aiohttp.ClientError, ValueError):

@@ -210,6 +210,7 @@ class BOSCHOCHSetup(BaseSetup):
             score=score,
             timeframe="15m",
             reasons=reasons,
+            strategy_family=self.family,
             stop=stop_price,
             tp1=tp1,
             tp2=tp2,

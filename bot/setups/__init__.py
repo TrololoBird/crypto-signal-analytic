@@ -286,6 +286,7 @@ def _build_signal(
     price_anchor: float,
     atr: float,
     timeframe: str = "15m",
+    strategy_family: str = "continuation",
     entry_pad_atr_mult: float = 0.08,
 ) -> Signal | None:
     if not math.isfinite(float(atr)) or atr <= 0.0:
@@ -341,6 +342,7 @@ def _build_signal(
         take_profit_1=normalized_tp1,
         take_profit_2=normalized_tp2,
         reasons=tuple(reasons),
+        strategy_family=str(strategy_family or "continuation"),
         bias_4h=prepared.bias_4h,
         quote_volume=prepared.universe.quote_volume,
         mark_price=prepared.mark_price,
@@ -413,7 +415,7 @@ def _last_swing_prices(
     work: pl.DataFrame, n: int = 3
 ) -> tuple[float | None, float | None]:
     """Return (last_swing_high_price, last_swing_low_price) from work frame."""
-    sh, sl = _swing_points(work, n=n)
+    sh, sl = _swing_points(work, n=n, include_unconfirmed_tail=True)
     sh_prices = work.filter(sh)["high"] if sh is not None else None
     sl_prices = work.filter(sl)["low"] if sl is not None else None
     last_high = float(sh_prices[-1]) if sh_prices is not None and sh_prices.len() > 0 else None

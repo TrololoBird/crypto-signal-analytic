@@ -41,6 +41,9 @@ class FundingReversalSetup(BaseSetup):
         defaults = {
             "base_score": 0.52,
             "funding_threshold": 0.0005,
+            "funding_trend_bars": 3.0,
+            "min_delta_threshold": 0.02,
+            "sl_buffer_atr": 0.6,
             "bias_mismatch_penalty": 0.75,
             "min_rr": 1.5,
         }
@@ -201,6 +204,7 @@ class FundingReversalSetup(BaseSetup):
             score=score,
             timeframe="15m+1h",
             reasons=reasons,
+            strategy_family=self.family,
             stop=stop,
             tp1=tp1,
             tp2=tp2,

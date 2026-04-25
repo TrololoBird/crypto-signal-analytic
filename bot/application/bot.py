@@ -143,6 +143,7 @@ class SignalBot:
 
         # Intra-candle scan throttle — monotonic timestamp of last scan per symbol
         self._last_intra_scan: dict[str, float] = {}
+        self._last_intra_mid: dict[str, float] = {}
         self._shortlist_service = ShortlistService(self)
         self._cycle_runner = CycleRunner(self)
 
@@ -774,7 +775,7 @@ class SignalBot:
                 or (prepared.mark_index_spread_bps is not None and prepared.mark_index_spread_bps <= 4.0)
             )
             depth_confirms = bool(
-                (depth_imbalance is not None and depth_imbalance <= -0.05)
+                (depth_imbalance is not None and depth_imbalance >= 0.05)
                 or (microprice_bias is not None and microprice_bias <= 0.0)
             )
             premium_exhaustion = bool(
@@ -782,7 +783,7 @@ class SignalBot:
                 or (prepared.mark_index_spread_bps is not None and prepared.mark_index_spread_bps >= 8.0)
             )
             liquidation_exhaustion = bool(
-                prepared.liquidation_score is not None and prepared.liquidation_score >= 0.35
+                prepared.liquidation_score is not None and prepared.liquidation_score <= -0.35
             )
             crowd_exhaustion = bool(
                 (prepared.global_ls_ratio is not None and prepared.global_ls_ratio >= 1.1)
@@ -866,6 +867,9 @@ class SignalBot:
             "confirmation_profile": profile,
         }
         if opposing_votes == 0 or family == "reversal" or profile == "countertrend_exhaustion":
+            return signal, details
+        if signal.score <= 0.0:
+            details["skipped_reason"] = "non_positive_score"
             return signal, details
         penalty_factor = 0.92 if opposing_votes == 1 else 0.85
         reasons = signal.reasons
@@ -1134,6 +1138,8 @@ class SignalBot:
         are still fresh enough for mid-candle signal detection.
         """
         symbol = event.symbol
+        if not hasattr(self, "_last_intra_mid"):
+            self._last_intra_mid = {}
         now = time.monotonic()
         throttle_seconds = float(
             getattr(
@@ -1144,6 +1150,27 @@ class SignalBot:
         )
         if now - self._last_intra_scan.get(symbol, 0.0) < throttle_seconds:
             return
+        min_move_bps = float(
+            getattr(
+                getattr(getattr(self, "settings", None), "ws", None),
+                "intra_candle_min_move_bps",
+                0.0,
+            )
+        )
+        if (
+            min_move_bps > 0.0
+            and event.bid is not None
+            and event.ask is not None
+            and event.bid > 0.0
+            and event.ask > 0.0
+        ):
+            mid_now = (event.bid + event.ask) / 2.0
+            mid_prev = self._last_intra_mid.get(symbol)
+            if mid_prev is not None and mid_prev > 0.0:
+                move_bps = abs(mid_now - mid_prev) / mid_prev * 10000.0
+                if move_bps < min_move_bps:
+                    return
+            self._last_intra_mid[symbol] = mid_now
         self._last_intra_scan[symbol] = now
 
         async def _run() -> None:
@@ -1154,7 +1181,28 @@ class SignalBot:
                 if item is None:
                     return
 
-                event_ts = datetime.now(UTC)
+                event_ts = (
+                    datetime.fromtimestamp(event.event_ts_ms / 1000.0, tz=UTC)
+                    if event.event_ts_ms is not None and event.event_ts_ms > 0
+                    else datetime.now(UTC)
+                )
+                ws_override: dict[str, Any] | None = None
+                if (
+                    event.bid is not None
+                    and event.ask is not None
+                    and event.bid > 0.0
+                    and event.ask > 0.0
+                    and event.ask >= event.bid
+                ):
+                    mid = (event.bid + event.ask) / 2.0
+                    spread_bps = ((event.ask - event.bid) / mid) * 10000.0 if mid > 0.0 else None
+                    depth_imbalance = ((event.ask - event.bid) / mid) if mid > 0.0 else None
+                    ws_override = {
+                        "bid_price": event.bid,
+                        "ask_price": event.ask,
+                        "spread_bps": spread_bps,
+                        "depth_imbalance": depth_imbalance,
+                    }
                 await self._get_cycle_runner().execute_symbol_cycle(
                     symbol=symbol,
                     item=item,
@@ -1163,6 +1211,7 @@ class SignalBot:
                     event_ts=event_ts,
                     shortlist_size=len(shortlist),
                     tracking_events=[],
+                    ws_enrichments_override=ws_override,
                 )
 
                 LOG.debug(
@@ -1651,7 +1700,7 @@ class SignalBot:
             pass
         try:
             p.basis_pct = await self.client.fetch_basis(p.universe.symbol, period="1h")
-            await self.client.fetch_basis(p.universe.symbol, period="5m", limit=12)
+            await self.client.fetch_basis(p.universe.symbol, period="5m")
             basis_stats_5m = self.client.get_cached_basis_stats(p.universe.symbol, period="5m")
             if basis_stats_5m is not None:
                 p.mark_index_spread_bps = cast(float | None, basis_stats_5m.get("mark_index_spread_bps"))
@@ -1724,7 +1773,7 @@ class SignalBot:
                         except Exception:
                             pass
                         try:
-                            await self.client.fetch_basis(symbol, period="5m", limit=12)
+                            await self.client.fetch_basis(symbol, period="5m")
                         except Exception:
                             pass
 
@@ -1777,7 +1826,7 @@ class SignalBot:
                 async with self._shortlist_lock:
                     shortlist = list(self._shortlist)
                 if shortlist and self.intelligence is not None:
-                    snapshot = await self.intelligence.collect(item.symbol for item in shortlist)
+                    snapshot = await self.intelligence.collect([item.symbol for item in shortlist])
                     await self._update_memory_market_context(shortlist)
                     await self._apply_public_guardrails(snapshot)
                     LOG.info(
@@ -1977,15 +2026,12 @@ class SignalBot:
 
             # Update market regime analyzer with full ticker data
             ticker_data: list[dict[str, Any]] = []
-            # Get ticker data from 24h cache if available
-            ticker_cache: tuple[float, list[dict[str, Any]]] | None = getattr(self.client, '_ticker_24h_cache', None)
-            if ticker_cache is not None:
-                _, all_tickers = ticker_cache
-                ticker_dict = {t.get('symbol'): t for t in all_tickers if isinstance(t, dict)}
-                for item in shortlist:
-                    ticker = ticker_dict.get(item.symbol)
-                    if ticker:
-                        ticker_data.append(ticker)
+            all_tickers = await self.client.fetch_ticker_24h()
+            ticker_dict = {t.get("symbol"): t for t in all_tickers if isinstance(t, dict)}
+            for item in shortlist:
+                ticker = ticker_dict.get(item.symbol)
+                if ticker:
+                    ticker_data.append(ticker)
 
             # This will cache the result for 60 seconds
             regime_result = self.market_regime.analyze(
@@ -2164,7 +2210,7 @@ class SignalBot:
                 None,
             )
             if existing is not None:
-                score_raw = getattr(existing, "score", None)
+                score_raw = existing.get("score") if isinstance(existing, dict) else getattr(existing, "score", None)
                 if score_raw is not None and signal.score >= float(score_raw or 0.0) + 0.10:
                     closed = await self._close_superseded_signal(signal)
                     if closed:
@@ -2301,6 +2347,9 @@ class SignalBot:
             "stop_loss": "loss",
             "expired": "expired",
             "smart_exit": "smart_exit",
+            "emergency_exit": "emergency_exit",
+            "ambiguous_exit": "ambiguous_exit",
+            "superseded": "superseded",
         }
         for event in events:
             outcome = outcome_map.get(event.event_type)
@@ -2314,7 +2363,7 @@ class SignalBot:
         await self._wait_noncritical(
             label="tracking delivery",
             timeout=self._delivery_timeout_seconds,
-            operation=self.delivery.deliver_tracking_updates(events, dry_run=False, stats={}),
+            operation=self.delivery.deliver_tracking_updates(events, dry_run=False),
         )
 
     # ------------------------------------------------------------------
@@ -2353,19 +2402,6 @@ class SignalBot:
                 market_ctx.get("btc_bias", "neutral"),
                 blacklisted if blacklisted else "none",
             )
-
-            # Update Prometheus metrics
-            if self.metrics._enabled:
-                self.metrics.update_bot_state(sl_size, open_signals, len(blacklisted))
-                self.metrics.record_ws_latency(ws_lag)
-                self.metrics.record_ws_message_age(ws_age)
-                if self._ws_manager is not None:
-                    self.metrics.update_ws_streams(len(self._ws_manager._symbols))
-                if self.market_regime._last_result is not None:
-                    r = self.market_regime._last_result
-                    self.metrics.update_market_regime(
-                        r.regime, r.strength, r.altcoin_season_index
-                    )
 
             # Update Prometheus metrics
             if self.metrics._enabled:

@@ -159,7 +159,7 @@ class LiquiditySweepSetup(BaseSetup):
                     stop = sweep_bar_h + sl_buffer_atr * atr
                     risk = stop - price
                     if risk > 0:
-                        tp1 = min(eq_high_level, price - risk * min_rr)
+                        tp1 = price - risk * min_rr
                         if tp1 >= price:
                             _reject(prepared, setup_id, "tp1_invalid_short", tp1=tp1, price=price)
                             return None
@@ -194,6 +194,7 @@ class LiquiditySweepSetup(BaseSetup):
                             score=score,
                             timeframe="1h",
                             reasons=reasons,
+                            strategy_family=self.family,
                             stop=stop,
                             tp1=tp1,
                             tp2=tp2,
@@ -218,7 +219,7 @@ class LiquiditySweepSetup(BaseSetup):
                     stop = sweep_bar_l - sl_buffer_atr * atr
                     risk = price - stop
                     if risk > 0:
-                        tp1 = max(eq_low_level, price + risk * min_rr)
+                        tp1 = price + risk * min_rr
                         if tp1 <= price:
                             _reject(prepared, setup_id, "tp1_invalid_long", tp1=tp1, price=price)
                             return None
@@ -253,6 +254,7 @@ class LiquiditySweepSetup(BaseSetup):
                             score=score,
                             timeframe="1h",
                             reasons=reasons,
+                            strategy_family=self.family,
                             stop=stop,
                             tp1=tp1,
                             tp2=tp2,

@@ -74,6 +74,15 @@ class _FrameCache:
 _FRAME_CACHE = _FrameCache(max_size=_MAX_CACHE_ENTRIES)
 
 
+def _clean_non_finite(series: pl.Series, *, fill: float) -> pl.Series:
+    """Replace NaN/inf/null values with a stable fill value."""
+    return (
+        series.replace([float("inf"), float("-inf")], None)
+        .fill_nan(fill)
+        .fill_null(fill)
+    )
+
+
 def _log_indicator_fallback(indicator: str, exc: Exception) -> None:
     if indicator in _ADVANCED_FALLBACKS_LOGGED:
         LOG.debug("advanced indicator fallback reused", indicator=indicator, error=str(exc))
@@ -245,12 +254,13 @@ def _adx(df: pl.DataFrame, period: int = 14) -> pl.Series:
     )
     
     atr = _atr(df, period)
-    plus_di = 100.0 * plus_dm.ewm_mean(alpha=1.0 / period, adjust=False) / atr
-    minus_di = 100.0 * minus_dm.ewm_mean(alpha=1.0 / period, adjust=False) / atr
+    atr_safe = _clean_non_finite(atr, fill=1e-9)
+    plus_di = 100.0 * plus_dm.ewm_mean(alpha=1.0 / period, adjust=False) / atr_safe
+    minus_di = 100.0 * minus_dm.ewm_mean(alpha=1.0 / period, adjust=False) / atr_safe
     
     dx = 100.0 * (plus_di - minus_di).abs() / (plus_di + minus_di)
     return _materialize_series(
-        dx.ewm_mean(alpha=1.0 / period, adjust=False).fill_nan(0.0),
+        _clean_non_finite(dx.ewm_mean(alpha=1.0 / period, adjust=False), fill=0.0),
         df=df,
         name=f"adx{period}",
     )
@@ -288,9 +298,9 @@ def _stochastic(
     rolling_low = df["low"].rolling_min(window_size=period)
     rolling_high = df["high"].rolling_max(window_size=period)
     width = rolling_high - rolling_low
-    raw_k = (((df["close"] - rolling_low) / width) * 100.0).fill_nan(50.0)
-    k = raw_k.rolling_mean(window_size=smooth_k).fill_nan(50.0).rename("stoch_k14")
-    d = k.rolling_mean(window_size=smooth_d).fill_nan(50.0).rename("stoch_d14")
+    raw_k = _clean_non_finite(((df["close"] - rolling_low) / width) * 100.0, fill=50.0)
+    k = _clean_non_finite(raw_k.rolling_mean(window_size=smooth_k), fill=50.0).rename("stoch_k14")
+    d = _clean_non_finite(k.rolling_mean(window_size=smooth_d), fill=50.0).rename("stoch_d14")
     return k, d
 
 
@@ -304,7 +314,7 @@ def _cci(df: pl.DataFrame, period: int = 20) -> pl.Series:
     typical_price = (df["high"] + df["low"] + df["close"]) / 3.0
     sma = typical_price.rolling_mean(window_size=period)
     mean_dev = (typical_price - sma).abs().rolling_mean(window_size=period)
-    return ((typical_price - sma) / (0.015 * mean_dev)).fill_nan(0.0).rename(f"cci{period}")
+    return _clean_non_finite((typical_price - sma) / (0.015 * mean_dev), fill=0.0).rename(f"cci{period}")
 
 
 def _mfi(df: pl.DataFrame, period: int = 14) -> pl.Series:
@@ -373,8 +383,8 @@ def _safe_close_position(df: pl.DataFrame, window: int = 20) -> pl.Series:
     rolling_high = df["high"].rolling_max(window_size=window)
     width = rolling_high - rolling_low
     
-    value = (df["close"] - rolling_low) / width
-    return value.clip(0.0, 1.0).fill_nan(0.5).rename("close_position")
+    value = _clean_non_finite((df["close"] - rolling_low) / width, fill=0.5)
+    return value.clip(0.0, 1.0).rename("close_position")
 
 
 def _ichimoku_lines(df: pl.DataFrame) -> tuple[pl.Series, pl.Series, pl.Series, pl.Series]:
@@ -524,8 +534,8 @@ def _add_advanced_indicators(df: pl.DataFrame) -> pl.DataFrame:
     bb_pct_b = (df["close"] - lower) / (upper - lower)
     bb_width = (upper - lower) / middle * 100.0
     result = result.with_columns([
-        bb_pct_b.fill_nan(0.5).alias("bb_pct_b"),
-        bb_width.fill_nan(0.0).alias("bb_width"),
+        _clean_non_finite(bb_pct_b, fill=0.5).alias("bb_pct_b"),
+        _clean_non_finite(bb_width, fill=0.0).alias("bb_width"),
     ])
     
     # --- Keltner Channels - pure Polars implementation -----------------------
@@ -809,8 +819,18 @@ def _market_regime(
 # Structure-based helpers
 # ---------------------------------------------------------------------------
 
-def _swing_points(work: pl.DataFrame, n: int = 3) -> tuple[pl.Series, pl.Series]:
-    """Detect swing highs and lows using n-bar look-around."""
+def _swing_points(
+    work: pl.DataFrame,
+    n: int = 3,
+    *,
+    include_unconfirmed_tail: bool = False,
+) -> tuple[pl.Series, pl.Series]:
+    """Detect swing highs and lows using n-bar look-around.
+
+    When ``include_unconfirmed_tail=True``, the last ``n`` bars may be marked
+    using only available right-side context (or none on the last bar). This is
+    useful for early/provisional swing detection in live signal logic.
+    """
     height = len(work)
     if height < 2 * n + 1:
         zeros = [False] * height
@@ -851,6 +871,29 @@ def _swing_points(work: pl.DataFrame, n: int = 3) -> tuple[pl.Series, pl.Series]
                 low_ok = False
         swing_high[idx] = high_ok
         swing_low[idx] = low_ok
+
+    if include_unconfirmed_tail:
+        for idx in range(max(n, height - n), height):
+            curr_high = high[idx]
+            curr_low = low[idx]
+            if curr_high is None or curr_low is None:
+                continue
+            high_ok = True
+            low_ok = True
+            max_offset = min(n, idx)
+            for offset in range(1, max_offset + 1):
+                prev_high = high[idx - offset]
+                prev_low = low[idx - offset]
+                if prev_high is None or prev_low is None:
+                    high_ok = False
+                    low_ok = False
+                    break
+                if curr_high <= prev_high:
+                    high_ok = False
+                if curr_low >= prev_low:
+                    low_ok = False
+            swing_high[idx] = high_ok
+            swing_low[idx] = low_ok
 
     return (
         pl.Series("swing_high", swing_high, dtype=pl.Boolean),

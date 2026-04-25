@@ -54,7 +54,15 @@ class EmaBounceSetup(BaseSetup):
         dynamic_params = get_dynamic_params(prepared, setup_id)
         defaults = self.get_optimizable_params(settings)
         
-        ema_touch_tolerance_pct = dynamic_params.get("ema_touch_tolerance_pct", 0.008)
+        ema_touch_tolerance_pct = float(
+            dynamic_params.get(
+                "ema_touch_tolerance_pct",
+                dynamic_params.get(
+                    "ema_touch_tolerance",
+                    defaults.get("ema_touch_tolerance_pct", defaults.get("ema_touch_tolerance", 0.008)),
+                ),
+            )
+        )
         bounce_threshold_pct = dynamic_params.get("bounce_threshold_pct", 0.005)
         min_adx = dynamic_params.get(
             "min_adx",
@@ -184,6 +192,6 @@ class EmaBounceSetup(BaseSetup):
 
         return _build_signal(
             prepared=prepared, setup_id=setup_id, direction=signal_direction,
-            score=score, timeframe="1h", reasons=reasons, stop=stop, tp1=tp1, tp2=tp2,
+            score=score, timeframe="1h", reasons=reasons, strategy_family=self.family, stop=stop, tp1=tp1, tp2=tp2,
             price_anchor=close, atr=atr,
         )

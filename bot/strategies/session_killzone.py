@@ -224,6 +224,7 @@ class SessionKillzoneSetup(BaseSetup):
             score=score,
             timeframe="15m+1h",
             reasons=reasons,
+            strategy_family=self.family,
             stop=stop,
             tp1=tp1,
             tp2=tp2,

@@ -208,7 +208,8 @@ def _render_signal_card(
     expiry_dt: datetime | None = None,
 ) -> str:
     entry_mid = (entry_low + entry_high) / 2.0
-    single_target_mode = abs(take_profit_2 - take_profit_1) <= max(abs(entry_mid) * 1e-8, 1e-8)
+    scale = max(abs(entry_mid), abs(take_profit_1), abs(take_profit_2), 1.0)
+    single_target_mode = abs(take_profit_2 - take_profit_1) <= (scale * 1e-6)
     tp3 = _compute_tp3(entry_mid, take_profit_2, direction)
 
     lines: list[str] = []
@@ -413,7 +414,7 @@ def format_tracked_signal_text(tracked: SignalTrackingEvent | object) -> str:
     )
 
 
-def format_tracking_event_text(event: SignalTrackingEvent, *, stats: dict[str, float | int]) -> str:
+def format_tracking_event_text(event: SignalTrackingEvent) -> str:
     tracked = event.tracked
     single_target_mode = bool(getattr(tracked, "single_target_mode", False))
     event_titles = {
@@ -435,7 +436,6 @@ def format_tracking_event_text(event: SignalTrackingEvent, *, stats: dict[str, f
                 event_titles["stop_loss"] = "Stop (Break-even)"
         except (TypeError, ValueError):
             pass
-    del stats
     lines = [
         f"<b>{html.escape(tracked.symbol)} {_direction_label(tracked.direction)}</b> <code>#{tracked.tracking_ref}</code> | <b>{event_titles.get(event.event_type, event.event_type)}</b>",
         (
@@ -531,7 +531,6 @@ class SignalDelivery:
         events: list[SignalTrackingEvent],
         *,
         dry_run: bool,
-        stats: dict[str, float | int],
     ) -> None:
         event_batches = self._coalesce_tracking_events(events)
         for batch in event_batches:
@@ -559,7 +558,7 @@ class SignalDelivery:
                 continue
             if final_event.event_type == "activated" and edited:
                 continue
-            text = format_tracking_event_text(final_event, stats=stats)
+            text = format_tracking_event_text(final_event)
             if dry_run:
                 LOG.info("dry-run tracking update\n%s", text)
                 continue

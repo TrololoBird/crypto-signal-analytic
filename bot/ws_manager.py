@@ -225,7 +225,7 @@ class FuturesWSManager:
         self._last_shortlist_summary: dict[str, Any] = {}
 
         # Event-driven callbacks (fire-and-forget via asyncio.create_task)
-        self._kline_close_cbs: dict[str, list] = {}  # interval -> [async cb(symbol, interval, ts)]
+        self._kline_close_cbs: dict[str, list] = {}  # interval -> [async cb(symbol, interval, close_ts_ms)]
         self._agg_trade_cbs: list = []               # [async cb(symbol, price, ts)]
         self._reconnect_cb: Any = None               # async cb() — fired on reconnect
 
@@ -272,7 +272,7 @@ class FuturesWSManager:
     def register_kline_close(self, interval: str, cb: Any) -> None:
         """Register an async callback fired when a kline of *interval* closes.
 
-        Callback signature: ``async def cb(symbol: str, interval: str, ts: datetime) -> None``
+        Callback signature: ``async def cb(symbol: str, interval: str, close_ts_ms: int) -> None``
         """
         self._kline_close_cbs.setdefault(interval, []).append(cb)
 
@@ -1156,9 +1156,11 @@ class FuturesWSManager:
     def get_microprice_bias(self, symbol: str) -> float | None:
         """Calculate microprice bias from order book.
 
-        Microprice = (bid * ask_size + ask * bid_size) / (bid_size + ask_size)
-        Returns bias relative to mid price, or None if unavailable.
-        Note: Uses simple mid-weighted proxy since we don't have size data.
+        Returns a signed bias proxy in [-1, 1], where positive means buy pressure
+        and negative means sell pressure.
+
+        We do not maintain full L2 sizes, so we approximate microprice pressure
+        from recent aggTrade delta ratio when available.
         """
         bid, ask = self.get_book_snapshot(symbol)
         if bid is None or ask is None or bid <= 0 or ask <= 0:
@@ -1167,10 +1169,10 @@ class FuturesWSManager:
         mid = (bid + ask) / 2.0
         if mid <= 0 or spread <= 0:
             return None
-        # Simple proxy: closer to bid = negative (selling pressure)
-        # closer to ask = positive (buying pressure)
-        # This is normalized by spread
-        return 0.0  # Placeholder - proper calculation needs order book depth
+        snapshot = self.get_agg_trade_snapshot(symbol)
+        if snapshot is None or snapshot.delta_ratio is None:
+            return None
+        return round(max(-1.0, min(1.0, float(snapshot.delta_ratio))), 4)
 
     def get_funding_sentiment(self) -> float | None:
         """Return the average funding rate across all tracked symbols.
@@ -1586,7 +1588,11 @@ class FuturesWSManager:
                     self._ws_conn = None
                 if not self._running:
                     return
-                await asyncio.sleep(5.0)
+                delay = min(max(delay, 1.0) * 2.0, max_delay)
+                try:
+                    await asyncio.sleep(delay)
+                except asyncio.CancelledError:
+                    return
 
     def _handle_ws_response(self, msg: dict, endpoint: str) -> None:
         if msg.get("error"):
@@ -1693,9 +1699,11 @@ class FuturesWSManager:
         if "result" in msg or "error" in msg:
             self._handle_ws_response(msg, endpoint)
             return
-        
-        # Process immediately - _process_message_internal yields control frequently
-        await self._process_message_internal(msg)
+
+        buffered = await self._message_buffer.put(msg)
+        if not buffered:
+            # Backpressure fallback: process directly to avoid full data starvation.
+            await self._process_message_internal(msg)
     
     async def _process_message_internal(self, msg: dict) -> None:
         """Internal message processing with latency tracking."""
@@ -1821,9 +1829,8 @@ class FuturesWSManager:
         close_ts_ms = int(k.get("T", 0))
         cbs = self._kline_close_cbs.get(interval)
         if cbs:
-            close_ts = datetime.fromtimestamp(close_ts_ms / 1000.0, tz=UTC)
             for _cb in cbs:
-                task = asyncio.create_task(_cb(symbol, interval, close_ts))
+                task = asyncio.create_task(_cb(symbol, interval, close_ts_ms))
                 self._attach_task_logging(task, label=f"kline_close:{symbol}:{interval}")
 
         # Publish to EventBus (primary path when SignalBot uses EventBus)
@@ -1843,6 +1850,7 @@ class FuturesWSManager:
         try:
             bid = float(data["b"]) if data.get("b") is not None else None
             ask = float(data["a"]) if data.get("a") is not None else None
+            event_ts_ms = int(data["E"]) if data.get("E") is not None else None
         except (KeyError, TypeError, ValueError):
             return
         async with self._data_lock:
@@ -1854,7 +1862,7 @@ class FuturesWSManager:
         if self._event_bus is not None:
             from .core.events import BookTickerEvent
             self._event_bus.publish_nowait(
-                BookTickerEvent(symbol=symbol, bid=bid, ask=ask)
+                BookTickerEvent(symbol=symbol, bid=bid, ask=ask, event_ts_ms=event_ts_ms)
             )
 
     async def _handle_agg_trade(self, symbol: str, data: dict) -> None:

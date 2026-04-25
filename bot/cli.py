@@ -183,17 +183,18 @@ async def _acquire_pid_lock(pid_file: Path) -> None:
             existing_pid = await asyncio.to_thread(_read_pid_value, pid_file)
             if existing_pid and existing_pid != os.getpid() and _pid_is_alive(existing_pid):
                 raise SystemExit(f"another bot process is already running with pid {existing_pid}")
-            # Race hardening: if the lock file exists but is still empty / being
-            # initialized by another process, wait briefly instead of deleting it.
-            if existing_pid == 0 and retries < 25:
+            # Race hardening for empty/initializing PID file:
+            # never unlink immediately; first give other process enough time
+            # to finish writing its PID.
+            if existing_pid == 0:
+                retries += 1
                 try:
                     stat = await asyncio.to_thread(pid_file.stat)
-                    age_s = time.time() - stat.st_mtime
+                    age_s = max(0.0, time.time() - stat.st_mtime)
                 except OSError:
                     age_s = 0.0
-                if age_s < 2.0:
-                    await asyncio.sleep(0.1)  # Use async sleep instead of blocking sleep
-                    retries += 1
+                if retries <= 50 or age_s < 10.0:
+                    await asyncio.sleep(0.1)
                     continue
             try:
                 await asyncio.to_thread(pid_file.unlink)

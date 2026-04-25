@@ -260,14 +260,19 @@ class MLFilter:
             else:
                 input_df = pl.DataFrame([features])
 
-            # Run prediction
+            # Run prediction (convert Polars to sklearn-friendly input).
+            try:
+                model_input = input_df.to_pandas(use_pyarrow_extension_array=False)
+            except Exception:
+                model_input = input_df.to_numpy()
+
             if hasattr(model, "predict_proba"):
-                proba = model.predict_proba(input_df)[0]
+                proba = model.predict_proba(model_input)[0]
                 # Binary classification: probability of positive class
                 probability = float(proba[1]) if len(proba) > 1 else float(proba[0])
             else:
                 # Fallback to direct prediction
-                pred = model.predict(input_df)[0]
+                pred = model.predict(model_input)[0]
                 probability = float(pred) if pred > 0 else 0.0
 
             # Calculate confidence (distance from 0.5)

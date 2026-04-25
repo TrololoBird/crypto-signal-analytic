@@ -210,7 +210,10 @@ class ScoringConfig(BaseModel):
                 hint = f" (missing in config: {', '.join(missing_in_config)})"
             pretty = ", ".join(f"{k}={v:.2f}" for k, v in weights.items())
             raise ValueError(
-                "ScoringConfig: weight_* fields must sum to 1.0, "
+                "ScoringConfig: model component weights "
+                "(weight_mtf_alignment, weight_volume_quality, weight_structure_clarity, "
+                "weight_risk_reward, weight_crowd_position, weight_oi_momentum) "
+                "must sum to 1.0; setup_prior_weight is validated separately. "
                 f"got {total_weight:.2f}{hint}. "
                 f"Current weights: {pretty}"
             )
@@ -340,6 +343,9 @@ class WSConfig(BaseModel):
     # Intra-candle analysis throttle (seconds between analysis per symbol)
     # Lower = more real-time, higher = less CPU load
     intra_candle_throttle_seconds: float = Field(default=60.0, ge=1.0, le=300.0)
+    # Optional noise gate: minimum mid-price move (in bps) required to trigger
+    # another intra-candle scan for the same symbol.
+    intra_candle_min_move_bps: float = Field(default=0.0, ge=0.0, le=100.0)
 
     @field_validator("base_url", "public_base_url", "market_base_url")
     @classmethod

@@ -29,13 +29,16 @@ class CycleRunner:
         event_ts: datetime,
         tracking_events: list[Any],
         shortlist_size: int,
+        ws_enrichments_override: dict[str, Any] | None = None,
     ) -> None:
         bot = self._bot
         frames = await bot._fetch_frames(item)
         if frames is None:
             return
 
-        ws_enrichments = bot._ws_cache_enrichments(symbol)
+        ws_enrichments = dict(bot._ws_cache_enrichments(symbol))
+        if ws_enrichments_override:
+            ws_enrichments.update(ws_enrichments_override)
 
         async with bot._analysis_semaphore:
             result = await bot._run_modern_analysis(

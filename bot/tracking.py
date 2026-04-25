@@ -195,7 +195,10 @@ class SignalTracker:
         return [self._tracked_from_payload(row) for row in rows]
 
     async def _persist_tracking_state(self) -> None:
-        return None
+        # Tracking rows are persisted incrementally via MemoryRepository calls.
+        # Here we only flush pending batched outcomes so callers that expect
+        # an explicit "persist" step do not lose queued outcomes on shutdown.
+        await self._flush_pending_outcomes()
 
     async def _arm_signal(
         self,
@@ -1067,7 +1070,7 @@ class SignalTracker:
         # Update adaptive scoring window for the closed setup.
         setup_outcome = (
             event_type
-            if event_type in {"tp1_hit", "tp2_hit", "stop_loss", "expired", "ambiguous_exit", "smart_exit"}
+            if event_type in {"tp1_hit", "tp2_hit", "stop_loss", "expired", "ambiguous_exit", "smart_exit", "superseded"}
             else "ambiguous_exit"
         )
         try:
@@ -1131,7 +1134,17 @@ class SignalTracker:
             max_profit_pct=max_profit_pct,
             max_loss_pct=max_loss_pct,
         )
-        asyncio.run(self.memory_repo.save_signal_outcome(outcome.to_dict()))
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            asyncio.run(self.memory_repo.save_signal_outcome(outcome.to_dict()))
+        else:
+            task = loop.create_task(self.memory_repo.save_signal_outcome(outcome.to_dict()))
+            task.add_done_callback(
+                lambda done: LOG.debug("save_signal_outcome failed: %s", done.exception())
+                if not done.cancelled() and done.exception() is not None
+                else None
+            )
 
         # Очищаем features store
         self.features_store.pop(tracked.tracking_id, None)
@@ -1170,7 +1183,7 @@ class SignalTracker:
 
         async with self._pending_outcomes_lock:
             self._pending_outcomes.append(outcome.to_dict())
-            should_flush = True
+            should_flush = len(self._pending_outcomes) >= self._pending_outcomes_flush_size
 
         if should_flush:
             await self._flush_pending_outcomes()

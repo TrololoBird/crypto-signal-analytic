@@ -1,0 +1,5 @@
+{"symbol":"BTCUSDT","setup_id":"breakout","stage":"filters","reason":"adx_low","adx_1h":12.1}
+{"symbol":"ETHUSDT","setup_id":"breakout","stage":"filters","reason":"adx_low","adx_1h":11.4}
+{"symbol":"BTCUSDT","setup_id":"mean_reversion","stage":"risk","reason":"rr_low","risk_reward":0.8}
+not-json
+

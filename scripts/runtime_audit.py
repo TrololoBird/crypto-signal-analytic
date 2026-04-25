@@ -6,11 +6,19 @@ import argparse
 import json
 import sqlite3
 import subprocess
-import time
 import sys
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
+import time
+
+from bot.diagnostics.runtime_analysis import (
+    aggregate_cycle_stats,
+    aggregate_rejection_funnel,
+    aggregate_symbol_funnel,
+    find_latest_run_dir,
+    read_jsonl,
+)
 
 TELEMETRY_DIR = Path("data/bot/telemetry")
 DB_PATH = Path("data/bot/bot.db")
@@ -23,45 +31,9 @@ def print_header(title: str) -> None:
     print(f"{'='*80}\n")
 
 
-def _file_has_rows(path: Path) -> bool:
-    if not path.exists():
-        return False
-    try:
-        with path.open("r", encoding="utf-8") as handle:
-            for line in handle:
-                if line.strip():
-                    return True
-    except OSError:
-        return False
-    return False
-
-
 def get_latest_run_dir(run_id: str | None = None) -> Path | None:
     """Find latest non-empty telemetry run directory, or use an explicit run id."""
-    runs_dir = TELEMETRY_DIR / "runs"
-    if not runs_dir.exists():
-        return None
-    if run_id:
-        candidate = runs_dir / run_id
-        return candidate if candidate.exists() else None
-    run_dirs = sorted(runs_dir.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True)
-    interesting_files = (
-        "strategy_decisions.jsonl",
-        "symbol_analysis.jsonl",
-        "rejected.jsonl",
-        "cycles.jsonl",
-    )
-    fallback: Path | None = None
-    for run_dir in run_dirs:
-        if not run_dir.is_dir():
-            continue
-        analysis_dir = run_dir / "analysis"
-        if not analysis_dir.exists():
-            continue
-        fallback = fallback or run_dir
-        if any(_file_has_rows(analysis_dir / filename) for filename in interesting_files):
-            return run_dir
-    return fallback
+    return find_latest_run_dir(TELEMETRY_DIR, run_id=run_id)
 
 
 def analyze_rejection_funnel(run_dir: Path) -> dict:
@@ -69,55 +41,10 @@ def analyze_rejection_funnel(run_dir: Path) -> dict:
     rejected_file = run_dir / "analysis" / "rejected.jsonl"
     if not rejected_file.exists():
         return {"error": "No rejected.jsonl found"}
-    
-    stats = {
-        "by_stage": Counter(),
-        "by_setup": Counter(),
-        "by_reason": Counter(),
-        "by_symbol_setup": Counter(),
-        "detailed": defaultdict(list)
-    }
-    
     try:
-        with open(rejected_file, 'r', encoding='utf-8') as f:
-            for line in f:
-                if not line.strip():
-                    continue
-                try:
-                    row = json.loads(line)
-                    stage = row.get("stage", "unknown")
-                    setup = row.get("setup_id", "unknown")
-                    reason = row.get("reason", "unknown")
-                    symbol = row.get("symbol", "unknown")
-                    
-                    stats["by_stage"][stage] += 1
-                    stats["by_setup"][setup] += 1
-                    stats["by_reason"][reason] += 1
-                    stats["by_symbol_setup"][f"{symbol}:{setup}"] += 1
-                    
-                    # Store sample for each reason (max 3 per reason)
-                    if len(stats["detailed"][reason]) < 3:
-                        sample = {
-                            "symbol": symbol,
-                            "setup": setup,
-                            "stage": stage
-                        }
-                        # Add optional fields if present
-                        if "adx_1h" in row:
-                            sample["adx_1h"] = row["adx_1h"]
-                        if "risk_reward" in row:
-                            sample["rr"] = row["risk_reward"]
-                        if "trend_direction" in row:
-                            sample["trend"] = row["trend_direction"]
-                        if "details" in row:
-                            sample["details"] = row["details"]
-                        stats["detailed"][reason].append(sample)
-                except json.JSONDecodeError:
-                    continue
+        return aggregate_rejection_funnel(read_jsonl(rejected_file))
     except Exception as e:
         return {"error": str(e)}
-    
-    return stats
 
 
 def analyze_symbol_funnel(run_dir: Path) -> dict:
@@ -125,49 +52,10 @@ def analyze_symbol_funnel(run_dir: Path) -> dict:
     analysis_file = run_dir / "analysis" / "symbol_analysis.jsonl"
     if not analysis_file.exists():
         return {"error": "No symbol_analysis.jsonl found"}
-    
-    stats = {
-        "symbols_processed": 0,
-        "symbols_with_raw_hits": 0,
-        "total_raw_hits": 0,
-        "total_candidates": 0,
-        "total_delivered": 0,
-        "rejection_reasons": Counter()
-    }
-    
     try:
-        with open(analysis_file, 'r', encoding='utf-8') as f:
-            for line in f:
-                if not line.strip():
-                    continue
-                try:
-                    data = json.loads(line)
-                    funnel = data.get("funnel", {})
-                    
-                    stats["symbols_processed"] += 1
-                    raw_hits = funnel.get("raw_hits", 0)
-                    candidates = data.get("candidates", 0)
-                    
-                    if raw_hits > 0:
-                        stats["symbols_with_raw_hits"] += 1
-                        stats["total_raw_hits"] += raw_hits
-                    
-                    stats["total_candidates"] += candidates
-                    stats["total_delivered"] += data.get("delivered", 0)
-                    
-                    # Count rejection reasons when raw hits exist but no candidates
-                    if raw_hits > 0 and candidates == 0:
-                        for key, val in funnel.items():
-                            if "rejects" in key and isinstance(val, int) and val > 0:
-                                stats["rejection_reasons"][key] += val
-                            elif key == "alignment_penalties" and isinstance(val, int) and val > 0:
-                                stats["rejection_reasons"]["alignment_penalties"] += val
-                except json.JSONDecodeError:
-                    continue
+        return aggregate_symbol_funnel(read_jsonl(analysis_file))
     except Exception as e:
         return {"error": str(e)}
-    
-    return stats
 
 
 def analyze_strategy_decisions(run_dir: Path) -> dict:
@@ -349,56 +237,10 @@ def analyze_cycles(run_dir: Path) -> dict:
     cycles_file = run_dir / "analysis" / "cycles.jsonl"
     if not cycles_file.exists():
         return {"error": "No cycles.jsonl found"}
-    
-    stats = {
-        "total_cycles": 0,
-        "symbols_analyzed": set(),
-        "total_detector_runs": 0,
-        "total_candidates": 0,
-        "total_delivered": 0,
-        "health_checks": 0,
-        "by_symbol": defaultdict(lambda: {
-            "cycles": 0, "detectors": 0, "candidates": 0, "delivered": 0
-        })
-    }
-    
     try:
-        with open(cycles_file, 'r', encoding='utf-8') as f:
-            for line in f:
-                if not line.strip():
-                    continue
-                try:
-                    row = json.loads(line)
-                    symbol = row.get("symbol")
-                    
-                    # Symbol-level cycle analysis
-                    if symbol:
-                        stats["total_cycles"] += 1
-                        stats["symbols_analyzed"].add(symbol)
-                        stats["total_detector_runs"] += row.get("detector_runs", 0)
-                        stats["total_candidates"] += row.get("candidates", 0)
-                        stats["total_delivered"] += row.get("delivered", 0)
-                        
-                        s = stats["by_symbol"][symbol]
-                        s["cycles"] += 1
-                        s["detectors"] += row.get("detector_runs", 0)
-                        s["candidates"] += row.get("candidates", 0)
-                        s["delivered"] += row.get("delivered", 0)
-                    else:
-                        # Global health check record
-                        stats["health_checks"] += 1
-                        # Extract funnel metrics if present
-                        funnel = row.get("funnel", {})
-                        if funnel:
-                            stats["total_detector_runs"] += funnel.get("detector_runs", 0)
-                            stats["total_candidates"] += funnel.get("post_filter_candidates", 0)
-                            stats["total_delivered"] += funnel.get("delivered", 0)
-                except json.JSONDecodeError:
-                    continue
+        return aggregate_cycle_stats(read_jsonl(cycles_file))
     except Exception as e:
         return {"error": str(e)}
-    
-    return stats
 
 
 def analyze_database() -> dict:

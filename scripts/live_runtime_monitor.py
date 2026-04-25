@@ -17,6 +17,8 @@ from typing import Any
 
 import structlog
 
+from bot.diagnostics.runtime_analysis import parse_cycle_log_lines
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)-7s | %(name)s | %(message)s",
@@ -75,52 +77,29 @@ class RuntimeMonitor:
     
     def _parse_log_lines(self, lines: list[str]):
         """Parse log lines for statistics."""
-        for line in lines:
-            # Parse cycle logs
-            if "cycle | symbol=" in line:
-                try:
-                    # Extract: symbol=XAUTUSDT detector_runs=15 candidates=0 delivered=0 rejected=15
-                    parts = line.split("|")
-                    for part in parts:
-                        if "symbol=" in part:
-                            symbol = part.split("symbol=")[1].split()[0]
-                            self.stats["symbols_processed"].add(symbol)
-                        if "detector_runs=" in part:
-                            runs = int(part.split("detector_runs=")[1].split()[0])
-                            self.stats["detector_runs_total"] += runs
-                        if "candidates=" in part:
-                            cands = int(part.split("candidates=")[1].split()[0])
-                            self.stats["candidates_total"] += cands
-                            if cands > 0:
-                                self.stats["symbols_with_candidates"].append({
-                                    "symbol": symbol,
-                                    "candidates": cands,
-                                    "time": datetime.now().isoformat(),
-                                })
-                        if "delivered=" in part:
-                            delivered = int(part.split("delivered=")[1].split()[0])
-                            self.stats["delivered_total"] += delivered
-                            if delivered > 0:
-                                self.stats["last_signals"].append({
-                                    "symbol": symbol,
-                                    "delivered": delivered,
-                                    "time": datetime.now().isoformat(),
-                                })
-                        if "rejected=" in part:
-                            rejected = int(part.split("rejected=")[1].split()[0])
-                            self.stats["rejected_total"] += rejected
-                    
-                    self.stats["cycles"] += 1
-                except Exception:
-                    pass
-            
-            # Parse errors
-            if "ERROR" in line or "error" in line.lower():
-                if len(self.stats["errors"]) < 50:  # Limit stored errors
-                    self.stats["errors"].append({
-                        "line": line[:200],
-                        "time": datetime.now().isoformat(),
-                    })
+        parsed = parse_cycle_log_lines(lines)
+        self.stats["cycles"] += parsed["cycles"]
+        self.stats["symbols_processed"].update(parsed["symbols_processed"])
+        self.stats["detector_runs_total"] += parsed["detector_runs_total"]
+        self.stats["candidates_total"] += parsed["candidates_total"]
+        self.stats["delivered_total"] += parsed["delivered_total"]
+        self.stats["rejected_total"] += parsed["rejected_total"]
+
+        now = datetime.now().isoformat()
+        for item in parsed["symbols_with_candidates"]:
+            self.stats["symbols_with_candidates"].append(
+                {"symbol": item["symbol"], "candidates": item["candidates"], "time": now}
+            )
+
+        for item in parsed["last_signals"]:
+            self.stats["last_signals"].append(
+                {"symbol": item["symbol"], "delivered": item["delivered"], "time": now}
+            )
+
+        for line in parsed["errors"]:
+            if len(self.stats["errors"]) >= 50:
+                break
+            self.stats["errors"].append({"line": line, "time": now})
     
     async def _generate_report(self):
         """Generate final runtime report."""

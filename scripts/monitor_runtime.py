@@ -6,6 +6,8 @@ import sys
 import time
 from pathlib import Path
 
+from bot.diagnostics.runtime_analysis import aggregate_cycle_stats, find_latest_run_dir, read_jsonl
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Lightweight runtime monitor for bot process/artifacts")
@@ -72,6 +74,11 @@ def is_process_running(pid: int) -> tuple[bool, str]:
 
 def print_report(args: argparse.Namespace) -> None:
     pid, pid_status = read_pid(args.pid_file)
+    latest_run_dir = find_latest_run_dir(args.telemetry_dir)
+    cycle_summary: dict[str, object] = {}
+    if latest_run_dir is not None:
+        cycles_path = latest_run_dir / "analysis" / "cycles.jsonl"
+        cycle_summary = aggregate_cycle_stats(read_jsonl(cycles_path))
 
     print("=" * 72)
     print("RUNTIME MONITOR")
@@ -90,6 +97,11 @@ def print_report(args: argparse.Namespace) -> None:
 
     print(f"DB exists     : {'yes' if args.db_path.exists() else 'no'}")
     print(f"Telemetry dir : {'yes' if args.telemetry_dir.exists() else 'no'}")
+    print(f"Latest run    : {latest_run_dir.name if latest_run_dir else 'n/a'}")
+    if cycle_summary:
+        print(f"Cycles (run)  : {cycle_summary.get('total_cycles', 0)}")
+        print(f"Candidates    : {cycle_summary.get('total_candidates', 0)}")
+        print(f"Delivered     : {cycle_summary.get('total_delivered', 0)}")
     print("=" * 72)
 
 

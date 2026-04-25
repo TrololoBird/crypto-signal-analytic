@@ -1,0 +1,3 @@
+{"symbol":"BTCUSDT","detector_runs":10,"candidates":1,"delivered":0}
+{"symbol":"ETHUSDT","detector_runs":11,"candidates":2,"delivered":1}
+{"funnel":{"detector_runs":5,"post_filter_candidates":1,"delivered":1}}

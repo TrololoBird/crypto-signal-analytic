@@ -29,3 +29,10 @@ repos:
         language: system
         files: ^bot/strategies/.*\.py$
         pass_filenames: true
+
+      - id: scripts-readme-sync
+        name: Validate scripts README inventory
+        entry: python scripts/check_scripts_readme.py
+        language: system
+        files: ^scripts/.*(\.py|README\.md)$
+        pass_filenames: false

@@ -2,17 +2,12 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-import json
-import logging
 from pathlib import Path
-import sys
 from typing import Any
 
-import structlog
+from common import bootstrap_repo_path, configure_script_logging, load_symbols_from_run, resolve_symbols
 
-ROOT_DIR = Path(__file__).resolve().parents[1]
-if str(ROOT_DIR) not in sys.path:
-    sys.path.insert(0, str(ROOT_DIR))
+bootstrap_repo_path()
 
 from bot.config import load_settings
 from bot.features import min_required_bars, prepare_symbol
@@ -20,31 +15,7 @@ from bot.market_data import BinanceFuturesMarketData, MarketDataUnavailable
 from bot.models import SymbolFrames, UniverseSymbol
 
 
-LOG = structlog.get_logger("scripts.live_check_indicators")
-
-
-def _configure_logging() -> None:
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s | %(levelname)-7s | %(name)s | %(message)s",
-        force=True,
-    )
-
-
-def _symbols_from_run(run_id: str) -> list[str]:
-    target = Path("data") / "bot" / "telemetry" / "runs" / run_id / "analysis" / "symbol_analysis.jsonl"
-    if not target.exists():
-        LOG.warning("symbols_from_run_missing", run_id=run_id, path=str(target))
-        return []
-    symbols: list[str] = []
-    seen: set[str] = set()
-    for line in target.read_text(encoding="utf-8").splitlines():
-        row = json.loads(line)
-        symbol = str(row.get("symbol") or "").upper()
-        if symbol and symbol not in seen:
-            seen.add(symbol)
-            symbols.append(symbol)
-    return symbols
+LOG = configure_script_logging("scripts.live_check_indicators")
 
 
 async def _build_universe_symbol(
@@ -170,13 +141,13 @@ def main() -> None:
     parser.add_argument("--limit", type=int, default=0)
     parser.add_argument("--concurrency", type=int, default=3)
     args = parser.parse_args()
-
-    _configure_logging()
-    symbols = [str(symbol).upper() for symbol in args.symbols if str(symbol).strip()]
-    if not symbols:
-        symbols = _symbols_from_run(args.symbols_from_run)
-    if not symbols:
-        symbols = ["BTCUSDT", "ETHUSDT", "SOLUSDT"]
+    fallback_symbols = ["BTCUSDT", "ETHUSDT", "SOLUSDT"]
+    symbols = resolve_symbols(
+        args_symbols=args.symbols,
+        symbols_from_run=load_symbols_from_run(args.symbols_from_run, Path("data") / "bot" / "telemetry"),
+        fallback_symbols=fallback_symbols,
+    )
+    if symbols == fallback_symbols:
         LOG.info("symbols_fallback_used", symbols=symbols)
     if args.limit > 0:
         symbols = symbols[: args.limit]

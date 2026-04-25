@@ -1,0 +1,57 @@
+name: Quality Report
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 7 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  quality-report:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install Python tooling
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff vulture
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Generate report directory
+        run: mkdir -p reports/quality
+
+      - name: Ruff (unused imports/variables report)
+        run: |
+          echo "# Ruff report" > reports/quality/ruff.txt
+          ruff check . --select F401,F841 >> reports/quality/ruff.txt 2>&1 || true
+
+      - name: Vulture (dead code report)
+        run: |
+          echo "# Vulture report" > reports/quality/vulture.txt
+          vulture bot scripts tests >> reports/quality/vulture.txt 2>&1 || true
+
+      - name: JSCPD (duplication report)
+        run: |
+          echo "# JSCPD report" > reports/quality/jscpd.txt
+          npx --yes jscpd@4.0.5 --min-lines 20 --min-tokens 120 --format python --reporters console \
+            --output reports/quality/jscpd-artifacts . >> reports/quality/jscpd.txt 2>&1 || true
+
+      - name: Upload reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-reports
+          path: reports/quality

@@ -14,7 +14,7 @@ block_validity_bars = 50
 retest_tolerance_pct = 0.002
 
 [risk_management]
-sl_buffer_atr = 0.5
+sl_buffer_atr = 1.5
 min_rr = 1.5
 
 [scoring]

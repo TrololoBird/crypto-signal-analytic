@@ -9,20 +9,13 @@ from __future__ import annotations
 
 import logging
 import math
-from typing import cast
-
-import polars as pl
 
 from ..setup_base import BaseSetup
 from ..config import BotSettings
 from ..models import PreparedSymbol, Signal
 from ..setups import _build_signal, _compute_dynamic_score, _reject
 from ..features import _swing_points
-from ..setups.utils import (
-    build_structural_targets,
-    validate_rr_or_penalty,
-    get_dynamic_params,
-)
+from ..setups.utils import get_dynamic_params
 
 LOG = logging.getLogger("bot.strategies.bos_choch")
 
@@ -42,6 +35,9 @@ class BOSCHOCHSetup(BaseSetup):
         defaults = {
             "base_score": 0.55,
             "swing_lookback": 12,
+            "bos_lookback": 12,  # Backward-compatible alias.
+            "choch_lookback": 12,  # Backward-compatible alias.
+            "sl_buffer_atr": 0.2,
             "breakout_threshold_atr": 0.4,
             "bias_mismatch_penalty": 0.75,
             "min_rr": 1.5,
@@ -74,10 +70,13 @@ class BOSCHOCHSetup(BaseSetup):
         setup_id = self.setup_id
         dynamic_params = get_dynamic_params(prepared, setup_id)
         defaults = self.get_optimizable_params(_settings)
-        
-        bos_lookback = int(dynamic_params.get("bos_lookback", defaults["bos_lookback"]))
-        choch_lookback = int(dynamic_params.get("choch_lookback", defaults["choch_lookback"]))
-        sl_buffer_atr = dynamic_params.get("sl_buffer_atr", defaults["sl_buffer_atr"])
+
+        bos_lookback = max(2, int(dynamic_params.get("bos_lookback", defaults["bos_lookback"])))
+        choch_lookback = max(2, int(dynamic_params.get("choch_lookback", defaults["choch_lookback"])))
+        swing_lookback = max(bos_lookback, choch_lookback)
+        sl_buffer_atr = float(dynamic_params.get("sl_buffer_atr", defaults["sl_buffer_atr"]))
+        min_rr = float(dynamic_params.get("min_rr", defaults["min_rr"]))
+        base_score = float(dynamic_params.get("base_score", defaults["base_score"]))
 
         w = prepared.work_15m
         if w.height < 30:
@@ -94,10 +93,7 @@ class BOSCHOCHSetup(BaseSetup):
             _reject(prepared, setup_id, "price_missing")
             return None
 
-        # 1H context for 15M signals (not 4H - too lagging for <4h trades)
-        bias_1h = getattr(prepared, 'bias_1h', prepared.bias_4h)
-
-        sh_mask, sl_mask = _swing_points(w, n=3)
+        sh_mask, sl_mask = _swing_points(w, n=swing_lookback)
         sh_prices = w.filter(sh_mask)["high"]
         sl_prices = w.filter(sl_mask)["low"]
 
@@ -128,9 +124,9 @@ class BOSCHOCHSetup(BaseSetup):
         bullish_break = sh_vals[-1] > sh_vals[-2]
         if prior_downtrend and bullish_break:
             direction = "long"
-            # SL: beyond the BOS/CHoCH structural pivot (last swing low) + 0.2×ATR
+            # SL: beyond the BOS/CHoCH structural pivot (last swing low) + sl_buffer_atr×ATR.
             pivot_level = float(sl_vals[-1])
-            stop_price = pivot_level - 0.2 * atr
+            stop_price = pivot_level - sl_buffer_atr * atr
 
         # Bearish CHoCH:
         #   Prior uptrend confirmed: sh[-2] > sh[-3] (higher high) AND sl[-2] > sl[-3] (higher low)
@@ -141,7 +137,7 @@ class BOSCHOCHSetup(BaseSetup):
             if prior_uptrend and bearish_break:
                 direction = "short"
                 pivot_level = float(sh_vals[-1])
-                stop_price = pivot_level + 0.2 * atr
+                stop_price = pivot_level + sl_buffer_atr * atr
 
         if direction is None or stop_price is None:
             _reject(prepared, setup_id, "no_choch_detected")
@@ -149,9 +145,9 @@ class BOSCHOCHSetup(BaseSetup):
 
         # --- Compute structural SL/TP ---
         if direction == "long":
-            # SL: beyond BOS/CHoCH structural pivot (last swing low) + 0.2×ATR
+            # SL: beyond BOS/CHoCH structural pivot (last swing low) + sl_buffer_atr×ATR.
             pivot_level = float(sl_vals[-1])
-            stop_price = pivot_level - 0.2 * atr
+            stop_price = pivot_level - sl_buffer_atr * atr
             risk = price - stop_price
             if risk <= 0:
                 _reject(prepared, setup_id, "risk_non_positive_long", stop=stop_price, price=price)
@@ -167,9 +163,9 @@ class BOSCHOCHSetup(BaseSetup):
                 tp2_cands = sh4_prices.filter(sh4_prices > price)
                 tp2 = float(tp2_cands[0]) if tp2_cands.len() > 0 else None
         else:
-            # SL: beyond BOS/CHoCH structural pivot (last swing high) + 0.2×ATR
+            # SL: beyond BOS/CHoCH structural pivot (last swing high) + sl_buffer_atr×ATR.
             pivot_level = float(sh_vals[-1])
-            stop_price = pivot_level + 0.2 * atr
+            stop_price = pivot_level + sl_buffer_atr * atr
             risk = stop_price - price
             if risk <= 0:
                 _reject(prepared, setup_id, "risk_non_positive_short", stop=stop_price, price=price)
@@ -185,8 +181,8 @@ class BOSCHOCHSetup(BaseSetup):
                 tp2_cands = sl4_prices.filter(sl4_prices < price)
                 tp2 = float(tp2_cands[-1]) if tp2_cands.len() > 0 else None
 
-        # Validate: TP1 must be at least 1.5× risk distance, else reject
-        if tp1 is None or abs(tp1 - price) < risk * 1.5:
+        # Validate: TP1 must be at least min_rr × risk distance, else reject.
+        if tp1 is None or abs(tp1 - price) < risk * min_rr:
             _reject(prepared, setup_id, "tp1_too_close_or_missing", tp1=tp1, risk=risk, price=price)
             return None  # Reject this CHoCH setup
         if tp2 is None:
@@ -196,7 +192,7 @@ class BOSCHOCHSetup(BaseSetup):
         rsi = float(w.item(-1, "rsi14") or 50.0)
         score = _compute_dynamic_score(
             direction=direction,
-            base_score=0.50,
+            base_score=base_score,
             vol_ratio=vol_ratio,
             rsi=rsi,
         )

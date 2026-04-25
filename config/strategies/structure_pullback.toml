@@ -14,7 +14,7 @@ pullback_lookback = 8
 swing_lookback_n = 5
 
 [risk_management]
-sl_buffer_atr = 0.4
+sl_buffer_atr = 1.5
 min_rr = 1.5
 
 [scoring]

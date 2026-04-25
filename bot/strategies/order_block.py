@@ -71,6 +71,7 @@ class OrderBlockSetup(BaseSetup):
         setup_id = self.setup_id
         dynamic_params = get_dynamic_params(prepared, setup_id)
         defaults = self.get_optimizable_params(settings)
+        sl_buffer_atr = float(dynamic_params.get("sl_buffer_atr", defaults.get("sl_buffer_atr", 1.5)))
 
         w1h = prepared.work_1h
         if w1h.height < 10:
@@ -168,13 +169,13 @@ class OrderBlockSetup(BaseSetup):
                 atr=atr,
                 work_1h=w1h,
                 min_rr=dynamic_params.get("min_rr", defaults["min_rr"]),
+                sl_buffer_atr=sl_buffer_atr,
                 sh_mask=sh_mask,
                 sl_mask=sl_mask,
             )
             
             # Use calculated stop if valid, else fall back
             stop = stop_calc if stop_calc != stop_basis else stop
-            risk = abs(price - stop)
             
             # Graded RR validation (penalty instead of reject)
             min_rr = dynamic_params.get("min_rr", defaults["min_rr"])

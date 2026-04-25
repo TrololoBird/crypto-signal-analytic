@@ -1,7 +1,11 @@
 from __future__ import annotations
 
+import math
 import os
-import tomllib
+try:
+    import tomllib
+except ModuleNotFoundError:  # pragma: no cover - fallback for Python < 3.11
+    import tomli as tomllib
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any, Literal, cast
@@ -94,10 +98,21 @@ class FilterConfig(BaseModel):
     ) -> dict[str, dict[str, float]]:
         normalized: dict[str, dict[str, float]] = {}
         for setup_id, params in (value or {}).items():
-            normalized[str(setup_id)] = {
-                str(param_name): float(param_value)
-                for param_name, param_value in params.items()
-            }
+            normalized_setup: dict[str, float] = {}
+            for param_name, param_value in params.items():
+                key = str(param_name)
+                coerced = float(param_value)
+                if not math.isfinite(coerced):
+                    raise ValueError(f"filters.setups.{setup_id}.{key} must be finite")
+                if key in {"sl_buffer_atr", "sl_atr_mult"} and coerced < 1.0:
+                    raise ValueError(
+                        f"filters.setups.{setup_id}.{key} must be >= 1.0 "
+                        "(v9 risk baseline)"
+                    )
+                if key == "min_rr" and coerced < 0.5:
+                    raise ValueError(f"filters.setups.{setup_id}.{key} must be >= 0.5")
+                normalized_setup[key] = coerced
+            normalized[str(setup_id)] = normalized_setup
         return normalized
 
 

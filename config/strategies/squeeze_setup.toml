@@ -15,7 +15,7 @@ bb_pct_b_threshold = 0.80
 volume_threshold = 0.8
 
 [risk_management]
-sl_buffer_atr = 0.4
+sl_buffer_atr = 1.5
 min_rr = 1.5
 
 [scoring]

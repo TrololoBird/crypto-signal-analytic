@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from collections import Counter
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock
@@ -26,6 +26,8 @@ from bot.setups import _build_signal
 from bot.setups.utils import build_structural_targets
 from bot.tracked_signals import TrackedSignalState
 from bot.tracking import SignalTracker
+
+UTC = timezone.utc
 
 
 class TelemetryStub:
@@ -521,7 +523,7 @@ def test_build_structural_targets_prefers_nearest_long_resistance() -> None:
         sh_mask=sh_mask,
     )
 
-    assert stop == pytest.approx(94.6)
+    assert stop == pytest.approx(92.0)
     assert tp1 == pytest.approx(120.0)
     assert tp2 == pytest.approx(120.0)
 

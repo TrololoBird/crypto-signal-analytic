@@ -16,7 +16,7 @@ bars_ago_min = 3
 bars_ago_max = 20
 
 [risk_management]
-sl_buffer_atr = 0.5
+sl_buffer_atr = 1.5
 min_rr = 1.5
 
 [scoring]

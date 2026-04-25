@@ -4,7 +4,7 @@ import json
 import math
 import time
 from collections.abc import Iterable
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from typing import Any, cast
 
 import aiohttp
@@ -16,6 +16,7 @@ from .market_data import BinanceFuturesMarketData
 from .telemetry import TelemetryStore
 
 LOG = structlog.get_logger("bot.public_intelligence")
+UTC = timezone.utc
 _OPTIONS_EXCHANGE_INFO_TTL_S = 3600.0
 _MACRO_TTL_S = 900.0
 _PLACEHOLDER_COLUMNS: frozenset[str] = frozenset(

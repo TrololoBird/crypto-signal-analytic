@@ -147,6 +147,7 @@ def build_structural_targets(
     work_1h: pl.DataFrame,
     work_4h: pl.DataFrame | None = None,
     min_rr: float = 1.5,
+    sl_buffer_atr: float = 1.5,
     sh_mask: pl.Series | None = None,
     sl_mask: pl.Series | None = None,
     breakout_bar_idx: int | None = None,
@@ -162,6 +163,7 @@ def build_structural_targets(
         work_1h: 1H timeframe data for TP calculation
         work_4h: Optional 4H timeframe for extended targets
         min_rr: Minimum risk/reward ratio
+        sl_buffer_atr: ATR multiplier used as stop noise buffer around stop_basis
         sh_mask: Swing high boolean mask (for long TP1)
         sl_mask: Swing low boolean mask (for short TP1)
         breakout_bar_idx: Index of breakout bar (for TP2 measured move)
@@ -170,9 +172,11 @@ def build_structural_targets(
     Returns:
         Tuple of (stop, tp1, tp2) where tp1/tp2 may be None
     """
+    stop_buffer = max(0.05, float(sl_buffer_atr))
+
     if direction == "long":
-        # SL: below stop_basis + 0.2×ATR noise buffer
-        stop = stop_basis - atr * 0.2
+        # SL: below stop_basis + configurable ATR noise buffer.
+        stop = stop_basis - atr * stop_buffer
         
         # TP1: next 1h resistance (swing high above entry)
         tp1 = None
@@ -200,8 +204,8 @@ def build_structural_targets(
             if last_4h_high > price_anchor * 1.02:  # At least 2% above
                 tp2 = last_4h_high
     else:
-        # SL: above stop_basis + 0.2×ATR noise buffer
-        stop = stop_basis + atr * 0.2
+        # SL: above stop_basis + configurable ATR noise buffer.
+        stop = stop_basis + atr * stop_buffer
         
         # TP1: next 1h support (swing low below entry)
         tp1 = None

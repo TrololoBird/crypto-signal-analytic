@@ -4,10 +4,6 @@
 """
 from __future__ import annotations
 
-from typing import cast
-
-import polars as pl
-
 from ..config import BotSettings
 from ..models import PreparedSymbol, Signal
 from ..setup_base import BaseSetup
@@ -64,6 +60,7 @@ class EmaBounceSetup(BaseSetup):
             "min_adx",
             dynamic_params.get("min_adx_1h", defaults.get("min_adx", defaults["min_adx_1h"])),
         )
+        sl_buffer_atr = float(dynamic_params.get("sl_buffer_atr", defaults.get("sl_buffer_atr", 1.5)))
         
         work_1h = prepared.work_1h
         if work_1h.height < 3:
@@ -81,12 +78,10 @@ class EmaBounceSetup(BaseSetup):
                     atr=atr, ema20=ema20, ema50=ema50)
             return None
 
-        direction: str | None = None
         reasons: list[str] = []
 
         # 1H context for 15M signals (not 4H - too lagging for <4h trades)
         bias_1h = getattr(prepared, 'bias_1h', prepared.bias_4h)
-        regime_1h = getattr(prepared, 'regime_1h_confirmed', prepared.regime_4h_confirmed)
         
         # Direction detection with graded scoring instead of reject
         signal_direction: str | None = None
@@ -143,6 +138,7 @@ class EmaBounceSetup(BaseSetup):
             atr=atr,
             work_1h=work_1h,
             min_rr=dynamic_params.get("min_rr", defaults["min_rr"]),
+            sl_buffer_atr=sl_buffer_atr,
             sh_mask=sh_mask,
             sl_mask=sl_mask,
         )

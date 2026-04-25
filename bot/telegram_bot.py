@@ -12,16 +12,18 @@ Provides commands:
 from __future__ import annotations
 
 import logging
-from typing import Any
+from datetime import datetime, timezone
+from html import escape
 
-from aiogram import Bot, Dispatcher, F, types
+from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from aiogram.types import InlineKeyboardButton
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from .config import BotSettings
 
 LOG = logging.getLogger(__name__)
+UTC = timezone.utc
 
 
 class TelegramSignalBot:
@@ -143,13 +145,16 @@ class TelegramSignalBot:
     ) -> None:
         """Send signal alert to specified chat."""
         emoji = "📈" if direction.upper() == "LONG" else "📉"
+        safe_symbol = escape(symbol)
+        safe_direction = escape(direction.upper())
+        safe_setup_type = escape(setup_type)
         
         text = (
-            f"🎯 <b>New Signal: {symbol}</b>\n\n"
-            f"{emoji} <b>Direction:</b> {direction.upper()}\n"
+            f"🎯 <b>New Signal: {safe_symbol}</b>\n\n"
+            f"{emoji} <b>Direction:</b> {safe_direction}\n"
             f"💰 <b>Entry:</b> {entry:,.2f}\n"
             f"⭐ <b>Score:</b> {score:.2f}\n"
-            f"🔍 <b>Setup:</b> {setup_type}\n\n"
+            f"🔍 <b>Setup:</b> {safe_setup_type}\n\n"
             f"⏰ {datetime.now(UTC).strftime('%H:%M:%S')} UTC\n\n"
             "⚠️ Educational only. DYOR."
         )
@@ -170,7 +175,7 @@ class TelegramSignalBot:
 # Integration with SignalBot (to be implemented)
 async def setup_telegram_bot(settings: BotSettings) -> TelegramSignalBot | None:
     """Factory function to create and start Telegram bot."""
-    if not settings.tg_token:
+    if not (settings.tg_token and settings.tg_token.strip()):
         LOG.warning("No TG_TOKEN provided, Telegram bot disabled")
         return None
     
@@ -180,7 +185,6 @@ async def setup_telegram_bot(settings: BotSettings) -> TelegramSignalBot | None:
 
 if __name__ == "__main__":
     import asyncio
-    from datetime import UTC, datetime
     
     # Test mode
     logging.basicConfig(level=logging.INFO)

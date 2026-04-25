@@ -10,7 +10,7 @@ tp_too_close_penalty = 0.75
 wick_through_atr_mult = 0.3      # wick_through = low < level - atr * X
 closed_back_threshold = 0.0      # closed_back = close > level
 # SL/TP
-sl_buffer_atr = 0.5              # stop = wick_extreme ± atr * X
+sl_buffer_atr = 1.5              # stop = wick_extreme ± atr * X
 min_rr = 1.5
 
 [bot.strategies.turtle_soup]
@@ -21,7 +21,7 @@ break_atr_mult = 0.1             # break detection threshold
 # Confirmation
 vol_ratio_threshold = 0.8        # volume ratio for confirmation
 # SL/TP
-sl_buffer_atr = 0.5
+sl_buffer_atr = 1.5
 min_rr = 1.5
 
 [bot.strategies.structure_pullback]
@@ -34,7 +34,7 @@ min_trend_score = 0.40           # was 0.50
 score_diff_threshold = 0.03      # |long - short| must exceed this
 ema_proximity_pct = 0.995        # 0.5% proximity to EMA
 # SL/TP
-sl_buffer_atr = 0.4
+sl_buffer_atr = 1.5
 min_rr = 1.5
 
 [bot.strategies.squeeze_setup]
@@ -46,7 +46,7 @@ min_squeeze_bars = 3
 # Volume
 vol_ratio_threshold = 0.8
 # SL/TP
-sl_buffer_atr = 0.4
+sl_buffer_atr = 1.5
 min_rr = 1.5
 
 [bot.strategies.fvg]
@@ -56,7 +56,7 @@ base_score = 0.54
 min_fvg_size_atr = 0.3           # minimum FVG size
 max_fvg_age_bars = 5             # how old FVG can be
 # SL/TP
-sl_buffer_atr = 0.5
+sl_buffer_atr = 1.5
 min_rr = 1.5
 
 [bot.strategies.liquidity_sweep]
@@ -66,7 +66,7 @@ base_score = 0.54
 sweep_atr_mult = 0.2             # sweep beyond level
 reclaim_threshold = 0.3          # close back above/below
 # SL/TP
-sl_buffer_atr = 0.5
+sl_buffer_atr = 1.5
 min_rr = 1.5
 
 [bot.strategies.order_block]
@@ -78,7 +78,7 @@ min_ob_size_atr = 0.5
 # Mitigation
 mitigation_threshold = 0.3       # how much must be mitigated
 # SL/TP
-sl_buffer_atr = 0.5
+sl_buffer_atr = 1.5
 min_rr = 1.5
 
 [bot.strategies.session_killzone]
@@ -92,7 +92,7 @@ london_close = 16
 # Momentum threshold
 min_momentum = 0.3
 # SL/TP
-sl_buffer_atr = 0.5
+sl_buffer_atr = 1.5
 min_rr = 1.5
 
 [bot.strategies.hidden_divergence]
@@ -103,7 +103,7 @@ rsi_lookback = 14
 price_tolerance_pct = 0.001      # 0.1% for price comparison
 macd_threshold = 0.0
 # SL/TP
-sl_buffer_atr = 0.5
+sl_buffer_atr = 1.5
 min_rr = 1.5
 
 [bot.strategies.funding_reversal]
@@ -113,7 +113,7 @@ base_score = 0.55
 extreme_funding = 0.01           # 1% funding = extreme
 oi_change_threshold = 0.5        # 50% OI change
 # SL/TP
-sl_buffer_atr = 0.5
+sl_buffer_atr = 1.5
 min_rr = 1.2                     # tighter RR for quick reversals
 
 [bot.strategies.cvd_divergence]
@@ -123,7 +123,7 @@ base_score = 0.52
 cvd_lookback_bars = 20
 volume_weighting = 0.7           # weight of volume in score
 # SL/TP
-sl_buffer_atr = 0.5
+sl_buffer_atr = 1.5
 min_rr = 1.5
 
 [bot.strategies.breaker_block]
@@ -133,7 +133,7 @@ base_score = 0.53
 break_lookback = 20
 min_break_size_atr = 0.3
 # SL/TP
-sl_buffer_atr = 0.5
+sl_buffer_atr = 1.5
 min_rr = 1.5
 
 [bot.strategies.ema_bounce]
@@ -145,7 +145,7 @@ bounce_threshold_pct = 0.005     # 0.5% bounce (was 0.3%)
 # Trend
 min_adx = 18.0
 # SL/TP
-sl_buffer_atr = 0.4              # via utils
+sl_buffer_atr = 1.5              # via utils
 target_atr_mult = 2.0
 
 [bot.strategies.structure_break_retest]
@@ -155,7 +155,7 @@ base_score = 0.54
 retest_max_bars = 5
 retest_tolerance_pct = 0.002     # 0.2% tolerance
 # SL/TP
-sl_buffer_atr = 0.5
+sl_buffer_atr = 1.5
 min_rr = 1.5
 
 [bot.strategies.bos_choch]
@@ -165,7 +165,7 @@ base_score = 0.53
 swing_lookback = 5
 break_confirmation_bars = 2
 # SL/TP
-sl_buffer_atr = 0.5
+sl_buffer_atr = 1.5
 min_rr = 1.5
 
 # ============================================
@@ -173,7 +173,7 @@ min_rr = 1.5
 # ============================================
 [bot.strategies.global]
 # Default SL buffer if not specified per strategy
-default_sl_buffer_atr = 0.5
+default_sl_buffer_atr = 1.5
 # Default risk/reward minimum
 default_min_rr = 1.5
 # Maximum signals per cycle per symbol

@@ -45,21 +45,21 @@ max_mark_price_deviation_pct = 0.005
 
 # Setup-specific optimizable parameters for self-learner
 [bot.filters.setups]
-ema_bounce = { base_score = 0.55, min_adx_1h = 15.0, bias_mismatch_penalty = 0.75, min_rr = 1.5 }
-structure_pullback = { base_score = 0.55, bias_mismatch_penalty = 0.75, tp_too_close_penalty = 0.75, min_rr = 1.5 }
-structure_break_retest = { base_score = 0.55, threshold_adx = 18.0, bias_mismatch_penalty = 0.75, min_rr = 1.5 }
-wick_trap_reversal = { base_score = 0.50, bias_mismatch_penalty = 0.75, min_rr = 1.5, adx_penalty_factor = 0.85 }
-squeeze_setup = { base_score = 0.55, bias_mismatch_penalty = 0.75, min_rr = 1.5 }
-fvg_setup = { base_score = 0.60, threshold_gap = 0.001, min_rr = 1.5, tp_too_close_penalty = 0.8 }
-order_block = { base_score = 0.50, threshold_volume = 1.2, min_rr = 1.5 }
-liquidity_sweep = { base_score = 0.50, threshold_tol = 0.0015, min_rr = 1.5 }
-bos_choch = { base_score = 0.55, bias_mismatch_penalty = 0.75, min_rr = 1.5, min_swings = 6 }
-hidden_divergence = { base_score = 0.50, bias_mismatch_penalty = 0.75, min_rr = 1.5 }
-funding_reversal = { base_score = 0.50, bias_mismatch_penalty = 0.75, min_rr = 1.5, adx_penalty_factor = 0.85 }
-cvd_divergence = { base_score = 0.50, bias_mismatch_penalty = 0.75, min_rr = 1.5 }
-session_killzone = { base_score = 0.55, bias_mismatch_penalty = 0.75, min_rr = 1.5 }
-breaker_block = { base_score = 0.50, bias_mismatch_penalty = 0.75, min_rr = 1.5 }
-turtle_soup = { base_score = 0.50, bias_mismatch_penalty = 0.75, min_rr = 1.5, adx_penalty_factor = 0.85 }
+ema_bounce = { base_score = 0.55, min_adx_1h = 15.0, bias_mismatch_penalty = 0.75, sl_buffer_atr = 1.5, min_rr = 1.5 }
+structure_pullback = { base_score = 0.55, bias_mismatch_penalty = 0.75, tp_too_close_penalty = 0.75, sl_buffer_atr = 1.5, min_rr = 1.5 }
+structure_break_retest = { base_score = 0.55, threshold_adx = 18.0, bias_mismatch_penalty = 0.75, sl_buffer_atr = 1.5, min_rr = 1.5 }
+wick_trap_reversal = { base_score = 0.50, bias_mismatch_penalty = 0.75, sl_buffer_atr = 1.5, min_rr = 1.5, adx_penalty_factor = 0.85 }
+squeeze_setup = { base_score = 0.55, bias_mismatch_penalty = 0.75, sl_buffer_atr = 1.5, min_rr = 1.5 }
+fvg_setup = { base_score = 0.60, threshold_gap = 0.001, sl_buffer_atr = 1.5, min_rr = 1.5, tp_too_close_penalty = 0.8 }
+order_block = { base_score = 0.50, threshold_volume = 1.2, sl_buffer_atr = 1.5, min_rr = 1.5 }
+liquidity_sweep = { base_score = 0.50, threshold_tol = 0.0015, sl_buffer_atr = 1.5, min_rr = 1.5 }
+bos_choch = { base_score = 0.55, bias_mismatch_penalty = 0.75, sl_buffer_atr = 1.5, min_rr = 1.5, min_swings = 6 }
+hidden_divergence = { base_score = 0.50, bias_mismatch_penalty = 0.75, sl_buffer_atr = 1.5, min_rr = 1.5 }
+funding_reversal = { base_score = 0.50, bias_mismatch_penalty = 0.75, sl_buffer_atr = 1.5, min_rr = 1.5, adx_penalty_factor = 0.85 }
+cvd_divergence = { base_score = 0.50, bias_mismatch_penalty = 0.75, sl_buffer_atr = 1.5, min_rr = 1.5 }
+session_killzone = { base_score = 0.55, bias_mismatch_penalty = 0.75, sl_buffer_atr = 1.5, min_rr = 1.5 }
+breaker_block = { base_score = 0.50, bias_mismatch_penalty = 0.75, sl_buffer_atr = 1.5, min_rr = 1.5 }
+turtle_soup = { base_score = 0.50, bias_mismatch_penalty = 0.75, sl_buffer_atr = 1.5, min_rr = 1.5, adx_penalty_factor = 0.85 }
 
 [bot.tracking]
 enabled = true

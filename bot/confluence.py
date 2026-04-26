@@ -5,6 +5,7 @@ import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from .ml.volatility_gate import VolatilityGate
 from .config import BotSettings
 from .models import PreparedSymbol, Signal
 from .scoring import (
@@ -85,6 +86,7 @@ class ConfluenceEngine:
     def __init__(self, settings: BotSettings, ml_filter: "MLFilter | None" = None) -> None:
         self.settings = settings
         self._ml_filter = ml_filter
+        self._volatility_gate = VolatilityGate()
 
     def score(self, signal: Signal, prepared: PreparedSymbol) -> ConfluenceResult:
         cfg = self.settings.scoring
@@ -103,19 +105,21 @@ class ConfluenceEngine:
         if self._ml_filter is not None and self._ml_filter.enabled:
             try:
                 ml_result = self._ml_filter.predict(signal, prepared)
-                if ml_result.error is None and ml_result.is_confident:
+                regime = str(getattr(prepared, "market_regime", "neutral") or "neutral")
+                if (
+                    ml_result.error is None
+                    and ml_result.is_confident
+                    and self._volatility_gate.should_use_ml(regime, signal.score)
+                ):
                     ml_probability = ml_result.probability
                     ml_confidence = ml_result.confidence
-                    # Blend ML prediction into final score (40% ML, 60% base)
-                    ml_weight = 0.4
-                    final = round(
-                        max(0.0, min(final * (1.0 - ml_weight) + ml_probability * ml_weight, 1.0)),
-                        4
-                    )
+                    delta = ml_probability - 0.5
+                    bounded_delta = max(-0.15, min(0.15, delta))
+                    final = round(max(0.0, min(final + bounded_delta, 1.0)), 4)
                     ml_applied = True
                     LOG.debug(
-                        "ML applied | symbol=%s setup=%s ml_prob=%.3f confidence=%.3f final_score=%.3f",
-                        signal.symbol, signal.setup_id, ml_probability, ml_confidence, final
+                        "ML applied | symbol=%s setup=%s regime=%s ml_prob=%.3f confidence=%.3f final_score=%.3f",
+                        signal.symbol, signal.setup_id, regime, ml_probability, ml_confidence, final
                     )
             except Exception as exc:
                 LOG.warning("ML prediction failed for %s: %s", signal.symbol, exc)

@@ -163,6 +163,7 @@ hard_barrier_pct = 1.5
 hard_barrier_window_minutes = 15
 smart_exit_enabled = true
 smart_exit_threshold = 0.62
+regime_detector = "composite"
 max_consecutive_stop_losses = 3
 stop_loss_pause_hours = 5
 benchmark_symbols = ["BTCUSDT", "ETHUSDT", "SOLUSDT"]

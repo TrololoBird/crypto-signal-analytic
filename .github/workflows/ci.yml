@@ -5,20 +5,31 @@ on:
   pull_request:
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/ruff-action@v3
+      - run: ruff check bot/ tests/
+      - run: ruff format --check bot/ tests/
+
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: pip install -e '.[dev]'
+      - run: mypy bot/ --ignore-missing-imports --strict
+
   test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
-      - name: Install deps
-        run: pip install -r requirements.txt
-      - name: Compile
-        run: python -m compileall -q bot
-      - name: Import check
-        run: python -c "from bot.application.bot import SignalBot"
-      - name: Validate config/runtime invariants
-        run: python scripts/validate_config.py
-      - name: Tests
-        run: pytest -q tests/
+          python-version: '3.13'
+      - run: pip install -e '.[dev,test]'
+      - run: pytest tests/ -v --cov=bot --cov-report=xml
+      - uses: codecov/codecov-action@v5

@@ -13,6 +13,8 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 import polars as pl
 
+from .regime.composite_regime import CompositeRegimeAnalyzer
+
 if TYPE_CHECKING:
     from .config import BotSettings
 
@@ -76,6 +78,7 @@ class MarketRegimeAnalyzer:
         self._last_result: MarketRegimeResult | None = None
         self._last_update_ts: float = 0.0
         self._cache_ttl_seconds = 60.0  # Recalculate every minute
+        self._composite = CompositeRegimeAnalyzer()
 
     def analyze(
         self,
@@ -103,6 +106,30 @@ class MarketRegimeAnalyzer:
             and now - self._last_update_ts < self._cache_ttl_seconds
         ):
             return self._last_result
+
+        detector = getattr(self.settings.intelligence, "regime_detector", "legacy")
+        if detector in {"hmm", "gmm_var", "composite"}:
+            composite = self._composite.analyze(
+                ticker_data,
+                funding_rates,
+                benchmark_context,
+            )
+            mapped = MarketRegimeResult(
+                regime=composite.regime,
+                strength=composite.strength,
+                btc_bias="neutral",
+                eth_bias="neutral",
+                dominance_24h=0.0,
+                funding_sentiment="neutral",
+                oi_momentum="stable",
+                top_gainer_pct=0.0,
+                top_loser_pct=0.0,
+                altcoin_season_index=50.0,
+                confidence=composite.confidence,
+            )
+            self._last_result = mapped
+            self._last_update_ts = now
+            return mapped
 
         result = self._calculate_regime(ticker_data, funding_rates, open_interest, benchmark_context)
         self._last_result = result

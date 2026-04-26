@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import html
 import inspect
 import logging
 import os
@@ -26,10 +27,12 @@ from typing import Any, cast
 from ..config import BotSettings
 from ..core.events import BookTickerEvent, KlineCloseEvent, ReconnectEvent
 from ..core.engine import StrategyDecision, StrategyRegistry
+from ..feature_flags import FeatureFlags
 from ..features import min_required_bars, prepare_symbol
 from ..filters import apply_global_filters
 from ..market_data import BinanceFuturesMarketData, MarketDataUnavailable
 from ..models import PreparedSymbol, Signal, SymbolFrames, UniverseSymbol, PipelineResult
+from ..monitor_bot import HealthMonitor
 from ..outcomes import build_prepared_feature_snapshot, extract_features_from_signal
 from ..setup_base import SetupParams
 from ..strategies import STRATEGY_CLASSES
@@ -68,6 +71,7 @@ class SignalBot:
         telemetry: TelemetryStore | None = None,
     ) -> None:
         self.settings = settings
+        self.feature_flags = FeatureFlags(settings)
         container = build_application_container(
             settings,
             market_data=market_data,
@@ -140,12 +144,20 @@ class SignalBot:
         self._prepare_error_count: int = 0
         self._last_prepare_error: dict[str, Any] = {}
         self._diagnostic_trace_counts: dict[str, int] = {}
+        self._running: bool = False
 
         # Intra-candle scan throttle — monotonic timestamp of last scan per symbol
         self._last_intra_scan: dict[str, float] = {}
         self._last_intra_mid: dict[str, float] = {}
         self._shortlist_service = ShortlistService(self)
         self._cycle_runner = CycleRunner(self)
+        self._health_monitor = HealthMonitor(
+            interval_seconds=float(self.settings.runtime.heartbeat_seconds),
+            check=self.health_check,
+            publish=lambda payload: self.telemetry.append_jsonl("health_runtime.jsonl", payload),
+            alert=self._alert_critical,
+            alert_after_failures=3,
+        )
 
         # Subscribe to EventBus events
         self._bus.subscribe(KlineCloseEvent, self._on_kline_close)  # type: ignore[arg-type]
@@ -775,7 +787,7 @@ class SignalBot:
                 or (prepared.mark_index_spread_bps is not None and prepared.mark_index_spread_bps <= 4.0)
             )
             depth_confirms = bool(
-                (depth_imbalance is not None and depth_imbalance <= -0.05)
+                (depth_imbalance is not None and depth_imbalance >= 0.05)
                 or (microprice_bias is not None and microprice_bias <= 0.0)
             )
             premium_exhaustion = bool(
@@ -1010,6 +1022,7 @@ class SignalBot:
             preload_task = asyncio.create_task(self._preload_shortlist_frames(), name="preload_frames")
             self._background_tasks.add(preload_task)
             preload_task.add_done_callback(self._background_tasks.discard)
+        self._running = True
 
     async def run_forever(self) -> None:
         """Main loop — EventBus-driven with emergency fallback."""
@@ -1022,6 +1035,7 @@ class SignalBot:
             asyncio.create_task(self._refresh_shortlist_periodic(), name="shortlist_refresh"),
             asyncio.create_task(self._heartbeat_periodic(), name="heartbeat"),
             asyncio.create_task(self._health_telemetry_periodic(), name="health_telemetry"),
+            asyncio.create_task(self._health_monitor.run(stop_event=self._shutdown), name="health_monitor"),
             asyncio.create_task(self._emergency_fallback_scan(), name="emergency_fallback"),
             asyncio.create_task(self._oi_refresh_periodic(), name="oi_refresh"),
             asyncio.create_task(self._tracking_review_periodic(), name="tracking_review"),
@@ -1049,6 +1063,9 @@ class SignalBot:
 
     async def close(self) -> None:
         """Graceful shutdown."""
+        self._running = False
+        self._shutdown.set()
+
         # Cancel and await all background tasks
         if self._background_tasks:
             for task in list(self._background_tasks):
@@ -1056,6 +1073,11 @@ class SignalBot:
             with contextlib.suppress(asyncio.CancelledError):
                 await asyncio.gather(*self._background_tasks, return_exceptions=True)
             self._background_tasks.clear()
+
+        try:
+            await self.tracker._persist_tracking_state()
+        except Exception as exc:
+            LOG.debug("tracker persist failed (non-fatal): %s", exc)
 
         if self._ws_manager is not None:
             await self._ws_manager.stop()
@@ -1088,6 +1110,24 @@ class SignalBot:
                     await result
         except Exception as exc:
             LOG.debug("telegram close failed (non-fatal): %s", exc)
+
+    async def health_check(self) -> dict[str, Any]:
+        ws_connected = bool(getattr(self._ws_manager, "is_connected", lambda: False)())
+        pending_outcomes = len(getattr(self.tracker, "_pending_outcomes", []))
+        try:
+            active_rows = await self._modern_repo.get_active_signals(include_closed=False)
+            active_signals = len([r for r in active_rows if r.get("status") in ("pending", "active")])
+        except Exception:
+            active_signals = 0
+        return {
+            "status": "healthy" if self._running else "degraded",
+            "ws_connected": ws_connected,
+            "active_signals": active_signals,
+            "pending_outcomes": pending_outcomes,
+            "shortlist_size": len(self._shortlist),
+            "last_kline_event_age_seconds": max(0.0, asyncio.get_running_loop().time() - self._last_kline_event_ts),
+            "feature_flags": await self.feature_flags.snapshot(),
+        }
 
     # ------------------------------------------------------------------
     # EventBus handlers
@@ -2455,8 +2495,22 @@ class SignalBot:
             return False, None
         except Exception as exc:
             LOG.warning("%s failed (skipped): %s", label, exc)
+            await self._alert_critical(exc, {"label": label, "timeout": timeout})
             return False, None
         return True, result
+
+    async def _alert_critical(self, exc: Exception, context: dict[str, Any]) -> None:
+        sender = getattr(self.telegram, "send_html", None)
+        if not callable(sender):
+            return
+        try:
+            await sender(
+                "<b>🚨 CRITICAL ERROR</b>\n"
+                f"<code>{html.escape(type(exc).__name__)}: {html.escape(str(exc))}</code>\n"
+                f"<code>context={html.escape(str(context))}</code>"
+            )
+        except Exception:
+            LOG.debug("critical alert dispatch failed", exc_info=True)
 
     def _emit_telemetry_mismatch(
         self,

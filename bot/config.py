@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import math
-import os
 try:
     import tomllib
 except ModuleNotFoundError:  # pragma: no cover - fallback for Python < 3.11
@@ -10,13 +9,9 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any, Literal, cast
 
-try:
-    from dotenv import load_dotenv
-    load_dotenv()
-except ImportError:
-    load_dotenv = lambda: None  # Fallback if dotenv not installed
-
 from pydantic import BaseModel, Field, field_validator, model_validator
+
+from .secrets import load_secrets
 
 
 class RuntimeConfig(BaseModel):
@@ -120,6 +115,7 @@ class TrackingConfig(BaseModel):
     enabled: bool = True
     pending_expiry_minutes: int = Field(default=180, ge=15, le=1440)
     active_expiry_minutes: int = Field(default=720, ge=30, le=10080)
+    outcome_retention_days: int = Field(default=90, ge=7, le=3650)
     move_stop_to_break_even_on_tp1: bool = True
     min_stop_distance_pct: float = Field(default=0.5, ge=0.0, le=100.0)
     max_stop_distance_pct: float = Field(default=15.0, ge=0.5, le=100.0)
@@ -572,13 +568,13 @@ def _convert_toml_dict(d: dict[Any, Any]) -> dict[str, Any]:
 
 
 def load_settings(config_path: str | Path = "config.toml") -> BotSettings:
-    load_dotenv()
     config_file = Path(config_path)
     parsed = _load_toml(config_file)
     bot_raw = parsed.get("bot") if isinstance(parsed.get("bot"), dict) else {}
     payload = _convert_toml_dict(cast(dict[Any, Any], bot_raw))
-    payload["tg_token"] = os.getenv("TG_TOKEN", "")
-    payload["target_chat_id"] = os.getenv("TARGET_CHAT_ID", "")
+    secrets = load_secrets()
+    payload["tg_token"] = secrets.tg_token
+    payload["target_chat_id"] = secrets.target_chat_id
     payload["config_path"] = config_file
     payload.setdefault("data_dir", Path("data") / "bot")
     filters_payload = payload.setdefault("filters", {})

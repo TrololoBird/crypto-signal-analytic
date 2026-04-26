@@ -48,7 +48,11 @@ def _load_outcomes(data_path: Path) -> list[dict[str, Any]]:
             await repo.close()
 
     try:
-        return asyncio.run(_read())
+        loop = asyncio.new_event_loop()
+        try:
+            return loop.run_until_complete(_read())
+        finally:
+            loop.close()
     except Exception as exc:
         LOG.warning("autotuner: failed to load SQLite outcomes from %s: %s", data_path, exc)
         return []

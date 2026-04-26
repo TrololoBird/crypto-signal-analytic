@@ -82,7 +82,7 @@ class StructureBreakRetestSetup(BaseSetup):
         regime_1h = prepared.regime_1h_confirmed
         bias_1h = prepared.bias_1h
 
-        sh_mask, sl_mask = _swing_points(work_1h, n=swing_lookback)
+        sh_mask, sl_mask = _swing_points(work_1h, n=swing_lookback, include_unconfirmed_tail=True)
         if not sh_mask.any() and not sl_mask.any():
             _reject(prepared, setup_id, "no_swing_points")
             return None

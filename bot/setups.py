@@ -6,20 +6,81 @@ No detect_* functions — those live in individual strategy files.
 from __future__ import annotations
 
 import logging
+from contextvars import ContextVar, Token
+from dataclasses import dataclass, field
 from typing import Any
 
 import polars as pl
 
 from .config import BotSettings
+from .core.engine.base import StrategyDecision
 from .features import _swing_points  # shared swing detection helper
 from .models import PreparedSymbol, Signal
 
 LOG = logging.getLogger("bot.setups")
 
 
+@dataclass(slots=True)
+class _DecisionCapture:
+    setup_id: str
+    prepared: PreparedSymbol
+    strict_data_quality: bool
+    recorded: list[StrategyDecision] = field(default_factory=list)
+
+
+_CURRENT_DECISION_CAPTURE: ContextVar[_DecisionCapture | None] = ContextVar(
+    "bot_setups_current_decision_capture_legacy",
+    default=None,
+)
+
+
 # ---------------------------------------------------------------------------
 # Shared helpers
 # ---------------------------------------------------------------------------
+
+
+def begin_strategy_decision_capture(
+    *,
+    prepared: PreparedSymbol,
+    setup_id: str,
+    strict_data_quality: bool,
+) -> Token:
+    return _CURRENT_DECISION_CAPTURE.set(
+        _DecisionCapture(
+            setup_id=setup_id,
+            prepared=prepared,
+            strict_data_quality=bool(strict_data_quality),
+        )
+    )
+
+
+def reset_strategy_decision_capture(token: Token) -> None:
+    _CURRENT_DECISION_CAPTURE.reset(token)
+
+
+def finalize_strategy_decision(
+    *,
+    prepared: PreparedSymbol,
+    setup_id: str,
+    outcome: StrategyDecision | Signal | None,
+) -> StrategyDecision:
+    capture = _CURRENT_DECISION_CAPTURE.get()
+    if isinstance(outcome, StrategyDecision):
+        return outcome
+    if isinstance(outcome, Signal):
+        return StrategyDecision.signal_hit(
+            setup_id=setup_id,
+            signal=outcome,
+            details={"symbol": prepared.symbol},
+        )
+    if capture is not None and capture.recorded:
+        return capture.recorded[-1]
+    return StrategyDecision.reject(
+        setup_id=setup_id,
+        stage="strategy",
+        reason_code="pattern.no_raw_hit",
+        details={"symbol": prepared.symbol, "fallback": "silent_none"},
+    )
 
 def _build_signal(
     *,

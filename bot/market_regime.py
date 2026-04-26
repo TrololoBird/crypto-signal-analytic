@@ -33,6 +33,10 @@ class MarketRegimeResult:
     top_gainer_pct: float  # % of top 10 gainers
     top_loser_pct: float  # % of top 10 losers
     altcoin_season_index: float  # 0-100, higher = more alt activity
+    volatility_regime: str = "stable"  # "expanding" | "contracting" | "stable"
+    risk_on_off: str = "neutral"  # "risk_on" | "risk_off" | "neutral"
+    btc_phase: str = "sideways"  # "accumulation" | "markup" | "distribution" | "decline" | "sideways"
+    confidence: float = 0.0  # 0.0 to 1.0
 
     @property
     def is_bullish(self) -> bool:
@@ -57,6 +61,10 @@ class MarketRegimeResult:
             "top_gainer_pct": round(self.top_gainer_pct, 2),
             "top_loser_pct": round(self.top_loser_pct, 2),
             "altcoin_season_index": round(self.altcoin_season_index, 1),
+            "volatility_regime": self.volatility_regime,
+            "risk_on_off": self.risk_on_off,
+            "btc_phase": self.btc_phase,
+            "confidence": round(self.confidence, 3),
         }
 
 
@@ -122,6 +130,10 @@ class MarketRegimeAnalyzer:
                 top_gainer_pct=0.0,
                 top_loser_pct=0.0,
                 altcoin_season_index=50.0,
+                volatility_regime="stable",
+                risk_on_off="neutral",
+                btc_phase="sideways",
+                confidence=0.0,
             )
 
         # Find BTC and ETH
@@ -249,8 +261,43 @@ class MarketRegimeAnalyzer:
         else:
             oi_momentum = "stable"
 
-        # Calculate dominance shift
-        dominance_24h = btc_change - eth_change * 0.5  # Simplified
+        # Dominance proxy: relative BTC leadership versus ETH over the same window.
+        # Positive => BTC outperforms ETH, negative => ETH outperforms BTC.
+        dominance_24h = btc_change - eth_change
+
+        volatility_span = abs(top_gainer_pct - top_loser_pct)
+        if volatility_span >= 8.0:
+            volatility_regime = "expanding"
+        elif volatility_span <= 3.0:
+            volatility_regime = "contracting"
+        else:
+            volatility_regime = "stable"
+
+        if altcoin_season_index >= 60 and dominance_24h < 0:
+            risk_on_off = "risk_on"
+        elif dominance_24h > 1.5 or (funding_sentiment == "long_heavy" and regime in {"bear", "volatile"}):
+            risk_on_off = "risk_off"
+        else:
+            risk_on_off = "neutral"
+
+        if btc_change > 1.5 and dominance_24h >= 0:
+            btc_phase = "markup"
+        elif btc_change < -1.5 and dominance_24h >= 0:
+            btc_phase = "decline"
+        elif dominance_24h < 0 and btc_change <= 0.5:
+            btc_phase = "accumulation"
+        elif dominance_24h < 0 and btc_change > 0.5:
+            btc_phase = "distribution"
+        else:
+            btc_phase = "sideways"
+
+        confidence = min(
+            1.0,
+            0.35
+            + min(abs(avg_context_score), 0.35)
+            + (0.15 if volatility_regime != "stable" else 0.0)
+            + (0.15 if regime in {"bull", "bear"} else 0.0),
+        )
 
         return MarketRegimeResult(
             regime=regime,
@@ -263,6 +310,10 @@ class MarketRegimeAnalyzer:
             top_gainer_pct=round(top_gainer_pct, 2),
             top_loser_pct=round(top_loser_pct, 2),
             altcoin_season_index=round(altcoin_season_index, 1),
+            volatility_regime=volatility_regime,
+            risk_on_off=risk_on_off,
+            btc_phase=btc_phase,
+            confidence=round(confidence, 3),
         )
 
     def _change_to_bias(self, change_pct: float) -> str:
@@ -299,6 +350,7 @@ class MarketRegimeAnalyzer:
         lines = [
             f"{regime_emoji} <b>Market:</b> {r.regime.upper()} ({strength_str})",
             f"{btc_emoji} BTC: {r.btc_bias} | {eth_emoji} ETH: {r.eth_bias}",
+            f"🧭 Vol: {r.volatility_regime} | Risk: {r.risk_on_off} | BTC phase: {r.btc_phase}",
         ]
 
         # Add funding context if interesting

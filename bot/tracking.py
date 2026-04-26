@@ -10,6 +10,7 @@ import logging
 import os
 from pathlib import Path
 import tempfile
+import time
 import typing
 from typing import Any, Mapping
 
@@ -100,6 +101,7 @@ class SignalTracker:
         self._pending_outcomes: list[dict[str, Any]] = []
         self._pending_outcomes_lock = asyncio.Lock()
         self._pending_outcomes_flush_size = 10  # Flush when queue reaches this size
+        self._last_outcome_cleanup_ts: float = 0.0
 
     async def _flush_pending_outcomes(self) -> None:
         """Flush pending outcomes to disk in batch."""
@@ -199,6 +201,28 @@ class SignalTracker:
         # Here we only flush pending batched outcomes so callers that expect
         # an explicit "persist" step do not lose queued outcomes on shutdown.
         await self._flush_pending_outcomes()
+        retention_days = int(getattr(self.settings.tracking, "outcome_retention_days", 90) or 90)
+        await self._cleanup_old_outcomes(retention_days)
+
+    async def _cleanup_old_outcomes(self, retention_days: int = 90) -> None:
+        if retention_days <= 0:
+            return
+        now_ts = time.monotonic()
+        if now_ts - self._last_outcome_cleanup_ts < 3600.0:
+            return
+        cutoff = (datetime.now(UTC) - timedelta(days=retention_days)).isoformat()
+        try:
+            deleted = await self.memory_repo.cleanup_signal_outcomes_before(cutoff)
+            if deleted > 0:
+                LOG.info(
+                    "tracking cleanup removed old outcomes | deleted=%d retention_days=%d",
+                    deleted,
+                    retention_days,
+                )
+        except Exception as exc:
+            LOG.debug("tracking cleanup failed (non-fatal): %s", exc)
+        finally:
+            self._last_outcome_cleanup_ts = now_ts
 
     async def _arm_signal(
         self,

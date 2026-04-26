@@ -31,6 +31,7 @@ class ScheduledTask:
     error_count: int = 0
     max_errors: int = 5
     enabled: bool = True
+    consecutive_failures_for_alert: int = 3
 
 
 class TaskScheduler:
@@ -48,6 +49,14 @@ class TaskScheduler:
         self._running = False
         self._task_handles: dict[str, asyncio.Task] = {}
         self._shutdown_event = asyncio.Event()
+        self._alert_handler: Callable[[str, Exception, int], Coroutine[Any, Any, None] | None] | None = None
+
+    def set_alert_handler(
+        self,
+        handler: Callable[[str, Exception, int], Coroutine[Any, Any, None] | None] | None,
+    ) -> None:
+        """Set optional repeated-failure alert handler."""
+        self._alert_handler = handler
     
     def register(
         self,
@@ -56,6 +65,7 @@ class TaskScheduler:
         interval_seconds: float,
         priority: TaskPriority = TaskPriority.NORMAL,
         max_errors: int = 5,
+        consecutive_failures_for_alert: int = 3,
     ) -> None:
         """Register a periodic task."""
         now = datetime.utcnow()
@@ -70,6 +80,7 @@ class TaskScheduler:
             error_count=0,
             max_errors=max_errors,
             enabled=True,
+            consecutive_failures_for_alert=max(1, int(consecutive_failures_for_alert)),
         )
         
         LOG.info(
@@ -210,26 +221,45 @@ class TaskScheduler:
     async def _execute_task(self, task: ScheduledTask) -> None:
         """Execute a single task with error handling."""
         task.last_run = datetime.utcnow()
-        
-        try:
-            LOG.debug("Executing task: %s", task.name)
-            await task.coro()
-            
-            # Reset error count on success
-            if task.error_count > 0:
-                LOG.info("Task %s recovered after %d errors", task.name, task.error_count)
-                task.error_count = 0
-                
-        except asyncio.CancelledError:
-            raise
-        except Exception as exc:
-            task.error_count += 1
-            LOG.exception("Task %s failed (error %d/%d): %s", 
-                         task.name, task.error_count, task.max_errors, exc)
-            
-            if task.error_count >= task.max_errors:
-                LOG.error("Task %s disabled after %d errors", task.name, task.error_count)
-                task.enabled = False
+
+        delay = max(0.5, task.interval_seconds * 0.25)
+        for attempt in range(1, 4):
+            try:
+                LOG.debug("Executing task: %s", task.name)
+                await task.coro()
+
+                # Reset error count on success
+                if task.error_count > 0:
+                    LOG.info("Task %s recovered after %d errors", task.name, task.error_count)
+                    task.error_count = 0
+                return
+            except asyncio.CancelledError:
+                raise
+            except Exception as exc:
+                if attempt < 3:
+                    LOG.warning(
+                        "Task %s attempt %d failed, retrying in %.1fs: %s",
+                        task.name, attempt, delay, exc,
+                    )
+                    await asyncio.sleep(delay)
+                    delay = min(delay * 2, 60.0)
+                    continue
+                task.error_count += 1
+                LOG.exception(
+                    "Task %s failed (error %d/%d): %s",
+                    task.name,
+                    task.error_count,
+                    task.max_errors,
+                    exc,
+                )
+                if task.error_count >= task.consecutive_failures_for_alert and self._alert_handler is not None:
+                    maybe_coro = self._alert_handler(task.name, exc, task.error_count)
+                    if asyncio.iscoroutine(maybe_coro):
+                        await maybe_coro
+                if task.error_count >= task.max_errors:
+                    LOG.error("Task %s disabled after %d errors", task.name, task.error_count)
+                    task.enabled = False
+                return
     
     def get_status(self) -> dict[str, Any]:
         """Get scheduler status."""

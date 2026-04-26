@@ -19,30 +19,7 @@ LOG = structlog.get_logger("bot.public_intelligence")
 UTC = timezone.utc
 _OPTIONS_EXCHANGE_INFO_TTL_S = 3600.0
 _MACRO_TTL_S = 900.0
-_PLACEHOLDER_COLUMNS: frozenset[str] = frozenset(
-    {
-        "aroon_up14",
-        "aroon_down14",
-        "aroon_osc14",
-        "stoch_k14",
-        "stoch_d14",
-        "stoch_h14",
-        "cci20",
-        "willr14",
-        "mfi14",
-        "cmf20",
-        "uo",
-        "fisher",
-        "fisher_signal",
-        "squeeze_hist",
-        "squeeze_on",
-        "squeeze_off",
-        "squeeze_no",
-        "chandelier_dir",
-        "zscore30",
-        "slope5",
-    }
-)
+_PLACEHOLDER_COLUMNS: frozenset[str] = frozenset()
 
 
 def _safe_float(value: Any) -> float | None:
@@ -152,11 +129,17 @@ class PublicIntelligenceService:
         )
         barrier = await self._build_barrier_snapshot(benchmark_symbols)
         harmonic = await self._build_harmonic_snapshot(benchmark_symbols[:2] or ["BTCUSDT"])
+        aggregates = self._build_aggregates(
+            derivatives=derivatives,
+            options=options,
+            macro=macro,
+        )
         summary = self._build_summary(
             derivatives=derivatives,
             options=options,
             macro=macro,
             barrier=barrier,
+            aggregates=aggregates,
         )
         macro_enabled = bool(cast(dict[str, Any], macro).get("enabled", True))
 
@@ -182,6 +165,7 @@ class PublicIntelligenceService:
             "derivatives": derivatives,
             "options": options,
             "macro": macro,
+            "aggregates": aggregates,
             "barrier": barrier,
             "harmonic": harmonic,
         }
@@ -745,6 +729,7 @@ class PublicIntelligenceService:
         options: dict[str, Any],
         macro: dict[str, Any],
         barrier: dict[str, Any],
+        aggregates: dict[str, Any],
     ) -> dict[str, list[str]]:
         confirmed_facts = list(cast(list[str], derivatives.get("confirmed_facts") or []))
         confirmed_facts.extend(cast(list[str], options.get("confirmed_facts") or []))
@@ -762,6 +747,8 @@ class PublicIntelligenceService:
         )
         if macro_enabled and macro_risk_mode != "normal":
             inferences.append(f"macro_risk_mode_{macro_risk_mode}")
+        sentiment_label = str(cast(dict[str, Any], aggregates.get("sentiment") or {}).get("label") or "neutral")
+        inferences.append(f"aggregated_sentiment_{sentiment_label}")
 
         assumptions = list(cast(list[str], options.get("assumptions") or []))
         assumptions.append("fund_flows_are_public_derivatives_flow_proxies_not_custody_or_etf_settlement_flows")
@@ -781,6 +768,98 @@ class PublicIntelligenceService:
             "inferences": inferences,
             "assumptions": assumptions,
             "uncertainty": uncertainty,
+        }
+
+    def _build_aggregates(
+        self,
+        *,
+        derivatives: dict[str, Any],
+        options: dict[str, Any],
+        macro: dict[str, Any],
+    ) -> dict[str, Any]:
+        by_symbol = cast(dict[str, Any], derivatives.get("by_symbol") or {})
+        by_underlying = cast(dict[str, Any], options.get("by_underlying") or {})
+        macro_mode = str(macro.get("risk_mode") or "normal")
+
+        taker_values = [_safe_float(row.get("taker_ratio")) for row in by_symbol.values()]
+        basis_values = [_safe_float(row.get("basis_pct")) for row in by_symbol.values()]
+        oi_change_values = [_safe_float(row.get("oi_change_pct")) for row in by_symbol.values()]
+        put_call_values = [_safe_float(row.get("put_call_oi_ratio")) for row in by_underlying.values()]
+
+        def _avg(values: list[float | None]) -> float | None:
+            clean = [v for v in values if v is not None]
+            if not clean:
+                return None
+            return sum(clean) / len(clean)
+
+        flows = {
+            "taker_ratio_avg": _avg(taker_values),
+            "oi_change_pct_avg": _avg(oi_change_values),
+            "flow_regime": "neutral",
+        }
+        if flows["taker_ratio_avg"] is not None and flows["oi_change_pct_avg"] is not None:
+            if flows["taker_ratio_avg"] > 1.02 and flows["oi_change_pct_avg"] > 0:
+                flows["flow_regime"] = "buyers_in_control"
+            elif flows["taker_ratio_avg"] < 0.98 and flows["oi_change_pct_avg"] > 0:
+                flows["flow_regime"] = "sellers_in_control"
+            elif flows["oi_change_pct_avg"] < 0:
+                flows["flow_regime"] = "position_unwind"
+
+        basis = {
+            "basis_pct_avg": _avg(basis_values),
+            "basis_regime": "flat",
+        }
+        if basis["basis_pct_avg"] is not None:
+            if basis["basis_pct_avg"] > 0.02:
+                basis["basis_regime"] = "contango"
+            elif basis["basis_pct_avg"] < -0.02:
+                basis["basis_regime"] = "backwardation"
+
+        oi = {
+            "oi_change_pct_avg": _avg(oi_change_values),
+            "oi_momentum": "flat",
+        }
+        if oi["oi_change_pct_avg"] is not None:
+            if oi["oi_change_pct_avg"] > 0.5:
+                oi["oi_momentum"] = "expanding"
+            elif oi["oi_change_pct_avg"] < -0.5:
+                oi["oi_momentum"] = "contracting"
+
+        sentiment_score = 0
+        if flows["flow_regime"] == "buyers_in_control":
+            sentiment_score += 1
+        elif flows["flow_regime"] == "sellers_in_control":
+            sentiment_score -= 1
+        if basis["basis_regime"] == "contango":
+            sentiment_score += 1
+        elif basis["basis_regime"] == "backwardation":
+            sentiment_score -= 1
+        if macro_mode == "risk_on":
+            sentiment_score += 1
+        elif macro_mode in {"risk_off", "disabled_binance_only"}:
+            sentiment_score -= 1
+        pc_avg = _avg(put_call_values)
+        if pc_avg is not None and pc_avg >= 1.2:
+            sentiment_score -= 1
+        elif pc_avg is not None and pc_avg <= 0.85:
+            sentiment_score += 1
+
+        sentiment_label = "neutral"
+        if sentiment_score >= 2:
+            sentiment_label = "bullish"
+        elif sentiment_score <= -2:
+            sentiment_label = "bearish"
+
+        return {
+            "flows": flows,
+            "basis": basis,
+            "oi": oi,
+            "sentiment": {
+                "score": sentiment_score,
+                "label": sentiment_label,
+                "put_call_oi_ratio_avg": pc_avg,
+                "macro_risk_mode": macro_mode,
+            },
         }
 
     async def _fetch_options_exchange_info(self, underlying_asset: str) -> list[dict[str, Any]]:

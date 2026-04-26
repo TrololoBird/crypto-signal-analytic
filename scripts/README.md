@@ -17,6 +17,7 @@
 | `migrate_configs.py` | Legacy one-off мигратор конфигов стратегий. | deprecated | `--help` (wrapper) | `python scripts/migrate_configs.py` |
 | `monitor_runtime.py` | Legacy runtime monitor под старый ручной/Windows поток запуска. | deprecated | `--help` (wrapper) | `python scripts/monitor_runtime.py` |
 | `runtime_audit.py` | Глубокий runtime-аудит telemetry/DB с аналитикой воронки. | active | `--run-id`, `--db-path`, `--telemetry-dir` | `python scripts/runtime_audit.py --run-id <RUN_ID>` |
+| `validate_config.py` | Проверка консистентности `config.toml` и базовых инвариантов подготовки фич/индикаторов. | active | `--config`, `--symbol`, `--interval`, `--limit` | `python scripts/validate_config.py --config config.toml` |
 
 ## Политика по статусам
 

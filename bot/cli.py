@@ -5,7 +5,9 @@ and telemetry. To test, run the bot and watch real data.
 """
 from __future__ import annotations
 
+import argparse
 import asyncio
+import contextlib
 import ctypes
 import errno
 import json
@@ -13,15 +15,18 @@ import logging
 import logging.handlers
 import os
 import signal
+import sqlite3
 import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
 import re
 import shutil
+from typing import Any
 
 from . import BotSettings, SignalBot, load_settings
-from .startup_reporter import generate_and_send_startup_report
+from .logging_config import configure_structlog
+from .startup_reporter import generate_and_send_startup_report, run_daily_summary_loop
 from .telemetry import TelemetryStore
 
 _LOGGER_STDERR_PREFIX_RE = re.compile(
@@ -115,6 +120,7 @@ def configure_logging(settings: BotSettings, *, debug_mode: bool = False) -> Non
         handlers=handlers,
         force=True,
     )
+    configure_structlog(log_level)
     
     # Keep asyncio debug disabled to avoid slow-task spam (tracemalloc handles coroutine tracking)
     asyncio.get_event_loop().set_debug(False)
@@ -299,12 +305,26 @@ async def _main() -> None:
     run_id = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S") + f"_{os.getpid()}"
     telemetry = TelemetryStore(settings.telemetry_dir, run_id=run_id)
     bot = SignalBot(settings, telemetry=telemetry)
+    summary_task: asyncio.Task[None] | None = None
     await _acquire_pid_lock(settings.pid_file)
     try:
         _setup_signal_handlers(bot)
+        summary_task = asyncio.create_task(
+            run_daily_summary_loop(
+                Path(".").resolve(),
+                stop_event=bot._shutdown,  # internal runtime stop event
+                config_path="config.toml",
+                send_telegram=True,
+            ),
+            name="daily_summary",
+        )
         await bot.start()
         await bot.run_forever()
     finally:
+        if summary_task is not None:
+            summary_task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await summary_task
         try:
             await bot.close()
         finally:
@@ -312,6 +332,50 @@ async def _main() -> None:
 
 
 def run() -> None:
+    parser = argparse.ArgumentParser(prog="crypto-signal-bot")
+    sub = parser.add_subparsers(dest="command")
+    sub.add_parser("run", help="Run live bot runtime (default)")
+    sub.add_parser("status", help="Show runtime/db status")
+    sub.add_parser("stop", help="Stop running bot by pid-file")
+    backtest = sub.add_parser("backtest", help="Compute outcome stats from SQLite history")
+    backtest.add_argument("--days", type=int, default=30)
+    backtest.add_argument("--setup", type=str, default="")
+    replay = sub.add_parser("replay", help="Show latest replay telemetry rows")
+    replay.add_argument("--tail", type=int, default=20)
+    db = sub.add_parser("db", help="DB maintenance")
+    db_sub = db.add_subparsers(dest="db_command")
+    db_sub.add_parser("migrate", help="Apply forward migrations")
+    db_clean = db_sub.add_parser("clean", help="Cleanup old outcomes by retention window")
+    db_clean.add_argument("--days", type=int, default=30)
+    args = parser.parse_args()
+
+    if args.command in (None, "run"):
+        _run_runtime()
+        return
+    if args.command == "status":
+        _run_status_command()
+        return
+    if args.command == "stop":
+        _run_stop_command()
+        return
+    if args.command == "backtest":
+        _run_backtest_command(days=max(1, int(args.days)), setup_id=str(args.setup or "").strip())
+        return
+    if args.command == "replay":
+        _run_replay_command(tail=max(1, int(args.tail)))
+        return
+    if args.command == "db":
+        db_command = getattr(args, "db_command", None)
+        if db_command == "migrate":
+            asyncio.run(_db_migrate_command())
+            return
+        if db_command == "clean":
+            asyncio.run(_db_clean_command(days=max(1, int(args.days))))
+            return
+        parser.error("db command is required: migrate|clean")
+
+
+def _run_runtime() -> None:
     debug_mode = os.getenv("DEBUG_BOT", "0") in ("1", "true", "yes")
     
     if debug_mode:
@@ -331,3 +395,118 @@ def run() -> None:
             import tracemalloc
             current, peak = tracemalloc.get_traced_memory()
             logging.getLogger("bot.cli").debug("Memory: current=%.2fMB peak=%.2fMB", current/1024/1024, peak/1024/1024)
+
+
+def _run_status_command() -> None:
+    settings = load_settings("config.toml")
+    pid = _read_pid_value(settings.pid_file)
+    running = bool(pid and _pid_is_alive(pid))
+    totals = {"outcomes": 0, "active_signals": 0}
+    if settings.db_path.exists():
+        with sqlite3.connect(settings.db_path) as conn:
+            cursor = conn.execute("SELECT COUNT(*) FROM signal_outcomes")
+            totals["outcomes"] = int(cursor.fetchone()[0] or 0)
+            cursor = conn.execute("SELECT COUNT(*) FROM active_signals WHERE status IN ('pending','active')")
+            totals["active_signals"] = int(cursor.fetchone()[0] or 0)
+    print(
+        json.dumps(
+            {
+                "running": running,
+                "pid": pid if running else None,
+                "pid_file": str(settings.pid_file),
+                "db_path": str(settings.db_path),
+                "totals": totals,
+            },
+            ensure_ascii=True,
+            indent=2,
+        )
+    )
+
+
+def _run_stop_command() -> None:
+    settings = load_settings("config.toml")
+    pid = _read_pid_value(settings.pid_file)
+    if not pid:
+        print("No pid found.")
+        return
+    if not _pid_is_alive(pid):
+        print(f"Process {pid} is not running.")
+        return
+    os.kill(pid, signal.SIGTERM)
+    print(f"Sent SIGTERM to pid {pid}.")
+
+
+def _run_backtest_command(*, days: int, setup_id: str = "") -> None:
+    settings = load_settings("config.toml")
+    if not settings.db_path.exists():
+        raise SystemExit(f"db not found: {settings.db_path}")
+    query = """
+        SELECT setup_id, COUNT(*) AS total,
+               SUM(CASE WHEN pnl_pct > 0 THEN 1 ELSE 0 END) AS wins,
+               AVG(COALESCE(pnl_pct, 0)) AS avg_pnl_pct
+        FROM signal_outcomes
+        WHERE COALESCE(closed_at, created_at) >= datetime('now', ?)
+    """
+    params: list[Any] = [f"-{days} days"]
+    if setup_id:
+        query += " AND setup_id = ?"
+        params.append(setup_id)
+    query += " GROUP BY setup_id ORDER BY total DESC, setup_id ASC"
+    with sqlite3.connect(settings.db_path) as conn:
+        rows = conn.execute(query, params).fetchall()
+    payload = []
+    for setup, total, wins, avg_pnl in rows:
+        total_i = int(total or 0)
+        wins_i = int(wins or 0)
+        payload.append(
+            {
+                "setup_id": str(setup),
+                "total": total_i,
+                "wins": wins_i,
+                "win_rate": round((wins_i / total_i), 4) if total_i else 0.0,
+                "avg_pnl_pct": round(float(avg_pnl or 0.0), 4),
+            }
+        )
+    print(json.dumps({"window_days": days, "setup_filter": setup_id or None, "results": payload}, ensure_ascii=True, indent=2))
+
+
+def _run_replay_command(*, tail: int) -> None:
+    settings = load_settings("config.toml")
+    replay_dir = settings.telemetry_dir / "replay"
+    if not replay_dir.exists():
+        raise SystemExit(f"replay dir not found: {replay_dir}")
+    rows: list[str] = []
+    for path in sorted(replay_dir.glob("*.jsonl"), key=lambda p: p.stat().st_mtime, reverse=True):
+        data = path.read_text(encoding="utf-8", errors="ignore").splitlines()
+        for line in reversed([ln for ln in data if ln.strip()]):
+            rows.append(line)
+            if len(rows) >= tail:
+                break
+        if len(rows) >= tail:
+            break
+    for row in reversed(rows[-tail:]):
+        print(row)
+
+
+async def _db_migrate_command() -> None:
+    from .migrations import migrate_db
+    import aiosqlite
+
+    settings = load_settings("config.toml")
+    settings.db_path.parent.mkdir(parents=True, exist_ok=True)
+    async with aiosqlite.connect(settings.db_path) as conn:
+        applied = await migrate_db(conn)
+    print(json.dumps({"db_path": str(settings.db_path), "migrations_applied": applied}, ensure_ascii=True))
+
+
+async def _db_clean_command(*, days: int) -> None:
+    from datetime import timedelta
+
+    from .core.memory import MemoryRepository
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+    settings = load_settings("config.toml")
+    repo = MemoryRepository(settings.db_path)
+    await repo.initialize()
+    deleted = await repo.cleanup_signal_outcomes_before(cutoff.isoformat())
+    await repo.close()
+    print(json.dumps({"db_path": str(settings.db_path), "days": days, "deleted_outcomes": deleted}, ensure_ascii=True))

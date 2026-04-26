@@ -13,6 +13,7 @@ import aiosqlite
 import polars as pl
 
 from .repository_extension import MemoryRepositoryExtension
+from ...migrations import migrate_db
 
 LOG = logging.getLogger("bot.core.memory.repository")
 
@@ -339,6 +340,7 @@ class MemoryRepository(MemoryRepositoryExtension):
             },
         )
         await self._ensure_extended_tables()
+        await migrate_db(self._conn)
         await self._conn.commit()
         LOG.info("Memory repository initialized at %s", self._db_path)
 
@@ -1093,3 +1095,14 @@ class MemoryRepository(MemoryRepositoryExtension):
         async with self._conn.execute("SELECT COUNT(*) AS count FROM cooldowns") as cursor:
             row = await cursor.fetchone()
         return int(row["count"]) if row else 0
+
+    async def cleanup_signal_outcomes_before(self, cutoff_iso: str) -> int:
+        """Delete old outcomes and return deleted row count."""
+        if not self._conn:
+            raise RuntimeError("Repository not initialized")
+        cursor = await self._conn.execute(
+            "DELETE FROM signal_outcomes WHERE COALESCE(closed_at, created_at) < ?",
+            (cutoff_iso,),
+        )
+        await self._conn.commit()
+        return int(cursor.rowcount or 0)

@@ -108,6 +108,15 @@ def build_prepared_feature_snapshot(prepared: Any) -> dict[str, Any]:
     features["premium_zscore_5m"] = _normalized_float(getattr(prepared, "premium_zscore_5m", None))
     features["premium_slope_5m"] = _normalized_float(getattr(prepared, "premium_slope_5m", None))
     features["context_snapshot_age_seconds"] = _normalized_float(getattr(prepared, "context_snapshot_age_seconds", None))
+    features["depth_imbalance"] = _normalized_float(getattr(prepared, "depth_imbalance", None))
+    features["microprice_bias"] = _normalized_float(getattr(prepared, "microprice_bias", None))
+    features["agg_trade_delta_30s"] = _normalized_float(getattr(prepared, "agg_trade_delta_30s", None))
+    features["aggression_shift"] = _normalized_float(getattr(prepared, "aggression_shift", None))
+    features["spot_lead_return_1m"] = _normalized_float(getattr(prepared, "spot_lead_return_1m", None))
+    features["spot_futures_spread_bps"] = _normalized_float(getattr(prepared, "spot_futures_spread_bps", None))
+    features["mark_price_age_seconds"] = _normalized_float(getattr(prepared, "mark_price_age_seconds", None))
+    features["ticker_price_age_seconds"] = _normalized_float(getattr(prepared, "ticker_price_age_seconds", None))
+    features["book_ticker_age_seconds"] = _normalized_float(getattr(prepared, "book_ticker_age_seconds", None))
     features["data_source_mix"] = getattr(prepared, "data_source_mix", "futures_only") or "futures_only"
     features["market_regime"] = getattr(prepared, "market_regime", "neutral") or "neutral"
 
@@ -180,6 +189,15 @@ class SignalFeatures:
     premium_zscore_5m: float | None = None
     premium_slope_5m: float | None = None
     context_snapshot_age_seconds: float | None = None
+    depth_imbalance: float | None = None
+    microprice_bias: float | None = None
+    agg_trade_delta_30s: float | None = None
+    aggression_shift: float | None = None
+    spot_lead_return_1m: float | None = None
+    spot_futures_spread_bps: float | None = None
+    mark_price_age_seconds: float | None = None
+    ticker_price_age_seconds: float | None = None
+    book_ticker_age_seconds: float | None = None
     data_source_mix: str = "futures_only"
     market_regime: str = "neutral"  # "trending" | "neutral" | "choppy"
 
@@ -229,6 +247,15 @@ class SignalFeatures:
             "premium_zscore_5m": self.premium_zscore_5m,
             "premium_slope_5m": self.premium_slope_5m,
             "context_snapshot_age_seconds": self.context_snapshot_age_seconds,
+            "depth_imbalance": self.depth_imbalance,
+            "microprice_bias": self.microprice_bias,
+            "agg_trade_delta_30s": self.agg_trade_delta_30s,
+            "aggression_shift": self.aggression_shift,
+            "spot_lead_return_1m": self.spot_lead_return_1m,
+            "spot_futures_spread_bps": self.spot_futures_spread_bps,
+            "mark_price_age_seconds": self.mark_price_age_seconds,
+            "ticker_price_age_seconds": self.ticker_price_age_seconds,
+            "book_ticker_age_seconds": self.book_ticker_age_seconds,
             "data_source_mix": self.data_source_mix,
             "market_regime": self.market_regime,
         }
@@ -363,6 +390,15 @@ def extract_features_from_signal(
         premium_zscore_5m=prepared_data.get("premium_zscore_5m") if prepared_data else None,
         premium_slope_5m=prepared_data.get("premium_slope_5m") if prepared_data else None,
         context_snapshot_age_seconds=prepared_data.get("context_snapshot_age_seconds") if prepared_data else None,
+        depth_imbalance=prepared_data.get("depth_imbalance") if prepared_data else None,
+        microprice_bias=prepared_data.get("microprice_bias") if prepared_data else None,
+        agg_trade_delta_30s=prepared_data.get("agg_trade_delta_30s") if prepared_data else None,
+        aggression_shift=prepared_data.get("aggression_shift") if prepared_data else None,
+        spot_lead_return_1m=prepared_data.get("spot_lead_return_1m") if prepared_data else None,
+        spot_futures_spread_bps=prepared_data.get("spot_futures_spread_bps") if prepared_data else None,
+        mark_price_age_seconds=prepared_data.get("mark_price_age_seconds") if prepared_data else None,
+        ticker_price_age_seconds=prepared_data.get("ticker_price_age_seconds") if prepared_data else None,
+        book_ticker_age_seconds=prepared_data.get("book_ticker_age_seconds") if prepared_data else None,
         data_source_mix=prepared_data.get("data_source_mix", "futures_only") if prepared_data else "futures_only",
         market_regime=prepared_data.get("market_regime", "neutral") if prepared_data else "neutral",
     )

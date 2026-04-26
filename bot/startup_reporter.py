@@ -307,25 +307,25 @@ def _collect_snapshot(context: StartupReportContext) -> dict[str, Any]:
 
     latest_cycle = cycles[-1] if cycles else {}
     latest_shortlist = shortlist_rows[-1] if shortlist_rows else {}
-    cycle_setup_counts = Counter()
-    selected_setup_counts = Counter()
-    rejection_reason_counts = Counter()
-    rejection_stage_counts = Counter()
-    delivery_status_counts = Counter()
-    decision_status_counts = Counter()
-    decision_reason_counts = Counter()
-    decision_stage_counts = Counter()
-    decision_reason_by_setup = Counter()
-    strategy_hit_counts = Counter()
-    data_quality_setup_counts = Counter()
-    missing_field_counts = Counter()
-    invalid_field_counts = Counter()
-    telemetry_mismatch_counts = Counter()
-    tracking_event_counts = Counter()
-    symbol_status_counts = Counter()
-    outcome_result_counts = Counter()
-    outcome_setup_counts = Counter()
-    outcome_quality_counts = Counter()
+    cycle_setup_counts: Counter[str] = Counter()
+    selected_setup_counts: Counter[str] = Counter()
+    rejection_reason_counts: Counter[str] = Counter()
+    rejection_stage_counts: Counter[str] = Counter()
+    delivery_status_counts: Counter[str] = Counter()
+    decision_status_counts: Counter[str] = Counter()
+    decision_reason_counts: Counter[str] = Counter()
+    decision_stage_counts: Counter[str] = Counter()
+    decision_reason_by_setup: Counter[tuple[str, str, str]] = Counter()
+    strategy_hit_counts: Counter[str] = Counter()
+    data_quality_setup_counts: Counter[str] = Counter()
+    missing_field_counts: Counter[str] = Counter()
+    invalid_field_counts: Counter[str] = Counter()
+    telemetry_mismatch_counts: Counter[str] = Counter()
+    tracking_event_counts: Counter[str] = Counter()
+    symbol_status_counts: Counter[str] = Counter()
+    outcome_result_counts: Counter[str] = Counter()
+    outcome_setup_counts: Counter[str] = Counter()
+    outcome_quality_counts: Counter[str] = Counter()
     runtime_errors: list[dict[str, Any]] = []
 
     for row in cycles:
@@ -1103,7 +1103,7 @@ def _resolve_report_chat_id(settings: BotSettings) -> str:
         value = os.getenv(env_name, "").strip()
         if value:
             return value
-    return settings.target_chat_id.strip()
+    return str(settings.target_chat_id).strip()
 
 
 async def _send_telegram_message(settings: BotSettings, text: str) -> bool:

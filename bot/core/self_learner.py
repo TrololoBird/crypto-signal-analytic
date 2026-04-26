@@ -14,6 +14,8 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, cast
 
+from ..learning import OutcomeStore, RegimeAwareParams, WalkForwardOptimizer
+
 try:
     optuna = importlib.import_module("optuna")
     OPTUNA_AVAILABLE = True
@@ -53,6 +55,8 @@ class SelfLearner:
         self.n_trials = n_trials
         self._study_cache: dict[str, Any | None] = {}
         self._running = False
+        self._outcomes = OutcomeStore(db_path)
+        self._walk_forward = WalkForwardOptimizer()
 
     async def run_nightly_study(self, settings: BotSettings) -> list[OptimizationResult]:
         """Run optimization study for all setups with sufficient outcome data.
@@ -80,7 +84,8 @@ class SelfLearner:
                     continue
 
                 # Run Optuna study
-                result = await self._optimize_setup(setup_id, default_params, outcomes)
+                regime = str(getattr(getattr(settings, "intelligence", None), "regime_detector", "legacy"))
+                result = await self._optimize_setup(setup_id, default_params, outcomes, regime=regime)
                 if result:
                     results.append(result)
                     
@@ -92,35 +97,18 @@ class SelfLearner:
 
     async def _fetch_outcomes(self, setup_id: str) -> list[dict[str, Any]]:
         """Fetch historical outcomes for a setup from aiosqlite."""
-        try:
-            import aiosqlite
-            
-            async with aiosqlite.connect(self.db_path) as db:
-                cursor = await db.execute(
-                    """SELECT * FROM setup_outcomes 
-                       WHERE setup_id = ? AND outcome IN ('win', 'loss', 'breakeven')
-                       ORDER BY created_at DESC
-                       LIMIT 500""",
-                    (setup_id,)
-                )
-                rows = await cursor.fetchall()
-                
-                # Get column names
-                columns = [desc[0] for desc in cursor.description]
-                
-                return [dict(zip(columns, row)) for row in rows]
-                
-        except Exception as e:
-            LOG.error(f"Failed to fetch outcomes for {setup_id}: {e}")
-            return []
+        return await self._outcomes.fetch_setup_outcomes(setup_id, limit=500)
 
     async def _optimize_setup(
         self,
         setup_id: str,
         default_params: dict[str, float],
         outcomes: list[dict[str, Any]],
+        *,
+        regime: str,
     ) -> OptimizationResult | None:
         """Run Optuna optimization for a single setup."""
+        regime_bounds = RegimeAwareParams(regime=regime)
         
         def objective(trial: Any) -> float:
             """Optimization objective: maximize risk-adjusted return."""
@@ -129,18 +117,19 @@ class SelfLearner:
             for param_name, default_value in default_params.items():
                 if "score" in param_name or "threshold" in param_name or "penalty" in param_name:
                     # These are typically 0.0-1.0 or small ranges
-                    low, high = max(0.0, default_value * 0.5), min(1.0, default_value * 1.5)
+                    low, high = regime_bounds.scale(param_name, float(default_value))
                     suggested_params[param_name] = trial.suggest_float(param_name, low, high)
                 elif "min_rr" in param_name:
                     # Risk/reward ratio typically 1.0-3.0
-                    suggested_params[param_name] = trial.suggest_float(param_name, 1.0, 3.0)
+                    low, high = regime_bounds.scale(param_name, float(default_value))
+                    suggested_params[param_name] = trial.suggest_float(param_name, max(0.8, low), min(4.0, high))
                 elif "bars" in param_name or "age" in param_name or "lookback" in param_name:
                     # Integer parameters
                     low, high = int(default_value * 0.5), int(default_value * 2.0)
                     suggested_params[param_name] = trial.suggest_int(param_name, max(1, low), max(2, high))
                 else:
                     # Generic float parameter
-                    low, high = default_value * 0.5, default_value * 2.0
+                    low, high = regime_bounds.scale(param_name, float(default_value))
                     suggested_params[param_name] = trial.suggest_float(param_name, low, high)
             
             # Simulate performance with these parameters
@@ -203,55 +192,8 @@ class SelfLearner:
         outcomes: list[dict[str, Any]],
         params: dict[str, float],
     ) -> float:
-        """Simulate performance with given parameters.
-        
-        Returns risk-adjusted return score (higher is better).
-        """
-        # Filter outcomes that would have passed with these params
-        filtered_outcomes = []
-        
-        for outcome in outcomes:
-            score = outcome.get("score", 0.5)
-            
-            # Apply graded penalties based on params
-            min_score = params.get("base_score", 0.5) * 0.9
-            if score < min_score:
-                continue  # Would have been filtered out
-            
-            filtered_outcomes.append(outcome)
-
-        if not filtered_outcomes:
-            return -1.0  # No trades is bad
-
-        # Calculate metrics
-        wins = sum(1 for o in filtered_outcomes if o.get("outcome") == "win")
-        losses = sum(1 for o in filtered_outcomes if o.get("outcome") == "loss")
-        total = wins + losses
-        
-        if total < 5:
-            return 0.0  # Too few trades
-
-        win_rate = wins / total
-        
-        # Calculate average R-multiple
-        r_multiples = []
-        for o in filtered_outcomes:
-            if o.get("outcome") == "win":
-                r_multiples.append(abs(o.get("tp1_hit", 0) - o.get("entry", 0)) / 
-                                  abs(o.get("entry", 0) - o.get("stop", 1)))
-            else:
-                r_multiples.append(-1.0)  # Full stop loss
-
-        avg_r = sum(r_multiples) / len(r_multiples) if r_multiples else 0
-        
-        # Expectancy = win_rate * avg_win - loss_rate * avg_loss
-        expectancy = win_rate * avg_r - (1 - win_rate) * 1.0
-
-        # Score combines expectancy with sample size confidence
-        # More trades = more confident in the result
-        confidence_factor = min(1.0, len(filtered_outcomes) / 100)
-        
-        return expectancy * confidence_factor
+        """Simulate performance with walk-forward evaluation."""
+        return self._walk_forward.evaluate(outcomes, params)
 
     async def update_setup_params(
         self,

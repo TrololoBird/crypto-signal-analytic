@@ -15,7 +15,7 @@ pythonpath = ["."]
 [tool.pyright]
 pythonVersion = "3.13"
 typeCheckingMode = "basic"
-exclude = ["tests/", "bot/ml/"]
+exclude = ["tests/"]
 
 [project]
 name = "crypto-signal-bot"
@@ -23,7 +23,7 @@ version = "8.0.0"
 requires-python = ">=3.13"
 dependencies = [
     "python-dotenv>=1.0.0",
-    "polars>=0.20.0",
+    "polars>=1.39.0",
     "aiohttp>=3.9.0",
     "toml>=0.10.2",
     "numpy>=1.26.0",

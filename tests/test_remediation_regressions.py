@@ -21,7 +21,7 @@ from bot.core.engine.base import StrategyDecision
 from bot.core.events import BookTickerEvent
 from bot.features import _ichimoku_lines, _swing_points, _weighted_moving_average
 from bot.market_data import BinanceFuturesMarketData, MarketDataUnavailable
-from bot.ml_filter import MLFilter
+from bot.ml import MLFilter
 from bot.models import AggTrade, PipelineResult, PreparedSymbol, Signal, UniverseSymbol
 from bot.setup_base import BaseSetup, SetupParams
 from bot.strategies.ema_bounce import EmaBounceSetup

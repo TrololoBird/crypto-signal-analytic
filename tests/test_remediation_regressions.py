@@ -665,10 +665,10 @@ def test_ichimoku_senkou_is_forward_projected() -> None:
     lows = [float(i) for i in range(80)]
     frame = pl.DataFrame({"high": highs, "low": lows})
     _, _, senkou_a, senkou_b = _ichimoku_lines(frame)
-    # Forward projection leaves trailing null tail instead of leading null head.
-    assert senkou_a.tail(26).null_count() == 26
-    assert senkou_b.tail(26).null_count() == 26
-    assert senkou_a.head(26).null_count() == 0
+    # Forward projection offsets values into the future, leaving a leading null head.
+    assert senkou_a.head(26).null_count() == 26
+    assert senkou_b.head(26).null_count() == 26
+    assert senkou_a.tail(26).null_count() == 0
 
 
 def test_confluence_includes_explicit_funding_component() -> None:

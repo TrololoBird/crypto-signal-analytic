@@ -374,6 +374,19 @@ def _cmf(df: pl.DataFrame, period: int = 20) -> pl.Series:
     return (money_flow_volume.rolling_sum(window_size=period) / volume_sum).fill_nan(0.0).rename(f"cmf{period}")
 
 
+def _ultimate_oscillator(df: pl.DataFrame, p1: int = 7, p2: int = 14, p3: int = 28) -> pl.Series:
+    prev_close = df["close"].shift(1)
+    min_low = _materialize_series(pl.min_horizontal(df["low"], prev_close), df=df, name="uo_min_low")
+    max_high = _materialize_series(pl.max_horizontal(df["high"], prev_close), df=df, name="uo_max_high")
+    bp = (df["close"] - min_low).rename("uo_bp")
+    tr = (max_high - min_low).rename("uo_tr")
+    avg1 = bp.rolling_sum(window_size=p1) / tr.rolling_sum(window_size=p1)
+    avg2 = bp.rolling_sum(window_size=p2) / tr.rolling_sum(window_size=p2)
+    avg3 = bp.rolling_sum(window_size=p3) / tr.rolling_sum(window_size=p3)
+    uo = (100.0 * ((4.0 * avg1) + (2.0 * avg2) + avg3) / 7.0).rename("uo")
+    return _clean_non_finite(uo, fill=50.0)
+
+
 def _realized_volatility(df: pl.DataFrame, period: int = 20) -> pl.Series:
     log_returns = df["close"].log() - df["close"].shift(1).log()
     return (log_returns.rolling_std(window_size=period) * np.sqrt(period) * 100.0).fill_nan(0.0).rename(
@@ -400,8 +413,8 @@ def _ichimoku_lines(df: pl.DataFrame) -> tuple[pl.Series, pl.Series, pl.Series, 
     kijun = ((high.rolling_max(26) + low.rolling_min(26)) / 2.0).rename("kijun")
     
     # Senkou spans are projected 26 periods ahead in standard Ichimoku plotting.
-    senkou_a = (((tenkan + kijun) / 2.0).shift(-26)).rename("senkou_a")
-    senkou_b = (((high.rolling_max(52) + low.rolling_min(52)) / 2.0).shift(-26)).rename("senkou_b")
+    senkou_a = (((tenkan + kijun) / 2.0).shift(26)).rename("senkou_a")
+    senkou_b = (((high.rolling_max(52) + low.rolling_min(52)) / 2.0).shift(26)).rename("senkou_b")
     
     return tenkan, kijun, senkou_a, senkou_b
 
@@ -535,6 +548,153 @@ def _keltner_channels(df: pl.DataFrame, period: int = 20, multiplier: float = 2.
     return upper, middle, lower
 
 
+def _parabolic_sar(
+    df: pl.DataFrame,
+    *,
+    step: float = 0.02,
+    max_step: float = 0.2,
+) -> tuple[pl.Series, pl.Series, pl.Series]:
+    high_vals = [float(v or 0.0) for v in df["high"]]
+    low_vals = [float(v or 0.0) for v in df["low"]]
+    close_vals = [float(v or 0.0) for v in df["close"]]
+    size = len(close_vals)
+    if size == 0:
+        empty = pl.Series("psar_long", [], dtype=pl.Float64)
+        return empty, pl.Series("psar_short", [], dtype=pl.Float64), pl.Series("psar_reversal", [], dtype=pl.Float64)
+
+    long_psar: list[float | None] = [None] * size
+    short_psar: list[float | None] = [None] * size
+    reversals: list[float] = [0.0] * size
+
+    is_long = True if size < 2 else close_vals[1] >= close_vals[0]
+    af = step
+    ep = high_vals[0] if is_long else low_vals[0]
+    psar = low_vals[0] if is_long else high_vals[0]
+
+    for i in range(size):
+        if i == 0:
+            if is_long:
+                long_psar[i] = psar
+            else:
+                short_psar[i] = psar
+            continue
+        prev_psar = psar
+        psar = prev_psar + af * (ep - prev_psar)
+        if is_long:
+            psar = min(psar, low_vals[i - 1], low_vals[i - 2] if i > 1 else low_vals[i - 1])
+            if low_vals[i] < psar:
+                is_long = False
+                reversals[i] = -1.0
+                psar = ep
+                ep = low_vals[i]
+                af = step
+                short_psar[i] = psar
+                continue
+            if high_vals[i] > ep:
+                ep = high_vals[i]
+                af = min(af + step, max_step)
+            long_psar[i] = psar
+        else:
+            psar = max(psar, high_vals[i - 1], high_vals[i - 2] if i > 1 else high_vals[i - 1])
+            if high_vals[i] > psar:
+                is_long = True
+                reversals[i] = 1.0
+                psar = ep
+                ep = high_vals[i]
+                af = step
+                long_psar[i] = psar
+                continue
+            if low_vals[i] < ep:
+                ep = low_vals[i]
+                af = min(af + step, max_step)
+            short_psar[i] = psar
+
+    return (
+        pl.Series("psar_long", long_psar, dtype=pl.Float64),
+        pl.Series("psar_short", short_psar, dtype=pl.Float64),
+        pl.Series("psar_reversal", reversals, dtype=pl.Float64),
+    )
+
+
+def _aroon(df: pl.DataFrame, period: int = 14) -> tuple[pl.Series, pl.Series, pl.Series]:
+    highs = [float(v or 0.0) for v in df["high"]]
+    lows = [float(v or 0.0) for v in df["low"]]
+    size = len(highs)
+    aroon_up: list[float] = []
+    aroon_down: list[float] = []
+    for idx in range(size):
+        start = max(0, idx - period + 1)
+        high_window = highs[start : idx + 1]
+        low_window = lows[start : idx + 1]
+        high_idx = max(range(len(high_window)), key=high_window.__getitem__)
+        low_idx = min(range(len(low_window)), key=low_window.__getitem__)
+        bars_since_high = (len(high_window) - 1) - high_idx
+        bars_since_low = (len(low_window) - 1) - low_idx
+        aroon_up.append(100.0 * (period - bars_since_high) / period)
+        aroon_down.append(100.0 * (period - bars_since_low) / period)
+    up = pl.Series("aroon_up14", aroon_up, dtype=pl.Float64)
+    down = pl.Series("aroon_down14", aroon_down, dtype=pl.Float64)
+    return up, down, (up - down).rename("aroon_osc14")
+
+
+def _fisher_transform(df: pl.DataFrame, period: int = 10) -> tuple[pl.Series, pl.Series]:
+    high = [float(v or 0.0) for v in df["high"]]
+    low = [float(v or 0.0) for v in df["low"]]
+    close = [float(v or 0.0) for v in df["close"]]
+    size = len(close)
+    values: list[float] = [0.0] * size
+    fisher: list[float] = [0.0] * size
+    for i in range(size):
+        start = max(0, i - period + 1)
+        hh = max(high[start : i + 1])
+        ll = min(low[start : i + 1])
+        width = max(hh - ll, 1e-9)
+        price_norm = (close[i] - ll) / width
+        raw = 2.0 * (price_norm - 0.5)
+        prev_v = values[i - 1] if i > 0 else 0.0
+        v = 0.33 * raw + 0.67 * prev_v
+        v = max(min(v, 0.999), -0.999)
+        values[i] = v
+        prev_f = fisher[i - 1] if i > 0 else 0.0
+        fisher[i] = 0.5 * np.log((1.0 + v) / (1.0 - v)) + 0.5 * prev_f
+    fisher_series = pl.Series("fisher", fisher, dtype=pl.Float64)
+    fisher_signal = fisher_series.ewm_mean(span=5, adjust=False).rename("fisher_signal")
+    return fisher_series, fisher_signal
+
+
+def _squeeze_momentum(df: pl.DataFrame, period: int = 20) -> tuple[pl.Series, pl.Series, pl.Series, pl.Series]:
+    bb_upper, bb_mid, bb_lower = _bollinger_bands(df["close"], period=period, nbdev=2.0)
+    kc_upper, _, kc_lower = _keltner_channels(df, period=period, multiplier=1.5)
+    squeeze_on = ((bb_lower > kc_lower) & (bb_upper < kc_upper)).cast(pl.Float64).rename("squeeze_on")
+    squeeze_off = ((bb_lower < kc_lower) & (bb_upper > kc_upper)).cast(pl.Float64).rename("squeeze_off")
+    squeeze_no_values = [
+        max(0.0, min(1.0, 1.0 - max(float(on or 0.0), float(off or 0.0))))
+        for on, off in zip(squeeze_on, squeeze_off, strict=False)
+    ]
+    squeeze_no = pl.Series("squeeze_no", squeeze_no_values, dtype=pl.Float64)
+    basis = ((df["high"].rolling_max(window_size=period) + df["low"].rolling_min(window_size=period)) / 2.0 + bb_mid) / 2.0
+    hist = _clean_non_finite((df["close"] - basis).ewm_mean(span=5, adjust=False), fill=0.0).rename("squeeze_hist")
+    return hist, squeeze_on, squeeze_off, squeeze_no
+
+
+def _chandelier_exit(df: pl.DataFrame, period: int = 22, atr_mult: float = 3.0) -> tuple[pl.Series, pl.Series, pl.Series]:
+    atr = _atr(df, period)
+    long_exit = (df["high"].rolling_max(window_size=period) - atr * atr_mult).rename("chandelier_long")
+    short_exit = (df["low"].rolling_min(window_size=period) + atr * atr_mult).rename("chandelier_short")
+    close_vals = [float(v or 0.0) for v in df["close"]]
+    long_vals = [float(v or 0.0) for v in long_exit]
+    short_vals = [float(v or 0.0) for v in short_exit]
+    direction: list[float] = []
+    prev_dir = 0.0
+    for close_val, long_val, short_val in zip(close_vals, long_vals, short_vals, strict=False):
+        if close_val > short_val:
+            prev_dir = 1.0
+        elif close_val < long_val:
+            prev_dir = -1.0
+        direction.append(prev_dir)
+    return long_exit, short_exit, pl.Series("chandelier_dir", direction, dtype=pl.Float64)
+
+
 def _add_advanced_indicators(df: pl.DataFrame) -> pl.DataFrame:
     """Add advanced technical indicators using pure Polars implementations."""
     result = df
@@ -602,21 +762,20 @@ def _add_advanced_indicators(df: pl.DataFrame) -> pl.DataFrame:
         hma21.alias("hma21"),
     ])
     
-    # --- PSAR (Parabolic SAR) - UNUSED by strategies, simplified -------------
-    # Simplified: use recent high/low as PSAR approximation
-    psar_long = df["low"].rolling_min(window_size=14)
-    psar_short = df["high"].rolling_max(window_size=14)
+    # --- PSAR (Parabolic SAR) -------------------------------------------------
+    psar_long, psar_short, psar_reversal = _parabolic_sar(df, step=0.02, max_step=0.2)
     result = result.with_columns([
         psar_long.alias("psar_long"),
         psar_short.alias("psar_short"),
-        pl.lit(0.0).alias("psar_reversal"),
+        psar_reversal.alias("psar_reversal"),
     ])
     
-    # --- Aroon - UNUSED by strategies, neutral values ----------------------
+    # --- Aroon ---------------------------------------------------------------
+    aroon_up, aroon_down, aroon_osc = _aroon(df, period=14)
     result = result.with_columns([
-        pl.lit(50.0).alias("aroon_up14"),
-        pl.lit(50.0).alias("aroon_down14"),
-        pl.lit(0.0).alias("aroon_osc14"),
+        aroon_up.alias("aroon_up14"),
+        aroon_down.alias("aroon_down14"),
+        aroon_osc.alias("aroon_osc14"),
     ])
     
     # --- Stochastic ---------------------------------------------------------
@@ -636,28 +795,31 @@ def _add_advanced_indicators(df: pl.DataFrame) -> pl.DataFrame:
         willr.alias("willr14"),
         _mfi(df, 14).fill_nan(50.0).alias("mfi14"),
         _cmf(df, 20).fill_nan(0.0).alias("cmf20"),
-        pl.lit(50.0).alias("uo"),
+        _ultimate_oscillator(df, 7, 14, 28).fill_nan(50.0).alias("uo"),
     ])
     
-    # --- Fisher Transform - UNUSED, neutral ----------------------------------
+    # --- Fisher Transform -----------------------------------------------------
+    fisher, fisher_signal = _fisher_transform(df, period=10)
     result = result.with_columns([
-        pl.lit(0.0).alias("fisher"),
-        pl.lit(0.0).alias("fisher_signal"),
+        fisher.alias("fisher"),
+        fisher_signal.alias("fisher_signal"),
     ])
     
-    # --- Squeeze Momentum - UNUSED, neutral --------------------------------
+    # --- Squeeze Momentum ----------------------------------------------------
+    squeeze_hist, squeeze_on, squeeze_off, squeeze_no = _squeeze_momentum(df, period=20)
     result = result.with_columns([
-        pl.lit(0.0).alias("squeeze_hist"),
-        pl.lit(0.0).alias("squeeze_on"),
-        pl.lit(0.0).alias("squeeze_off"),
-        pl.lit(1.0).alias("squeeze_no"),
+        squeeze_hist.alias("squeeze_hist"),
+        squeeze_on.alias("squeeze_on"),
+        squeeze_off.alias("squeeze_off"),
+        squeeze_no.alias("squeeze_no"),
     ])
     
-    # --- Chandelier Exit - UNUSED, simplified -------------------------------
+    # --- Chandelier Exit -----------------------------------------------------
+    chandelier_long, chandelier_short, chandelier_dir = _chandelier_exit(df, period=22, atr_mult=3.0)
     result = result.with_columns([
-        (df["close"] * 0.95).alias("chandelier_long"),
-        (df["close"] * 1.05).alias("chandelier_short"),
-        pl.lit(0.0).alias("chandelier_dir"),
+        chandelier_long.alias("chandelier_long"),
+        chandelier_short.alias("chandelier_short"),
+        chandelier_dir.alias("chandelier_dir"),
     ])
     
     # --- Z-Score and Slope -------------------------------------------------

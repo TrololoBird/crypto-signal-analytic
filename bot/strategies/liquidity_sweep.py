@@ -227,12 +227,12 @@ class LiquiditySweepSetup(BaseSetup):
                         sh_mask, _ = _sp(w, n=3, include_unconfirmed_tail=True)
                         sh_prices = w.filter(sh_mask)["high"]
                         tp2_candidates = sh_prices.filter(sh_prices > price)
-                        structural_tp1 = _as_float(tp2_candidates[0]) if tp2_candidates.len() > 0 else None
+                        structural_tp1 = _as_float(tp2_candidates[-1]) if tp2_candidates.len() > 0 else None
                         tp1 = min(rr_tp1, structural_tp1) if structural_tp1 is not None else rr_tp1
                         if tp1 <= price:
                             _reject(prepared, setup_id, "tp1_invalid_long", tp1=tp1, price=price)
                             return None
-                        tp2 = _as_float(tp2_candidates[0]) if tp2_candidates.len() > 0 else None
+                        tp2 = _as_float(tp2_candidates[-1]) if tp2_candidates.len() > 0 else None
                         # Validate: TP1 must be at least 1.5× risk distance
                         if abs(tp1 - price) < risk * min_rr:
                             _reject(prepared, setup_id, "tp1_too_close_or_missing", tp1=tp1, risk=risk, price=price)

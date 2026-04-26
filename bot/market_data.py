@@ -771,20 +771,22 @@ class BinanceFuturesMarketData:
         if lock is None:
             lock = asyncio.Lock()
             self._klines_locks[key] = lock
-        async with lock:
-            now = time.monotonic()
-            cached = self._klines_cache.get(key)
-            if cached is not None and (now - cached[0]) < ttl:
-                frame = cached[1]
-            else:
-                frame = await self.fetch_klines(symbol, interval, limit=limit)
-                self._klines_cache[key] = (time.monotonic(), frame)
-        # Best-effort lock cleanup to avoid unbounded lock map growth.
-        # Remove only if this key's lock is currently unused.
-        active_lock = self._klines_locks.get(key)
-        if active_lock is lock and not lock.locked():
-            self._klines_locks.pop(key, None)
-        return frame
+        try:
+            async with lock:
+                now = time.monotonic()
+                cached = self._klines_cache.get(key)
+                if cached is not None and (now - cached[0]) < ttl:
+                    frame = cached[1]
+                else:
+                    frame = await self.fetch_klines(symbol, interval, limit=limit)
+                    self._klines_cache[key] = (time.monotonic(), frame)
+            return frame
+        finally:
+            # Best-effort lock cleanup to avoid unbounded lock map growth.
+            # Remove only if this key's lock is currently unused.
+            active_lock = self._klines_locks.get(key)
+            if active_lock is lock and not lock.locked():
+                self._klines_locks.pop(key, None)
 
     async def _fetch_book_ticker_rest(self, symbol: str) -> tuple[float | None, float | None]:
         max_attempts = 3

@@ -83,3 +83,5 @@ scripts/audit_data/
 .cursor/
 *.tmp
 *.temp
+check_result.txt
+test_out.txt

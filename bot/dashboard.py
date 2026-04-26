@@ -78,8 +78,16 @@ class BotDashboard:
             return await self._get_metrics()
 
         @self.app.get("/api/health")
-        async def health() -> dict[str, str]:
-            return {"status": "healthy"}
+        async def health() -> dict[str, Any]:
+            return await self.bot.health_check()
+
+        @self.app.get("/api/analytics/report")
+        async def analytics_report(days: int = 30) -> dict[str, Any]:
+            from .analytics import StrategyAnalytics
+
+            days = max(1, min(int(days), 365))
+            reporter = StrategyAnalytics(repo=self.bot._modern_repo)
+            return await reporter.generate_report(days=days)
 
     def _get_html_dashboard(self) -> str:
         return """<!DOCTYPE html>

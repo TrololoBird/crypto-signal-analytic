@@ -34,6 +34,7 @@ class EmaBounceSetup(BaseSetup):
             "bias_mismatch_penalty": 0.75,
             "tp_too_close_penalty": 0.75,
             "min_rr": 1.5,
+            "ema_touch_tolerance_pct": 0.005,
             "ema_touch_tolerance": 0.005,
         }
 

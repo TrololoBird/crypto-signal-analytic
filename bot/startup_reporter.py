@@ -282,7 +282,11 @@ def _load_sqlite_tracking_snapshot(db_path: Path, bot_dir: Path, since: datetime
                 "low_funding_symbols": [],
             },
         }
-    return asyncio.run(_read())
+    loop = asyncio.new_event_loop()
+    try:
+        return loop.run_until_complete(_read())
+    finally:
+        loop.close()
 
 
 def _collect_snapshot(context: StartupReportContext) -> dict[str, Any]:
@@ -1171,3 +1175,33 @@ async def generate_and_send_startup_report(
         settings = load_settings(config_path)
         await _send_telegram_message(settings, result.telegram_message)
     return result
+
+
+async def run_daily_summary_loop(
+    repo_root: Path,
+    *,
+    stop_event: asyncio.Event,
+    config_path: str | Path = "config.toml",
+    send_telegram: bool = True,
+    interval_hours: float = 24.0,
+) -> None:
+    """Periodic runtime summary loop (daily by default)."""
+    interval_seconds = max(3600.0, float(interval_hours) * 3600.0)
+    while not stop_event.is_set():
+        try:
+            await asyncio.wait_for(stop_event.wait(), timeout=interval_seconds)
+            continue
+        except asyncio.TimeoutError:
+            pass
+        try:
+            await generate_and_send_startup_report(
+                repo_root,
+                event="daily_runtime_summary",
+                send_telegram=send_telegram,
+                config_path=config_path,
+            )
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            # Keep loop alive in runtime regardless of report failure.
+            continue

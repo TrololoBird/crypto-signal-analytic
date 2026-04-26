@@ -16,6 +16,7 @@ def main() -> None:
     parser.add_argument("--end", required=True)
     parser.add_argument("--timeframe", default="15m")
     parser.add_argument("--setup", default="")
+    parser.add_argument("--initial-equity", type=float, default=1.0)
     args = parser.parse_args()
 
     settings = BotSettings(tg_token="0" * 30, target_chat_id="0")
@@ -25,6 +26,8 @@ def main() -> None:
         start=datetime.fromisoformat(args.start),
         end=datetime.fromisoformat(args.end),
         timeframe=args.timeframe,
+        setup_id=args.setup or None,
+        initial_equity=args.initial_equity,
     )
 
     output_dir = settings.data_dir / "backtests"

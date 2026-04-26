@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from .ml.volatility_gate import VolatilityGate
 from .config import BotSettings
@@ -20,7 +20,7 @@ from .scoring import (
 )
 
 if TYPE_CHECKING:
-    from .ml_filter import MLFilter
+    from .ml.filter import MLFilter
 
 LOG = logging.getLogger("bot.confluence")
 
@@ -43,6 +43,7 @@ class ConfluenceResult:
     ml_probability: float | None = None
     ml_confidence: float | None = None
     ml_applied: bool = False
+    ml_skip_reason: str | None = None
 
     @property
     def weighted_model_score(self) -> float:
@@ -55,11 +56,11 @@ class ConfluenceResult:
         return ScoringResult(
             base_score=self.setup_prior,
             adjustments=adjustments,
-            final_score=self.final_score,  # type: ignore[attr-defined]
+            final_score=self.final_score,
             setup_id="",
         )
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, object]:
         return {
             "setup_prior": self.setup_prior,
             "components": [
@@ -71,6 +72,7 @@ class ConfluenceResult:
             "ml_probability": self.ml_probability,
             "ml_confidence": self.ml_confidence,
             "ml_applied": self.ml_applied,
+            "ml_skip_reason": self.ml_skip_reason,
         }
 
 
@@ -101,28 +103,43 @@ class ConfluenceEngine:
         ml_probability: float | None = None
         ml_confidence: float | None = None
         ml_applied = False
+        ml_skip_reason: str | None = None
 
         if self._ml_filter is not None and self._ml_filter.enabled:
             try:
                 ml_result = self._ml_filter.predict(signal, prepared)
                 regime = str(getattr(prepared, "market_regime", "neutral") or "neutral")
-                if (
-                    ml_result.error is None
-                    and ml_result.is_confident
-                    and self._volatility_gate.should_use_ml(regime, signal.score)
-                ):
+                gate_passed = self._volatility_gate.should_use_ml(regime, signal.score)
+                if ml_result.error is not None:
+                    ml_skip_reason = "ml_error"
+                elif not ml_result.is_confident:
+                    ml_skip_reason = "ml_low_confidence"
+                elif not gate_passed:
+                    ml_skip_reason = "volatility_gate_blocked"
+                else:
                     ml_probability = ml_result.probability
                     ml_confidence = ml_result.confidence
                     delta = ml_probability - 0.5
                     bounded_delta = max(-0.15, min(0.15, delta))
                     final = round(max(0.0, min(final + bounded_delta, 1.0)), 4)
                     ml_applied = True
+                    ml_skip_reason = None
                     LOG.debug(
                         "ML applied | symbol=%s setup=%s regime=%s ml_prob=%.3f confidence=%.3f final_score=%.3f",
                         signal.symbol, signal.setup_id, regime, ml_probability, ml_confidence, final
                     )
+                if not ml_applied and ml_skip_reason is not None:
+                    LOG.debug(
+                        "ML skipped | symbol=%s setup=%s regime=%s reason=%s",
+                        signal.symbol, signal.setup_id, regime, ml_skip_reason,
+                    )
             except Exception as exc:
                 LOG.warning("ML prediction failed for %s: %s", signal.symbol, exc)
+                ml_skip_reason = "ml_exception"
+        elif self._ml_filter is None:
+            ml_skip_reason = "ml_filter_absent"
+        elif not self._ml_filter.enabled:
+            ml_skip_reason = "ml_disabled"
 
         return ConfluenceResult(
             setup_prior=signal.score,
@@ -131,13 +148,14 @@ class ConfluenceEngine:
             ml_probability=ml_probability,
             ml_confidence=ml_confidence,
             ml_applied=ml_applied,
+            ml_skip_reason=ml_skip_reason,
         )
 
     def _compute_components(
         self,
         signal: Signal,
         prepared: PreparedSymbol,
-        cfg,
+        cfg: Any,
     ) -> list[ComponentScore]:
         funding_weight = max(0.0, min(cfg.weight_crowd_position * 0.5, cfg.weight_crowd_position))
         crowd_weight = max(0.0, cfg.weight_crowd_position - funding_weight)

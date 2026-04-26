@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import math
 try:
-    import tomllib
+    import tomllib as _toml_lib
 except ModuleNotFoundError:  # pragma: no cover - fallback for Python < 3.11
-    import tomli as tomllib
+    import tomli
+    _toml_lib = tomli
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any, Literal, cast
@@ -31,6 +32,7 @@ class RuntimeConfig(BaseModel):
     startup_batch_size: int = Field(default=3, ge=1, le=10)
     startup_batch_delay_seconds: float = Field(default=2.0, ge=0.5, le=10.0)
     max_concurrent_rest_requests: int = Field(default=5, ge=1, le=20)
+    heartbeat_seconds: float = Field(default=60.0, ge=5.0, le=3600.0)
 
     @field_validator("log_level")
     @classmethod
@@ -199,7 +201,7 @@ class ScoringConfig(BaseModel):
         }
         total_weight = sum(weights.values())
         if abs(total_weight - 1.0) > 1e-6:
-            fields_set = getattr(self, "model_fields_set", set())
+            fields_set: set[str] = set(getattr(self, "model_fields_set", set()))
             missing_in_config = sorted(k for k in weights if k not in fields_set)
             hint = ""
             if missing_in_config:
@@ -517,7 +519,7 @@ def _load_toml(path: Path) -> dict[str, Any]:
     if not path.exists():
         return {}
     with path.open("rb") as handle:
-        parsed = tomllib.load(handle)
+        parsed = _toml_lib.load(handle)
     return parsed if isinstance(parsed, dict) else {}
 
 

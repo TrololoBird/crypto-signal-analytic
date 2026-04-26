@@ -267,7 +267,7 @@ class Signal:
             "stop": round(self.stop, 8),
             "take_profit_1": round(self.take_profit_1, 8),
             "take_profit_2": round(self.take_profit_2, 8),
-            "risk_reward": round(self.risk_reward, 4),
+            "risk_reward": round(float(self.risk_reward or 0.0), 4),
             "stop_distance_pct": round(self.stop_distance_pct, 4),
             "bias_4h": self.bias_4h,
             "quote_volume": self.quote_volume,

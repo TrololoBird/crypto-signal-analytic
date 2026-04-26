@@ -30,3 +30,26 @@ dependencies = [
     "pandas>=2.1.0",
     "pydantic>=2.0.0",
 ]
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.9",
+    "mypy>=1.14",
+    "pre-commit>=4.0",
+]
+test = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.25",
+    "pytest-cov>=6.0",
+    "respx>=0.22",
+    "aioresponses>=0.7",
+]
+regime = [
+    "hmmlearn>=0.3",
+    "scikit-learn>=1.4",
+]
+ml = [
+    "lightgbm>=4.5",
+    "xgboost>=2.1",
+    "optuna>=4.0",
+]

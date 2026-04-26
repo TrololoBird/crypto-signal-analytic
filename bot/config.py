@@ -275,6 +275,7 @@ class IntelligenceConfig(BaseModel):
     hard_barrier_window_minutes: int = Field(default=15, ge=5, le=240)
     smart_exit_enabled: bool = True
     smart_exit_threshold: float = Field(default=0.62, ge=0.0, le=1.0)
+    regime_detector: Literal["legacy", "hmm", "gmm_var", "composite"] = "composite"
     max_consecutive_stop_losses: int = Field(default=3, ge=1, le=20)
     stop_loss_pause_hours: int = Field(default=5, ge=0, le=168)
     benchmark_symbols: tuple[str, ...] = ("BTCUSDT", "ETHUSDT", "SOLUSDT")

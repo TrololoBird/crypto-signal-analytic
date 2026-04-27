@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from pathlib import Path
 from typing import Any
 
@@ -12,17 +13,20 @@ except ImportError:  # pragma: no cover - optional dependency fallback
 
 
 class _CentroidModel:
+    """Baseline centroid-distance classifier (fallback when boosted/tree models unavailable)."""
+
     def __init__(self) -> None:
         self.mean_pos: list[float] = []
         self.mean_neg: list[float] = []
         self.feature_importances_: list[float] = []
 
     def fit(self, x: list[list[float]] | list[tuple[float, ...]], y: list[int]) -> None:
-        if not x:
+        rows = [list(row) for row in x]
+        if not rows:
             return
-        cols = len(x[0])
-        pos = [row for row, label in zip(x, y, strict=False) if label == 1]
-        neg = [row for row, label in zip(x, y, strict=False) if label == 0]
+        cols = len(rows[0])
+        pos = [row for row, label in zip(rows, y, strict=False) if label == 1]
+        neg = [row for row, label in zip(rows, y, strict=False) if label == 0]
         self.mean_pos = [sum(row[i] for row in pos) / max(len(pos), 1) for i in range(cols)]
         self.mean_neg = [sum(row[i] for row in neg) / max(len(neg), 1) for i in range(cols)]
         raw = [abs(self.mean_pos[i] - self.mean_neg[i]) for i in range(cols)]
@@ -37,6 +41,53 @@ class _CentroidModel:
             score = 1.0 / (1.0 + (d_pos / max(d_neg, 1e-9)))
             score = max(0.0, min(1.0, score))
             result.append([1.0 - score, score])
+        return result
+
+
+class _LinearFallbackModel:
+    """Small dependency-free linear classifier fallback.
+
+    Used when sklearn is unavailable for non-centroid model types.
+    """
+
+    def __init__(self) -> None:
+        self.weights: list[float] = []
+        self.bias: float = 0.0
+        self.feature_importances_: list[float] = []
+
+    def fit(self, x: list[list[float]] | list[tuple[float, ...]], y: list[int]) -> None:
+        rows = [list(row) for row in x]
+        if not rows:
+            return
+        cols = len(rows[0])
+        pos = [row for row, label in zip(rows, y, strict=False) if label == 1]
+        neg = [row for row, label in zip(rows, y, strict=False) if label == 0]
+        mean_pos = [sum(row[i] for row in pos) / max(len(pos), 1) for i in range(cols)]
+        mean_neg = [sum(row[i] for row in neg) / max(len(neg), 1) for i in range(cols)]
+
+        self.weights = [mean_pos[i] - mean_neg[i] for i in range(cols)]
+        midpoint = [(mean_pos[i] + mean_neg[i]) * 0.5 for i in range(cols)]
+        self.bias = -sum(w * m for w, m in zip(self.weights, midpoint, strict=False))
+
+        raw = [abs(w) for w in self.weights]
+        denom = sum(raw) or 1.0
+        self.feature_importances_ = [v / denom for v in raw]
+
+    def predict_proba(self, x: list[list[float]]) -> list[list[float]]:
+        if not self.weights:
+            return [[0.5, 0.5] for _ in x]
+        result: list[list[float]] = []
+        for row in x:
+            score = sum(w * v for w, v in zip(self.weights, row, strict=False)) + self.bias
+            # numerically stable sigmoid
+            if score >= 0:
+                exp_term = math.exp(-score)
+                p1 = 1.0 / (1.0 + exp_term)
+            else:
+                exp_term = math.exp(score)
+                p1 = exp_term / (1.0 + exp_term)
+            p1 = max(0.0, min(1.0, p1))
+            result.append([1.0 - p1, p1])
         return result
 
 
@@ -111,6 +162,14 @@ class SignalClassifier:
         if isinstance(features, list) and features:
             self._feature_names = [str(v) for v in features]
         return self.model is not None
+
+    def model_kind(self) -> str:
+        """Return normalized model kind for runtime guardrails/telemetry."""
+        if self.model is None and not self.load():
+            return "unloaded"
+        if isinstance(self.model, _CentroidModel):
+            return "centroid_baseline"
+        return type(self.model).__name__.lower() if self.model is not None else "unloaded"
 
     def predict_proba(self, feature_vector: dict[str, float]) -> float:
         if self.model is None and not self.load():
@@ -190,4 +249,4 @@ class SignalClassifier:
                 n_jobs=1,
             )
         except Exception:
-            return _CentroidModel()
+            return _LinearFallbackModel()

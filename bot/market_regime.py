@@ -107,7 +107,8 @@ class MarketRegimeAnalyzer:
         ):
             return self._last_result
 
-        detector = getattr(self.settings.intelligence, "regime_detector", "legacy")
+        intelligence = getattr(self.settings, "intelligence", None)
+        detector = getattr(intelligence, "regime_detector", "legacy")
         if detector in {"hmm", "gmm_var", "composite"}:
             composite = self._composite.analyze(
                 ticker_data,

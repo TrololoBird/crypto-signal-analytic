@@ -18,8 +18,6 @@ import html
 import inspect
 import logging
 import os
-import time
-from collections import Counter
 from dataclasses import replace
 from datetime import datetime, timezone
 from typing import Any, cast
@@ -42,10 +40,15 @@ from ..confluence import ConfluenceEngine
 from .container import build_application_container
 from .cycle_runner import CycleRunner
 from .delivery_orchestrator import DeliveryOrchestrator
+from .fallback_runner import FallbackRunner
 from .health_manager import HealthManager
+from .intra_candle_scanner import IntraCandleScanner
+from .kline_handler import KlineHandler
 from .market_context_updater import MarketContextUpdater
+from .oi_refresh_runner import OIRefreshRunner
 from .shortlist_service import ShortlistService
 from .symbol_analyzer import SymbolAnalyzer
+from .telemetry_manager import TelemetryManager
 
 UTC = timezone.utc
 LOG = logging.getLogger("bot.application.bot")
@@ -159,6 +162,11 @@ class SignalBot:
         self._delivery_orchestrator = DeliveryOrchestrator(self)
         self._health_manager = HealthManager(self)
         self._market_context_updater = MarketContextUpdater(self)
+        self._intra_candle_scanner = IntraCandleScanner(self)
+        self._kline_handler = KlineHandler(self)
+        self._telemetry_manager = TelemetryManager(self)
+        self._fallback_runner = FallbackRunner(self)
+        self._oi_refresh_runner = OIRefreshRunner(self)
         self._health_monitor = HealthMonitor(
             interval_seconds=float(self.settings.runtime.heartbeat_seconds),
             check=self.health_check,
@@ -213,36 +221,46 @@ class SignalBot:
             self._cycle_runner = runner
         return runner
 
+    def _get_intra_candle_scanner(self) -> IntraCandleScanner:
+        scanner = getattr(self, "_intra_candle_scanner", None)
+        if scanner is None:
+            scanner = IntraCandleScanner(self)
+            self._intra_candle_scanner = scanner
+        return scanner
+
+    def _get_telemetry_manager(self) -> TelemetryManager:
+        manager = getattr(self, "_telemetry_manager", None)
+        if manager is None:
+            manager = TelemetryManager(self)
+            self._telemetry_manager = manager
+        return manager
+
+    def _get_kline_handler(self) -> KlineHandler:
+        handler = getattr(self, "_kline_handler", None)
+        if handler is None:
+            handler = KlineHandler(self)
+            self._kline_handler = handler
+        return handler
+
+    def _get_fallback_runner(self) -> FallbackRunner:
+        runner = getattr(self, "_fallback_runner", None)
+        if runner is None:
+            runner = FallbackRunner(self)
+            self._fallback_runner = runner
+        return runner
+
+    def _get_oi_refresh_runner(self) -> OIRefreshRunner:
+        runner = getattr(self, "_oi_refresh_runner", None)
+        if runner is None:
+            runner = OIRefreshRunner(self)
+            self._oi_refresh_runner = runner
+        return runner
+
     def _decision_to_reject_row(self, *, symbol: str, decision: StrategyDecision) -> dict[str, Any]:
-        row: dict[str, Any] = {
-            "ts": datetime.now(UTC).isoformat(),
-            "symbol": symbol,
-            "setup_id": decision.setup_id,
-            "direction": getattr(decision.signal, "direction", "n/a"),
-            "stage": decision.stage,
-            "reason": decision.reason_code,
-            "reason_code": decision.reason_code,
-            "decision_status": decision.status,
-        }
-        if decision.details:
-            row["details"] = decision.details
-        if decision.missing_fields:
-            row["missing_fields"] = list(decision.missing_fields)
-        if decision.invalid_fields:
-            row["invalid_fields"] = list(decision.invalid_fields)
-        if decision.error is not None:
-            row["error"] = decision.error
-        return row
+        return self._get_telemetry_manager().decision_to_reject_row(symbol=symbol, decision=decision)
 
     def _append_symbol_trace(self, *, symbol: str, row: dict[str, Any]) -> None:
-        limit = int(getattr(getattr(self.settings, "runtime", None), "diagnostic_trace_limit_per_symbol", 20))
-        if limit <= 0 or not hasattr(self.telemetry, "append_symbol_jsonl"):
-            return
-        count = self._diagnostic_trace_counts.get(symbol, 0)
-        if count >= limit:
-            return
-        self._diagnostic_trace_counts[symbol] = count + 1
-        self.telemetry.append_symbol_jsonl("analysis", symbol, "strategy_traces.jsonl", row)
+        self._get_telemetry_manager().append_symbol_trace(symbol=symbol, row=row)
 
     def _append_strategy_decision_telemetry(
         self,
@@ -251,30 +269,11 @@ class SignalBot:
         trigger: str,
         decision: StrategyDecision,
     ) -> None:
-        row: dict[str, Any] = {
-            "ts": datetime.now(UTC).isoformat(),
-            "symbol": symbol,
-            "trigger": trigger,
-            "setup_id": decision.setup_id,
-            "status": decision.status,
-            "stage": decision.stage,
-            "reason": decision.reason_code,
-            "reason_code": decision.reason_code,
-            "missing_fields": list(decision.missing_fields),
-            "invalid_fields": list(decision.invalid_fields),
-        }
-        if decision.signal is not None:
-            row["direction"] = decision.signal.direction
-            row["score"] = round(decision.signal.score, 4)
-        if decision.details:
-            row["details"] = decision.details
-        if decision.error is not None:
-            row["error"] = decision.error
-        self.telemetry.append_jsonl("strategy_decisions.jsonl", row)
-        if decision.missing_fields or decision.invalid_fields:
-            self.telemetry.append_jsonl("data_quality.jsonl", row)
-        if decision.status in {"signal", "reject", "error"}:
-            self._append_symbol_trace(symbol=symbol, row=row)
+        self._get_telemetry_manager().append_strategy_decision(
+            symbol=symbol,
+            trigger=trigger,
+            decision=decision,
+        )
 
     # ------------------------------------------------------------------
     # Modern Engine Migration
@@ -546,134 +545,15 @@ class SignalBot:
     # ------------------------------------------------------------------
 
     async def _on_kline_close(self, event: KlineCloseEvent) -> None:
-        """Handle kline_close from EventBus — primary analysis path."""
-        if event.interval != "15m":
-            return  # only process 15m closes for signal detection
-
-        self._last_kline_event_ts = asyncio.get_running_loop().time()
-        symbol = event.symbol
-        LOG.info("kline_close received | symbol=%s trigger=%s", symbol, event.trigger)
-
-        async with self._shortlist_lock:
-            shortlist = list(self._shortlist)
-
-        # Review tracking for symbol
-        tracking_events = await self.tracker.review_open_signals_for_symbol(symbol, dry_run=False)
-        if tracking_events:
-            await self._deliver_tracking(tracking_events)
-
-        # Find symbol in shortlist
-        item = next((row for row in shortlist if row.symbol == symbol), None)
-        if item is None:
-            LOG.debug("kline_close skipped | symbol=%s not in shortlist", symbol)
-            return  # symbol not in shortlist, skip silently
-
-        await self._get_cycle_runner().execute_symbol_cycle(
-            symbol=symbol,
-            item=item,
-            interval=event.interval,
-            trigger=event.trigger,
-            event_ts=datetime.now(UTC),
-            tracking_events=tracking_events,
-            shortlist_size=len(shortlist),
-        )
+        """Delegate kline-close handling to KlineHandler."""
+        await self._get_kline_handler().on_kline_close(event)
 
     async def _on_reconnect(self, event: ReconnectEvent) -> None:
         LOG.info("ws reconnected | reason=%s", event.reason)
 
     async def _on_book_ticker(self, event: BookTickerEvent) -> None:
-        """Intra-candle scan trigger — fires at most once per throttle interval per symbol.
-
-        bookTicker events arrive on every tick. We throttle (configurable via
-        intra_candle_throttle_seconds) and fire a non-blocking analysis task so
-        the event loop is never stalled. The cached frames from the last kline-close
-        are still fresh enough for mid-candle signal detection.
-        """
-        symbol = event.symbol
-        if not hasattr(self, "_last_intra_mid"):
-            self._last_intra_mid = {}
-        now = time.monotonic()
-        throttle_seconds = float(
-            getattr(
-                getattr(getattr(self, "settings", None), "ws", None),
-                "intra_candle_throttle_seconds",
-                0.0,
-            )
-        )
-        if now - self._last_intra_scan.get(symbol, 0.0) < throttle_seconds:
-            return
-        min_move_bps = float(
-            getattr(
-                getattr(getattr(self, "settings", None), "ws", None),
-                "intra_candle_min_move_bps",
-                0.0,
-            )
-        )
-        if (
-            min_move_bps > 0.0
-            and event.bid is not None
-            and event.ask is not None
-            and event.bid > 0.0
-            and event.ask > 0.0
-        ):
-            mid_now = (event.bid + event.ask) / 2.0
-            mid_prev = self._last_intra_mid.get(symbol)
-            if mid_prev is not None and mid_prev > 0.0:
-                move_bps = abs(mid_now - mid_prev) / mid_prev * 10000.0
-                if move_bps < min_move_bps:
-                    return
-            self._last_intra_mid[symbol] = mid_now
-        self._last_intra_scan[symbol] = now
-
-        async def _run() -> None:
-            try:
-                async with self._shortlist_lock:
-                    shortlist = list(self._shortlist)
-                item = next((row for row in shortlist if row.symbol == symbol), None)
-                if item is None:
-                    return
-
-                event_ts = (
-                    datetime.fromtimestamp(event.event_ts_ms / 1000.0, tz=UTC)
-                    if event.event_ts_ms is not None and event.event_ts_ms > 0
-                    else datetime.now(UTC)
-                )
-                ws_override: dict[str, Any] | None = None
-                if (
-                    event.bid is not None
-                    and event.ask is not None
-                    and event.bid > 0.0
-                    and event.ask > 0.0
-                    and event.ask >= event.bid
-                ):
-                    mid = (event.bid + event.ask) / 2.0
-                    spread_bps = ((event.ask - event.bid) / mid) * 10000.0 if mid > 0.0 else None
-                    ws_override = {
-                        "bid_price": event.bid,
-                        "ask_price": event.ask,
-                        "spread_bps": spread_bps,
-                    }
-                await self._get_cycle_runner().execute_symbol_cycle(
-                    symbol=symbol,
-                    item=item,
-                    interval="bookTicker",
-                    trigger="intra_candle",
-                    event_ts=event_ts,
-                    shortlist_size=len(shortlist),
-                    tracking_events=[],
-                    ws_enrichments_override=ws_override,
-                )
-
-                LOG.debug(
-                    "intra_candle scan complete | symbol=%s",
-                    symbol,
-                )
-            except Exception as exc:
-                LOG.debug("intra_candle scan failed for %s: %s", symbol, exc)
-
-        task = asyncio.create_task(_run(), name=f"intra_candle:{symbol}")
-        self._background_tasks.add(task)
-        task.add_done_callback(self._background_tasks.discard)
+        """Delegate intra-candle scan trigger handling to IntraCandleScanner."""
+        await self._get_intra_candle_scanner().handle(event)
 
     # ------------------------------------------------------------------
     # Shared analysis logic — used by both kline_close and intra_candle paths
@@ -684,99 +564,19 @@ class SignalBot:
         symbol: str,
         result: PipelineResult,
     ) -> tuple[list[Signal], list[dict], list[Signal]]:
-        """Run selection + cooldown + delivery for a single symbol's pipeline result.
-
-        Returns (candidates, all_rejected, delivered).
-        """
-        candidates = result.candidates
-        rejected: list[dict] = list(result.rejected)
-        delivered: list[Signal] = []
-
-        if candidates:
-            selected = self._select_and_rank(
-                {symbol: candidates},
-                max_signals=self.settings.runtime.max_signals_per_cycle,
-            )
-            if result.funnel:
-                result.funnel["selected"] = len(selected)
-            prepared_by_tracking_id = (
-                {item.tracking_id: result.prepared for item in selected}
-                if result.prepared is not None
-                else None
-            )
-            delivered, cooldown_rejected, delivery_status_counts = await self._select_and_deliver(
-                selected,
-                prepared_by_tracking_id=prepared_by_tracking_id,
-            )
-            if result.funnel:
-                result.funnel["delivered"] = len(delivered)
-                result.funnel["delivery_status_counts"] = dict(delivery_status_counts)
-            rejected.extend(cooldown_rejected)
-
-        return candidates, rejected, delivered
+        return await self._get_kline_handler().select_and_deliver_for_symbol(symbol, result)
 
     # ------------------------------------------------------------------
     # Emergency fallback — full scan when no kline events
     # ------------------------------------------------------------------
 
     async def _tracking_review_periodic(self) -> None:
-        """Review open signal tracking every 5 minutes, independent of kline events.
-
-        Decoupled from the main analysis loop so TP/SL notifications are sent
-        promptly even when the bot is idle or WS klines are disabled.
-        """
-        _interval = 300  # 5 minutes
-        while not self._shutdown.is_set():
-            await asyncio.sleep(_interval)
-            if self._shutdown.is_set():
-                break
-            try:
-                tracking_events = await self.tracker.review_open_signals(dry_run=False)
-                if tracking_events:
-                    await self._deliver_tracking(tracking_events)
-            except Exception as exc:
-                LOG.exception("tracking_review_periodic failed: %s", exc)
+        """Delegate tracking-review loop to FallbackRunner."""
+        await self._get_fallback_runner().tracking_review_periodic()
 
     async def _emergency_fallback_scan(self) -> None:
-        """Run full shortlist scan if no kline events for a long time."""
-        fallback_sec = self.settings.runtime.emergency_fallback_seconds
-        while not self._shutdown.is_set():
-            await asyncio.sleep(fallback_sec)
-            if self._shutdown.is_set():
-                break
-
-            time_since_event = asyncio.get_running_loop().time() - self._last_kline_event_ts
-            if time_since_event < fallback_sec:
-                self.telemetry.append_jsonl(
-                    "fallback_checks.jsonl",
-                    {
-                        "ts": datetime.now(UTC).isoformat(),
-                        "trigger": "emergency_fallback",
-                        "action": "skip",
-                        "fallback_seconds": fallback_sec,
-                        "time_since_last_kline_seconds": round(time_since_event, 1),
-                    },
-                )
-                continue
-
-            self.telemetry.append_jsonl(
-                "fallback_checks.jsonl",
-                {
-                    "ts": datetime.now(UTC).isoformat(),
-                    "trigger": "emergency_fallback",
-                    "action": "run",
-                    "fallback_seconds": fallback_sec,
-                    "time_since_last_kline_seconds": round(time_since_event, 1),
-                },
-            )
-            LOG.info(
-                "emergency fallback: no kline events for %.0fs — running full scan",
-                time_since_event,
-            )
-            try:
-                await self._run_emergency_cycle()
-            except Exception as exc:
-                LOG.exception("emergency fallback cycle failed: %s", exc)
+        """Delegate emergency-fallback loop to FallbackRunner."""
+        await self._get_fallback_runner().emergency_fallback_scan()
 
     async def _run_emergency_cycle(self) -> dict[str, Any]:
         """Full shortlist analysis — used for emergency fallback."""
@@ -806,93 +606,8 @@ class SignalBot:
     # ------------------------------------------------------------------
 
     async def _oi_refresh_periodic(self) -> None:
-        """Pre-warm OI and L/S ratio caches every 15 minutes."""
-        await asyncio.sleep(30)  # stagger after shortlist populates
-        while not self._shutdown.is_set():
-            async with self._shortlist_lock:
-                shortlist = list(self._shortlist)
-
-            if shortlist and isinstance(self.client, BinanceFuturesMarketData):
-                # Staggered batch processing to prevent REST API flood
-                batch_size = self.settings.runtime.startup_batch_size
-                batch_delay = self.settings.runtime.startup_batch_delay_seconds
-                rest_concurrency = max(
-                    1,
-                    int(self.settings.runtime.max_concurrent_rest_requests),
-                )
-                sem = asyncio.Semaphore(rest_concurrency)
-
-                async def _fetch_one(symbol: str, limiter: asyncio.Semaphore) -> None:
-                    async with limiter:
-                        try:
-                            await self.client.fetch_open_interest_change(symbol, period="1h")
-                        except Exception:
-                            pass
-                        try:
-                            await self.client.fetch_open_interest_change(symbol, period="5m")
-                        except Exception:
-                            pass
-                        try:
-                            await self.client.fetch_long_short_ratio(symbol, period="1h")
-                        except Exception:
-                            pass
-                        try:
-                            await self.client.fetch_long_short_ratio(symbol, period="5m")
-                        except Exception:
-                            pass
-                        try:
-                            await self.client.fetch_taker_ratio(symbol, period="1h")
-                        except Exception:
-                            pass
-                        try:
-                            await self.client.fetch_taker_ratio(symbol, period="5m")
-                        except Exception:
-                            pass
-                        try:
-                            await self.client.fetch_global_ls_ratio(symbol, period="1h")
-                        except Exception:
-                            pass
-                        try:
-                            await self.client.fetch_global_ls_ratio(symbol, period="5m")
-                        except Exception:
-                            pass
-                        try:
-                            await self.client.fetch_funding_rate_history(symbol)
-                        except Exception:
-                            pass
-                        try:
-                            await self.client.fetch_basis(symbol, period="1h")
-                        except Exception:
-                            pass
-                        try:
-                            await self.client.fetch_basis(symbol, period="5m")
-                        except Exception:
-                            pass
-
-                # Process in batches with delay between batches
-                processed = 0
-                for i in range(0, len(shortlist), batch_size):
-                    batch = shortlist[i:i + batch_size]
-                    await asyncio.gather(
-                        *[_fetch_one(item.symbol, sem) for item in batch],
-                        return_exceptions=True,
-                    )
-                    processed += len(batch)
-                    if i + batch_size < len(shortlist):
-                        await asyncio.sleep(batch_delay)
-
-                LOG.info(
-                    "oi/ls cache refreshed | symbols=%d batches=%d rest_concurrency=%d",
-                    processed,
-                    (len(shortlist) + batch_size - 1) // batch_size,
-                    rest_concurrency,
-                )
-                await self._update_memory_market_context(shortlist)
-
-            try:
-                await asyncio.wait_for(self._shutdown.wait(), timeout=900)
-            except asyncio.TimeoutError:
-                continue
+        """Delegate OI/L-S refresh loop to OIRefreshRunner."""
+        await self._get_oi_refresh_runner().run()
 
     async def _market_regime_periodic(self) -> None:
         await self._market_context_updater.market_regime_periodic()
@@ -1041,16 +756,12 @@ class SignalBot:
         expected: dict[str, Any],
         actual: dict[str, Any],
     ) -> None:
-        self.telemetry.append_jsonl(
-            "telemetry_mismatch.jsonl",
-            {
-                "ts": datetime.now(UTC).isoformat(),
-                "symbol": symbol,
-                "trigger": trigger,
-                "mismatch_type": mismatch_type,
-                "expected": expected,
-                "actual": actual,
-            },
+        self._get_telemetry_manager().emit_telemetry_mismatch(
+            symbol=symbol,
+            trigger=trigger,
+            mismatch_type=mismatch_type,
+            expected=expected,
+            actual=actual,
         )
 
     def _emit_cycle_log(
@@ -1066,111 +777,14 @@ class SignalBot:
         rejected: list[dict[str, Any]],
         delivered: list[Signal] | None = None,
     ) -> None:
-        delivered_count = len(delivered or [])
-        delivery_status_counts = (
-            dict(result.funnel.get("delivery_status_counts", {}))
-            if isinstance(result.funnel, dict)
-            else {}
-        )
-        delivery_sent_count = int(delivery_status_counts.get("sent", delivered_count))
-        cycle_row: dict[str, Any] = {
-            "ts": datetime.now(UTC).isoformat(),
-            "mode": {
-                "kline_close": "event_driven",
-                "intra_candle": "intra_candle",
-                "emergency_fallback": "emergency_fallback",
-            }.get(result.trigger, result.trigger),
-            "trigger": result.trigger,
-            "event_symbol": symbol,
-            "event_interval": interval,
-            "event_ts": event_ts.isoformat(),
-            "shortlist_size": shortlist_size,
-            "detector_runs": result.raw_setups,
-            "post_filter_candidates": len(candidates),
-            "selected_signals": delivered_count,
-            "raw_setups": result.raw_setups,
-            "candidate_count": len(candidates),
-            "selected_count": delivered_count,
-            "rejected_count": len(rejected),
-            "shortlist_source": self._shortlist_source,
-            "setup_counts": dict(Counter(s.setup_id for s in candidates)),
-            "selected_setup_counts": dict(Counter(s.setup_id for s in (delivered or []))),
-            "delivery_status_counts": delivery_status_counts,
-            "tracking_events": [e.event_type for e in tracking_events],
-            "dry_run": False,
-            "status": result.status or ("ok" if not result.error else "error"),
-            "prepare_error_count": self._prepare_error_count,
-        }
-        if result.funnel:
-            cycle_row["funnel"] = result.funnel
-            if result.funnel.get("prepare_error_stage") is not None:
-                cycle_row["prepare_error_stage"] = result.funnel.get("prepare_error_stage")
-            if result.funnel.get("prepare_error_exception_type") is not None:
-                cycle_row["prepare_error_exception_type"] = result.funnel.get("prepare_error_exception_type")
-        if result.error:
-            cycle_row["error"] = result.error
-        if self._ws_manager is not None:
-            ws_snapshot = self._ws_manager.state_snapshot()
-            cycle_row.update(ws_snapshot if isinstance(ws_snapshot, dict) else {})
-        rest_snapshot_func = getattr(self.client, "state_snapshot", None)
-        if callable(rest_snapshot_func):
-            rest_snapshot = rest_snapshot_func()
-            cycle_row.update(rest_snapshot if isinstance(rest_snapshot, dict) else {})
-
-        self.telemetry.append_jsonl("cycles.jsonl", cycle_row)
-        symbol_row: dict[str, Any] = {
-            "ts": datetime.now(UTC).isoformat(),
-            "symbol": symbol,
-            "event_ts": event_ts.isoformat(),
-            "status": result.status or ("ok" if not result.error else "error"),
-            "error": result.error,
-            "detector_runs": result.raw_setups,
-            "post_filter_candidates": len(candidates),
-            "selected_signals": delivered_count,
-            "raw_setups": result.raw_setups,
-            "candidates": len(candidates),
-            "delivered": delivered_count,
-            "rejected": len(rejected),
-            "shortlist_source": self._shortlist_source,
-            "delivery_status_counts": delivery_status_counts,
-        }
-        if result.prepared is not None:
-            symbol_row.update(
-                {
-                    "work_rows_15m": int(result.prepared.work_15m.height) if result.prepared.work_15m is not None else 0,
-                    "work_rows_1h": int(result.prepared.work_1h.height) if result.prepared.work_1h is not None else 0,
-                    "work_rows_5m": int(result.prepared.work_5m.height) if result.prepared.work_5m is not None else 0,
-                    "work_rows_4h": int(result.prepared.work_4h.height) if result.prepared.work_4h is not None else 0,
-                    "spread_bps": result.prepared.spread_bps,
-                    "bias_4h": result.prepared.bias_4h,
-                    "bias_1h": result.prepared.bias_1h,
-                    "market_regime": result.prepared.market_regime,
-                    "context_snapshot_age_seconds": result.prepared.context_snapshot_age_seconds,
-                    "data_source_mix": result.prepared.data_source_mix,
-                    "mark_index_spread_bps": result.prepared.mark_index_spread_bps,
-                    "premium_zscore_5m": result.prepared.premium_zscore_5m,
-                    "premium_slope_5m": result.prepared.premium_slope_5m,
-                    "oi_slope_5m": result.prepared.oi_slope_5m,
-                    "top_vs_global_ls_gap": result.prepared.top_vs_global_ls_gap,
-                }
-            )
-        if result.funnel:
-            symbol_row["funnel"] = result.funnel
-            if result.funnel.get("prepare_error_stage") is not None:
-                symbol_row["prepare_error_stage"] = result.funnel.get("prepare_error_stage")
-            if result.funnel.get("prepare_error_exception_type") is not None:
-                symbol_row["prepare_error_exception_type"] = result.funnel.get("prepare_error_exception_type")
-        self.telemetry.append_jsonl("symbol_analysis.jsonl", symbol_row)
-        if delivery_sent_count != delivered_count:
-            self._emit_telemetry_mismatch(
-                symbol=symbol,
-                trigger=result.trigger,
-                mismatch_type="delivery_sent_vs_symbol_analysis",
-                expected={"sent_delivery_rows": delivery_sent_count},
-                actual={"symbol_analysis_delivered": delivered_count},
-            )
-        LOG.info(
-            "cycle | symbol=%s detector_runs=%d candidates=%d delivered=%d rejected=%d status=%s",
-            symbol, result.raw_setups, len(candidates),
-            delivered_count, len(rejected), result.status or "ok",
+        self._get_telemetry_manager().emit_cycle_log(
+            symbol=symbol,
+            interval=interval,
+            event_ts=event_ts,
+            shortlist_size=shortlist_size,
+            tracking_events=tracking_events,
+            result=result,
+            candidates=candidates,
+            rejected=rejected,
+            delivered=delivered,
         )

@@ -79,3 +79,32 @@ def test_centroid_detector_fit_predict_does_not_fail() -> None:
     regime, confidence = detector.current_regime({"returns": 0.5, "vol": 0.02, "funding_rate": 0.0001})
     assert regime in {"contagion", "calm_up", "calm_down", "neutral"}
     assert 0.0 <= confidence <= 1.0
+
+
+def test_composite_regime_uses_history_frame_when_available(monkeypatch) -> None:
+    analyzer = CompositeRegimeAnalyzer()
+    captured = {}
+
+    monkeypatch.setattr(analyzer.centroid, "current_regime", lambda _features: ("neutral", 0.4))
+
+    def _fake_predict(df):
+        captured["height"] = df.height
+        return SimpleNamespace(regime="ranging", confidence=0.6)
+
+    monkeypatch.setattr(analyzer.rule_based, "predict", _fake_predict)
+
+    history = pl.DataFrame(
+        {
+            "log_returns": [0.001, -0.002, 0.003],
+            "realized_vol": [0.01, 0.011, 0.012],
+            "atr_pct": [0.01, 0.011, 0.012],
+        }
+    )
+
+    analyzer.analyze(
+        ticker_data=[],
+        funding_rates={"BTCUSDT": 0.0},
+        benchmark_context={"BTCUSDT": {"basis_pct": 0.0, "premium_slope_5m": 0.01, "regime_frame_4h": history}},
+    )
+
+    assert captured["height"] == 3

@@ -70,8 +70,16 @@ class MLFilter:
 
                 classifier = SignalClassifier(self.model_dir, model_type=self.settings.ml.model_type)
                 if classifier.load():
+                    model_kind = classifier.model_kind()
+                    if model_kind == "centroid_baseline":
+                        LOG.warning(
+                            "ML filter fallback resolved to centroid baseline model; "
+                            "live ML scoring is disabled for safety"
+                        )
+                        self.enabled = False
+                        return
                     self._classifier = classifier
-                    self._model_metadata = {"trained_at": "signal_classifier_artifact"}
+                    self._model_metadata = {"trained_at": "signal_classifier_artifact", "model_kind": model_kind}
                     LOG.info("ML filter loaded SignalClassifier fallback from %s", classifier.model_path)
                     return
                 LOG.warning("No trained model found in %s, ML filter disabled", self.model_dir)

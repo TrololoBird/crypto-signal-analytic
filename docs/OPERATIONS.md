@@ -7,6 +7,10 @@
 - `make test` — run tests.
 - `make run` — start bot runtime.
 - `make dry-run` — run without sending live deliveries.
+- Targeted remediation suites:
+  - `pytest -q tests/test_remediation_intra_candle.py`
+  - `pytest -q tests/test_remediation_indicators.py`
+  - `pytest -q tests/test_remediation_regressions.py`
 
 ## Recommended routine
 
@@ -22,6 +26,8 @@
 - tracking queue/drain status
 - memory repository summary
 - data quality and strategy decision JSONL traces
+- emergency fallback checks (`fallback_checks.jsonl`)
+- cycle/symbol telemetry emitted via `TelemetryManager`
 
 ## ML training quality gates
 
@@ -32,6 +38,7 @@
   - `--min-accuracy`, `--min-precision`, `--min-recall`, `--min-f1` (all bounded in `[0.0, 1.0]`).
 - CLI exits with code `2` when any enabled gate fails and includes failure reasons in `quality_gate.failures`.
 - Runtime ML integration should import `MLFilter` from `bot.ml` (canonical path). The top-level module `bot.ml_filter` is kept only as a backward-compatible shim.
+- If runtime fallback resolves to `centroid_baseline`, live ML scoring is auto-disabled as a safety guardrail.
 
 ## Incident checklist
 

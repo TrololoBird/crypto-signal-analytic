@@ -64,8 +64,7 @@ class SelfLearner:
         Returns list of OptimizationResult with optimized parameters.
         """
         if not OPTUNA_AVAILABLE:
-            LOG.warning("Optuna not available, skipping optimization")
-            return []
+            LOG.warning("Optuna not available, using walk-forward grid-search fallback")
 
         results: list[OptimizationResult] = []
         
@@ -108,7 +107,16 @@ class SelfLearner:
         regime: str,
     ) -> OptimizationResult | None:
         """Run Optuna optimization for a single setup."""
-        regime_bounds = RegimeAwareParams(regime=regime)
+        regime_bounds = RegimeAwareParams(regime=regime, db_path=self.db_path)
+
+        if not OPTUNA_AVAILABLE or optuna is None:
+            search_space = self._build_fallback_search_space(default_params, regime_bounds)
+            best_params = self._walk_forward.optimize(outcomes, search_space=search_space)
+            if not best_params:
+                return None
+            best_value = float(best_params.pop("_score", 0.0))
+            regime_bounds.set_params(setup_id, regime, best_params)
+            return self._build_result(setup_id, outcomes, best_params, best_value)
         
         def objective(trial: Any) -> float:
             """Optimization objective: maximize risk-adjusted return."""
@@ -161,31 +169,8 @@ class SelfLearner:
         # Get best parameters
         best_params = study.best_params
         best_value = study.best_value
-
-        # Calculate metrics
-        wins = sum(1 for o in outcomes if o.get("outcome") == "win")
-        losses = sum(1 for o in outcomes if o.get("outcome") == "loss")
-        total = wins + losses
-        win_rate = wins / total if total > 0 else 0.0
-
-        # Calculate profit factor
-        gross_profit = sum(o.get("pnl", 0) for o in outcomes if o.get("outcome") == "win")
-        gross_loss = abs(sum(o.get("pnl", 0) for o in outcomes if o.get("outcome") == "loss"))
-        profit_factor = gross_profit / gross_loss if gross_loss > 0 else float('inf')
-
-        LOG.info(
-            f"Optimized {setup_id}: win_rate={win_rate:.2%}, "
-            f"profit_factor={profit_factor:.2f}, score={best_value:.4f}"
-        )
-
-        return OptimizationResult(
-            setup_id=setup_id,
-            params=best_params,
-            win_rate=win_rate,
-            profit_factor=profit_factor,
-            total_trades=total,
-            optimized_at=datetime.now(timezone.utc),
-        )
+        regime_bounds.set_params(setup_id, regime, best_params)
+        return self._build_result(setup_id, outcomes, best_params, best_value)
 
     def _simulate_performance(
         self,
@@ -194,6 +179,62 @@ class SelfLearner:
     ) -> float:
         """Simulate performance with walk-forward evaluation."""
         return self._walk_forward.evaluate(outcomes, params)
+
+    @staticmethod
+    def _build_fallback_search_space(
+        default_params: dict[str, float],
+        regime_bounds: RegimeAwareParams,
+    ) -> dict[str, list[float]] | None:
+        if not default_params:
+            return None
+
+        search_space: dict[str, list[float]] = {}
+        for param_name, default_value in default_params.items():
+            value = float(default_value)
+            low, high = regime_bounds.scale(param_name, value)
+            if any(token in param_name for token in ("score", "threshold", "penalty")):
+                low, high = max(0.0, low), min(1.0, high)
+            if "min_rr" in param_name:
+                low, high = max(0.8, low), min(4.0, high)
+            if high < low:
+                low, high = high, low
+            midpoint = (low + high) / 2
+            search_space[param_name] = [low, midpoint, high]
+        return search_space or None
+
+    def _build_result(
+        self,
+        setup_id: str,
+        outcomes: list[dict[str, Any]],
+        params: dict[str, float],
+        score: float,
+    ) -> OptimizationResult:
+        wins = sum(1 for o in outcomes if o.get("outcome") == "win")
+        losses = sum(1 for o in outcomes if o.get("outcome") == "loss")
+        total = wins + losses
+        win_rate = wins / total if total > 0 else 0.0
+
+        gross_profit = sum(float(o.get("pnl", 0.0) or 0.0) for o in outcomes if o.get("outcome") == "win")
+        gross_loss = abs(
+            sum(float(o.get("pnl", 0.0) or 0.0) for o in outcomes if o.get("outcome") == "loss")
+        )
+        profit_factor = gross_profit / gross_loss if gross_loss > 0 else float("inf")
+
+        LOG.info(
+            "Optimized %s: win_rate=%.2f%%, profit_factor=%.2f, score=%.4f",
+            setup_id,
+            win_rate * 100,
+            profit_factor,
+            score,
+        )
+        return OptimizationResult(
+            setup_id=setup_id,
+            params=params,
+            win_rate=win_rate,
+            profit_factor=profit_factor,
+            total_trades=total,
+            optimized_at=datetime.now(timezone.utc),
+        )
 
     async def update_setup_params(
         self,

@@ -23,6 +23,12 @@ import polars as pl
 import structlog
 
 from .models import PreparedSymbol, SymbolFrames, UniverseSymbol
+from .features_microstructure import add_microstructure_features
+from .features_structure import (
+    hull_moving_average as _hull_moving_average_external,
+    ichimoku_lines as _ichimoku_lines_external,
+    weighted_moving_average as _weighted_moving_average_external,
+)
 
 # Optional polars_ta import. All strategy-critical indicators keep pure-Polars
 # fallbacks, so this remains optional rather than a hard dependency.
@@ -282,40 +288,6 @@ def _vwap(df: pl.DataFrame) -> pl.Series:
     return _materialize_series(vwap, df=df, name="vwap")
 
 
-def _add_microstructure_features(df: pl.DataFrame) -> pl.DataFrame:
-    """Add lightweight microstructure features from available L1/flow columns."""
-    result = df
-    if "delta_ratio" in result.columns:
-        result = result.with_columns([
-            ((pl.col("delta_ratio") - 0.5) * 2.0).clip(-1.0, 1.0).alias("signed_order_flow"),
-        ])
-    else:
-        result = result.with_columns([pl.lit(0.0).alias("signed_order_flow")])
-
-    if {"bid_qty", "ask_qty"}.issubset(result.columns):
-        denom = (pl.col("bid_qty") + pl.col("ask_qty")).clip(lower_bound=1e-9)
-        result = result.with_columns([
-            ((pl.col("bid_qty") - pl.col("ask_qty")) / denom)
-            .clip(-1.0, 1.0)
-            .fill_nan(0.0)
-            .alias("tob_imbalance"),
-        ])
-    else:
-        result = result.with_columns([pl.lit(0.0).alias("tob_imbalance")])
-
-    if {"bid_price", "ask_price", "bid_qty", "ask_qty", "close"}.issubset(result.columns):
-        microprice = (
-            (pl.col("ask_price") * pl.col("bid_qty")) + (pl.col("bid_price") * pl.col("ask_qty"))
-        ) / (pl.col("bid_qty") + pl.col("ask_qty")).clip(lower_bound=1e-9)
-        result = result.with_columns([
-            (((microprice - pl.col("close")) / pl.col("close")).fill_nan(0.0) * 100.0)
-            .clip(-2.0, 2.0)
-            .alias("microprice_deviation_pct"),
-        ])
-    else:
-        result = result.with_columns([pl.lit(0.0).alias("microprice_deviation_pct")])
-
-    return result
 
 
 def _roc(df: pl.DataFrame, period: int = 10) -> pl.Series:
@@ -441,18 +413,7 @@ def _safe_close_position(df: pl.DataFrame, window: int = 20) -> pl.Series:
 
 
 def _ichimoku_lines(df: pl.DataFrame) -> tuple[pl.Series, pl.Series, pl.Series, pl.Series]:
-    """Ichimoku Cloud lines without lookahead bias."""
-    high = df["high"]
-    low = df["low"]
-    
-    tenkan = ((high.rolling_max(9) + low.rolling_min(9)) / 2.0).rename("tenkan")
-    kijun = ((high.rolling_max(26) + low.rolling_min(26)) / 2.0).rename("kijun")
-    
-    # Senkou spans are projected 26 periods ahead in standard Ichimoku plotting.
-    senkou_a = (((tenkan + kijun) / 2.0).shift(26)).rename("senkou_a")
-    senkou_b = (((high.rolling_max(52) + low.rolling_min(52)) / 2.0).shift(26)).rename("senkou_b")
-    
-    return tenkan, kijun, senkou_a, senkou_b
+    return _ichimoku_lines_external(df)
 
 
 # ---------------------------------------------------------------------------
@@ -534,27 +495,11 @@ def _bollinger_bands(close: pl.Series, period: int = 20, nbdev: float = 2.0) -> 
 
 
 def _weighted_moving_average(series: pl.Series, period: int, *, name: str) -> pl.Series:
-    if period <= 1:
-        return series.cast(pl.Float64).rename(name)
-    values = series.to_list()
-    weights = list(range(1, period + 1))
-    divisor = float(sum(weights))
-    out: list[float | None] = [None] * len(values)
-    for idx in range(period - 1, len(values)):
-        window = values[idx - period + 1 : idx + 1]
-        if any(v is None for v in window):
-            continue
-        out[idx] = sum(float(v) * w for v, w in zip(window, weights, strict=False)) / divisor
-    return _clean_non_finite(pl.Series(name, out, dtype=pl.Float64), fill=0.0)
+    return _weighted_moving_average_external(series, period, name=name)
 
 
 def _hull_moving_average(close: pl.Series, period: int, *, name: str) -> pl.Series:
-    half = max(1, period // 2)
-    sqrt_n = max(1, int(np.sqrt(period)))
-    wma_half = _weighted_moving_average(close, half, name=f"{name}_half")
-    wma_full = _weighted_moving_average(close, period, name=f"{name}_full")
-    raw = (2.0 * wma_half - wma_full).rename(f"{name}_raw")
-    return _weighted_moving_average(raw, sqrt_n, name=name)
+    return _hull_moving_average_external(close, period, name=name)
 
 
 def _keltner_channels(df: pl.DataFrame, period: int = 20, multiplier: float = 2.0) -> tuple[pl.Series, pl.Series, pl.Series]:
@@ -973,7 +918,7 @@ def _prepare_frame(df: pl.DataFrame) -> pl.DataFrame:
     
     # Advanced indicators
     work = _add_advanced_indicators(work)
-    work = _add_microstructure_features(work)
+    work = add_microstructure_features(work)
     work = work.with_columns([
         _roc(work, 10).fill_nan(0.0).alias("roc10"),
         _realized_volatility(work, 20).fill_nan(0.0).alias("realized_vol_20"),
